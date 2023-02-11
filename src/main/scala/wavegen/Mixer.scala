@@ -4,29 +4,71 @@ import chisel3._
 import chisel3.util._
 import scala.collection.immutable.ListMap
 
-class Mixer(channelCount: Int, width: Int) extends Module {
-	val init :: summing :: Nil = Enum(2)
+import wavegen.Maxer
+class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
+	val sInit :: sSumming :: Nil = Enum(2)
 
-	var inputs = Seq.tabulate(channelCount)(n => ("channel" + n) -> Flipped(Decoupled(UInt(width.W))))
-	var channelKeys = inputs.map(_._1)
-	val io = IO(new CustomBundle(inputs :+ ("out" -> Decoupled(UInt(width.W)))))
-	val out = io("out").asInstanceOf[DecoupledIO[UInt]]
+	val io = IO(new Bundle {
+		val in  = Input(Vec(channelCount, Flipped(Decoupled(UInt(width.W)))))
+		val out = Decoupled(UInt(width.W))
+	})
 
-	def apply(channel: String) = io(channel).asInstanceOf[DecoupledIO[UInt]]
+	// var inputs = Seq.tabulate(channelCount)(n => ("channel" + n) -> Flipped(Decoupled(UInt(width.W))))
+	// var channelKeys = inputs.map(_._1)
+	// val io = IO(new CustomBundle(inputs :+ ("out" -> Decoupled(UInt(width.W)))))
+	// val out = io("out").asInstanceOf[DecoupledIO[UInt]]
+
+	// def apply(channel: String) = io(channel).asInstanceOf[DecoupledIO[UInt]]
 
 	val bigger = width + log2Ceil(channelCount)
 	val maxReg = RegInit(0.U(bigger.W))
 
-	val allValid = channelKeys.foldLeft(true.B)(_ && io(_).asInstanceOf[DecoupledIO[UInt]].valid)
+	// val allValid = channelKeys.foldLeft(true.B)(_ && io(_).asInstanceOf[DecoupledIO[UInt]].valid)
 	
-	val state = RegInit(init)
+	val state = RegInit(sInit)
 
-	out.valid := false.B
-	out.bits := 0.U
+	io.out.valid := false.B
+	io.out.bits := 0.U
 
-	channelKeys.foreach { this(_).ready := false.B }
+	// channelKeys.foreach { this(_).ready := false.B }
+	
+	io.in.foreach { in => in.ready := true.B }
 
-	when (state === init) {
-		out.valid := allValid
+	// when (state === init) {
+	// 	out.valid := allValid
+	// }
+
+	val maxer = Module(new Maxer(channelCount + 1, bigger))
+	val summer = Module(new Summer(channelCount, width))
+
+	for (i <- 0 until channelCount) {
+		maxer.io.in(i)  := io.in(i).bits
+		summer.io.in(i) := io.in(i).bits
+	}
+
+	maxer.io.in(channelCount) := maxReg
+
+	val allValid = io.in.foldLeft(true.B)(_ && _.valid)
+
+	val memory = Reg(Vec(memorySize, UInt(bigger.W)))
+	val index = RegInit(0.U(log2Ceil(memorySize).W))
+
+	
+
+	when (state === sInit) {
+		when (allValid) {
+			// maxReg := maxer.io.out
+			memory(index) := summer.io.out
+			when (maxReg < maxer.io.out) {
+				maxReg := maxer.io.out
+			}
+
+			when (index === (memorySize - 1).U) {
+				index := 0.U
+				state := sSumming
+			} .otherwise {
+				index := index + 1.U
+			}
+		}
 	}
 }

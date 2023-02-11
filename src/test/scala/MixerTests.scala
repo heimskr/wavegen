@@ -8,6 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class MixerTest1(width: Int = 8) extends Module {
 	val io = IO(new Bundle {
+		val pause = Input(Bool())
 		val c0v = Input(Bool())
 		val c1v = Input(Bool())
 		val c0r = Output(Bool())
@@ -19,8 +20,8 @@ class MixerTest1(width: Int = 8) extends Module {
 	val gen0 = Module(new TableGen(new SawtoothGenerator(true), 10, 255))
 	val gen1 = Module(new TableGen(new TriangleGenerator(true), 10, 255))
 
-	gen0.io.pause := false.B
-	gen1.io.pause := false.B
+	gen0.io.pause := io.pause
+	gen1.io.pause := io.pause
 
 	val c0 = mixer("channel0")
 	val c1 = mixer("channel1") 
@@ -41,6 +42,7 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 	behavior of "Mixer"
 	it should "mix properly" in {
 		test(new MixerTest1).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+			dut.io.pause.poke(true.B)
 			dut.io.c0v.poke(false.B)
 			dut.io.c1v.poke(false.B)
 			dut.io.out.valid.expect(false.B)
@@ -48,7 +50,6 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 			dut.io.out.valid.expect(false.B)
 			dut.io.c1v.poke(true.B)
 			dut.io.out.valid.expect(true.B)
-
 			
 		}
 	}
