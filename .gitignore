@@ -7,3 +7,6 @@ project
 target
 .bloop
 test_run_dir
+*.anno.json
+*.fir
+/*.v

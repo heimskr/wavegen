@@ -11,7 +11,7 @@ class MixerDebug(channelCount: Int, width: Int) extends Bundle {
 	val max = Output(FixedPoint((width + extra).W, extra.BP))
 }
 
-class Mixer(channelCount: Int, width: Int, memorySize: Int, batchSize: Int = 1) extends Module {
+class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 	val sSumming :: sAdjusting :: sDone :: Nil = Enum(3)
 
 	val io = IO(new Bundle {
