@@ -6,8 +6,11 @@ import chisel3.util._
 import chiseltest._
 import chisel3.experimental.BundleLiterals._
 import org.scalatest.flatspec.AnyFlatSpec
+import scala.util.control.Breaks._
 
-class MixerTest1(width: Int = 8) extends Module {
+class MixerTest1(period: Int = 40, resolution: Int = 1023) extends Module {
+	val width = log2Ceil(resolution)
+
 	val io = IO(new Bundle {
 		val pause = Input(Bool())
 		val c0v = Input(Bool())
@@ -17,9 +20,6 @@ class MixerTest1(width: Int = 8) extends Module {
 		val out = Decoupled(FixedPoint(width.W, 0.BP))
 		val debug = new MixerDebug(2, width)
 	})
-
-	val period = 10
-	val resolution = 255
 
 	val mixer = Module(new Mixer(2, width, resolution))
 	val gen0 = Module(new TableGen(new SawtoothGenerator(true), period, resolution))
@@ -59,8 +59,13 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 
 			dut.io.pause.poke(false.B)
 
-			for (i <- 0 until 1000) {
-				dut.clock.step()
+			dut.clock.setTimeout(0)
+			breakable {
+				for (i <- 0 until 10000) {
+					dut.clock.step()
+					if (dut.io.debug.state.peek() == 2)
+						break
+				}
 			}
 		}
 	}
