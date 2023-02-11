@@ -18,7 +18,7 @@ class FPSummer(inputCount: Int, width: Int, point: Int = 0) extends Module {
 
 	def makeOut(value: Double) = value.F(bigWidth.W, bigPoint.BP)
 
-	io.out := io.in.foldLeft(0.F(bigWidth.W, bigPoint.BP)) { (sum, in) =>
+	io.out := io.in.foldLeft(.0.F(bigWidth.W, bigPoint.BP)) { (sum, in) =>
 		sum + Cat(0.U(extra.W), in).asFixedPoint(bigPoint.BP)
 	}
 }

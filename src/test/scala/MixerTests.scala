@@ -15,11 +15,15 @@ class MixerTest1(width: Int = 8) extends Module {
 		val c0r = Output(Bool())
 		val c1r = Output(Bool())
 		val out = Decoupled(FixedPoint(width.W, 0.BP))
+		val debug = new MixerDebug(2, width)
 	})
 
-	val mixer = Module(new Mixer(2, width, 255))
-	val gen0 = Module(new TableGen(new SawtoothGenerator(true), 10, 255))
-	val gen1 = Module(new TableGen(new TriangleGenerator(true), 10, 255))
+	val period = 10
+	val resolution = 255
+
+	val mixer = Module(new Mixer(2, width, resolution))
+	val gen0 = Module(new TableGen(new SawtoothGenerator(true), period, resolution))
+	val gen1 = Module(new TableGen(new TriangleGenerator(false), period * 2, resolution))
 
 	gen0.io.pause := io.pause
 	gen1.io.pause := io.pause
@@ -37,6 +41,7 @@ class MixerTest1(width: Int = 8) extends Module {
 	io.c1r := c1.ready
 
 	io.out <> mixer.io.out
+	io.debug <> mixer.io.debug
 }
 
 class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
@@ -51,6 +56,12 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 			dut.io.out.valid.expect(false.B)
 			dut.io.c1v.poke(true.B)
 			// dut.io.out.valid.expect(true.B)
+
+			dut.io.pause.poke(false.B)
+
+			for (i <- 0 until 1000) {
+				dut.clock.step()
+			}
 		}
 	}
 }
