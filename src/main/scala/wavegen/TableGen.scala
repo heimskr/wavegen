@@ -3,7 +3,7 @@ package wavegen
 import chisel3._
 import chisel3.util._
 
-class TableGen[T <: Generator](val gen: T, val period: Int, val resolution: Int) extends Module {
+class TableGen[T <: Generator](gen: T, period: Int, resolution: Int) extends Module {
 	require(1 < period)
 	require(1 < resolution)
 	val inWidth = log2Ceil(period + 1).W

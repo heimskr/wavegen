@@ -50,7 +50,7 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int, batchSize: Int = 1) 
 	val maxPossible = Fill(width, 1.U(1.W))
 
 	enableIndex := false.B
-	resetIndex := false.B
+	resetIndex  := false.B
 
 	when (state === sSumming) {
 		when (allValid) {
@@ -81,9 +81,11 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int, batchSize: Int = 1) 
 		when (indexWrap) {
 			resetIndex := true.B
 			state := sDone
-			printf(p"Done\n")
 		} .otherwise {
 			enableIndex := true.B
 		}
+	} .elsewhen (state === sDone) {
+		resetIndex := true.B
+		enableIndex := false.B
 	}
 }

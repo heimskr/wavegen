@@ -64,7 +64,7 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 				for (i <- 0 until 10000) {
 					dut.clock.step()
 					if (dut.io.debug.state.peek() == 2)
-						break
+						break()
 				}
 			}
 		}
