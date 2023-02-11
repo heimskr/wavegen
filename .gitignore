@@ -5,3 +5,5 @@
 .vscode
 project
 target
+.bloop
+test_run_dir
