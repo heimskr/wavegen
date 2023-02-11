@@ -1,45 +1,32 @@
 package wavegen
 
 import chisel3._
+import chisel3.experimental._
 import chisel3.util._
 import scala.collection.immutable.ListMap
 
-import wavegen.Maxer
 class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 	val sInit :: sSumming :: Nil = Enum(2)
 
 	val io = IO(new Bundle {
-		val in  = Input(Vec(channelCount, Flipped(Decoupled(UInt(width.W)))))
-		val out = Decoupled(UInt(width.W))
+		val in  = Vec(channelCount, Flipped(Decoupled(FixedPoint(width.W, 0.BP))))
+		val out = Decoupled(FixedPoint(width.W, 0.BP))
+		val state = Output(UInt(4.W))
 	})
 
-	// var inputs = Seq.tabulate(channelCount)(n => ("channel" + n) -> Flipped(Decoupled(UInt(width.W))))
-	// var channelKeys = inputs.map(_._1)
-	// val io = IO(new CustomBundle(inputs :+ ("out" -> Decoupled(UInt(width.W)))))
-	// val out = io("out").asInstanceOf[DecoupledIO[UInt]]
-
-	// def apply(channel: String) = io(channel).asInstanceOf[DecoupledIO[UInt]]
-
 	val bigger = width + log2Ceil(channelCount)
-	val maxReg = RegInit(0.U(bigger.W))
-
-	// val allValid = channelKeys.foldLeft(true.B)(_ && io(_).asInstanceOf[DecoupledIO[UInt]].valid)
 	
 	val state = RegInit(sInit)
-
+	io.state := state
+	
 	io.out.valid := false.B
-	io.out.bits := 0.U
-
-	// channelKeys.foreach { this(_).ready := false.B }
+	io.out.bits := .0.F(0.BP)
 	
 	io.in.foreach { in => in.ready := true.B }
-
-	// when (state === init) {
-	// 	out.valid := allValid
-	// }
-
-	val maxer = Module(new Maxer(channelCount + 1, bigger))
-	val summer = Module(new Summer(channelCount, width))
+	
+	val maxer = Module(new FPMaxer(channelCount + 1, FixedPoint(width.W, 0.BP)))
+	val summer = Module(new FPSummer(channelCount, width))
+	val maxReg = RegInit(summer.makeOut(.0))
 
 	for (i <- 0 until channelCount) {
 		maxer.io.in(i)  := io.in(i).bits
@@ -50,15 +37,15 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 
 	val allValid = io.in.foldLeft(true.B)(_ && _.valid)
 
-	val memory = Reg(Vec(memorySize, UInt(bigger.W)))
+	val memory = Reg(Vec(memorySize, summer.outType))
 	val index = RegInit(0.U(log2Ceil(memorySize).W))
 
-	
+	0.F(0.BP)
 
 	when (state === sInit) {
 		when (allValid) {
-			// maxReg := maxer.io.out
 			memory(index) := summer.io.out
+		
 			when (maxReg < maxer.io.out) {
 				maxReg := maxer.io.out
 			}
