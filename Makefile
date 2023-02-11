@@ -1,0 +1,2 @@
+test:
+	sbt "testOnly *MixerTests"

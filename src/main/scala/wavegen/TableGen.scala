@@ -10,10 +10,11 @@ class TableGen[T <: Generator](val gen: T, val period: Int, val resolution: Int)
 	val outWidth = log2Ceil(resolution + 1).W
 
 	val io = IO(new Bundle {
+		val pause = Input(Bool())
 		val out = Output(UInt(outWidth))
 	})
 
-	val (counter, wrap) = Counter(true.B, period)
+	val (counter, wrap) = Counter(!io.pause, period)
 
 	val list = List.tabulate(period)(i => (gen(i.doubleValue / period) * resolution).toInt.U(outWidth))
 	val data = RegInit(VecInit(list))
