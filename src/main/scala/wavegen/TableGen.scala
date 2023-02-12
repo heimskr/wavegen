@@ -6,7 +6,6 @@ import chisel3.util._
 class TableGen[T <: Generator](gen: T, period: Int, resolution: Int) extends Module {
 	require(1 < period)
 	require(1 < resolution)
-	val inWidth = log2Ceil(period + 1).W
 	val outWidth = log2Ceil(resolution + 1).W
 
 	val io = IO(new Bundle {
