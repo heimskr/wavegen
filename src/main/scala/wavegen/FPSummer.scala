@@ -6,6 +6,7 @@ import scala.collection.immutable.ListMap
 import chisel3.experimental.FixedPoint
 
 class FPSummer(inputCount: Int, width: Int, point: Int = 0) extends Module {
+	require(0 < inputCount)
 	val extra = log2Ceil(inputCount)
 	val bigPoint = point + extra
 	val bigWidth = width + extra
@@ -18,7 +19,11 @@ class FPSummer(inputCount: Int, width: Int, point: Int = 0) extends Module {
 
 	def makeOut(value: Double) = value.F(bigWidth.W, bigPoint.BP)
 
-	io.out := io.in.foldLeft(.0.F(bigWidth.W, bigPoint.BP)) { (sum, in) =>
-		sum + Cat(0.U(extra.W), in).asFixedPoint(bigPoint.BP)
+	if (inputCount == 1) {
+		io.out := io.in(0)
+	} else {
+		io.out := io.in.foldLeft(.0.F(bigWidth.W, bigPoint.BP)) { (sum, in) =>
+			sum + Cat(0.U(extra.W), in).asFixedPoint(bigPoint.BP)
+		}
 	}
 }
