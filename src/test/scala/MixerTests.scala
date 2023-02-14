@@ -22,8 +22,8 @@ class MixerTest1(period: Int = 40, resolution: Int = 1023) extends Module {
 	})
 
 	val mixer = Module(new Mixer(2, width, resolution))
-	val gen0 = Module(new TableGen(new SawtoothGenerator(true), period, resolution))
-	val gen1 = Module(new TableGen(new TriangleGenerator(false), period * 2, resolution))
+	val gen0 = Module(new TableGen(new SawtoothGenerator(true),  100000000, period, resolution))
+	val gen1 = Module(new TableGen(new TriangleGenerator(false), 100000000, period * 2, resolution))
 
 	gen0.io.pause := io.pause
 	gen1.io.pause := io.pause
@@ -92,11 +92,11 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 	}
 
 	var channelRange = 2 to 4
-	var widthRange = 6 to 10
+	var widthRange   = 6 to 10
 	var memSizeRange = 16 to 256 by 24
 
 	channelRange = 3 to 3
-	widthRange = 7 to 7
+	widthRange   = 7 to 7
 	memSizeRange = 256 to 256
 
 	for (channels <- channelRange) {
