@@ -91,37 +91,51 @@ class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
 		}
 	}
 
-	it should "mix random data properly" in {
-		test(new MixerTest2(3, 8, 256)) { dut =>
-			val chans = dut.channelCount
-			val runs = dut.memorySize
-			val randMax = 1 << dut.width
-			val divisor = randMax - 1
+	var channelRange = 2 to 4
+	var widthRange = 6 to 10
+	var memSizeRange = 16 to 256 by 24
 
-			val data = Seq.tabulate(runs) { x =>
-				Seq.tabulate(chans)(y => scala.util.Random.between(0, randMax))
-			}
+	channelRange = 3 to 3
+	widthRange = 7 to 7
+	memSizeRange = 256 to 256
 
-			val sums = data.map(_.sum)
-			val max = sums.max
-			val reduced = if (divisor < max) sums.map(_ * divisor / max) else sums
+	for (channels <- channelRange) {
+		for (width <- widthRange) {
+			for (memSize <- memSizeRange) {
+				it should s"mix random data properly (${channels}c, ${width}w, ${memSize}m)" in {
+					test(new MixerTest2(channels, width, memSize)) { dut =>
+						val chans = dut.channelCount
+						val runs = dut.memorySize
+						val randMax = 1 << dut.width
+						val divisor = randMax - 1
 
-			dut.io.in.valid.poke(true)
+						val data = Seq.tabulate(runs) { x =>
+							Seq.tabulate(chans)(y => scala.util.Random.between(0, randMax))
+						}
 
-			for (i <- 0 until runs) {
-				for (c <- 0 until chans)
-					dut.io.in.bits(c).poke(data(i)(c))
-				dut.io.debug.state.expect(0)
-				dut.clock.step()
-			}
+						val sums = data.map(_.sum)
+						val max = sums.max
+						val reduced = if (divisor < max) sums.map(_ * divisor / max) else sums
 
-			dut.io.in.valid.poke(false)
-			dut.io.debug.state.expect(1)
-			dut.io.out.valid.expect(true)
+						dut.io.in.valid.poke(true)
 
-			reduced.foreach { n =>
-				dut.io.out.bits.expect(n)
-				dut.clock.step()
+						for (i <- 0 until runs) {
+							for (c <- 0 until chans)
+								dut.io.in.bits(c).poke(data(i)(c))
+							dut.io.debug.state.expect(0)
+							dut.clock.step()
+						}
+
+						dut.io.in.valid.poke(false)
+						dut.io.debug.state.expect(1)
+						dut.io.out.valid.expect(true)
+
+						reduced.foreach { n =>
+							dut.io.out.bits.expect(n)
+							dut.clock.step()
+						}
+					}
+				}
 			}
 		}
 	}
