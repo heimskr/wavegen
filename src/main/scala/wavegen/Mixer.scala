@@ -43,8 +43,8 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 
 	val memory = Mem(memorySize, summer.outType)
 
-	val enableIndex = Reg(Bool())
-	val resetIndex = Reg(Bool())
+	val enableIndex = Wire(Bool())
+	val resetIndex = Wire(Bool())
 	val (index, indexWrap) = Counter(0 until memorySize, enableIndex, resetIndex)
 
 	val maxPossible = Fill(width, 1.U(1.W))
@@ -54,6 +54,7 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 
 	when (state === sSumming) {
 		when (allValid) {
+			enableIndex := true.B
 			memory(index) := summer.io.out
 
 			// FixedPoints appear to be always signed.
@@ -61,7 +62,7 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 				maxReg := summer.io.out
 			}
 
-			when (indexWrap) {
+			when (index === (memorySize - 1).U) {
 				resetIndex := true.B
 				when (maxPossible < maxReg.asUInt) {
 					state := sAdjusting
@@ -78,7 +79,7 @@ class Mixer(channelCount: Int, width: Int, memorySize: Int) extends Module {
 		io.out.valid := true.B
 		io.out.bits := newValue
 
-		when (indexWrap) {
+		when (index === (memorySize - 1).U) {
 			resetIndex := true.B
 			state := sDone
 		} .otherwise {
