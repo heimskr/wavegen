@@ -3,7 +3,7 @@ package wavegen
 import chisel3._
 import chisel3.util._
 
-class TableGen[T <: Generator](gen: T, clockFreq: Int, period: Int, resolution: Int) extends Module {
+class TableGen[T <: Generator](gen: T, period: Int, resolution: Int)(implicit clockFreq: Int) extends Module {
 	require(1 < period)
 	require(1 < resolution)
 	require(1 < clockFreq)
@@ -16,7 +16,7 @@ class TableGen[T <: Generator](gen: T, clockFreq: Int, period: Int, resolution: 
 		val out = Output(UInt(outWidth))
 	})
 
-	val clocker = Module(new Clocker(clockFreq))
+	val clocker = Module(new Clocker)
 	clocker.io.enable := !io.pause
 	clocker.io.freq := io.freq
 

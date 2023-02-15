@@ -8,7 +8,7 @@ import chisel3.experimental.BundleLiterals._
 import org.scalatest.flatspec.AnyFlatSpec
 import scala.util.control.Breaks._
 
-class MixerTest1(period: Int = 40, resolution: Int = 1023) extends Module {
+class MixerTest1(period: Int = 40, resolution: Int = 1023)(implicit clockFreq: Int) extends Module {
 	val width = log2Ceil(resolution)
 
 	val io = IO(new Bundle {
@@ -22,8 +22,8 @@ class MixerTest1(period: Int = 40, resolution: Int = 1023) extends Module {
 	})
 
 	val mixer = Module(new Mixer(2, width, resolution))
-	val gen0 = Module(new TableGen(new SawtoothGenerator(true),  100000000, period, resolution))
-	val gen1 = Module(new TableGen(new TriangleGenerator(false), 100000000, period * 2, resolution))
+	val gen0 = Module(new TableGen(new SawtoothGenerator(true),  period, resolution))
+	val gen1 = Module(new TableGen(new TriangleGenerator(false), period * 2, resolution))
 
 	gen0.io.pause := io.pause
 	gen1.io.pause := io.pause
@@ -66,6 +66,8 @@ class MixerTest2(val channelCount: Int, val width: Int, val memorySize: Int) ext
 }
 
 class MixerTests extends AnyFlatSpec with ChiselScalatestTester {
+	implicit val clockFreq = 100_000_000
+
 	behavior of "Mixer"
 	it should "mix" in {
 		test(new MixerTest1).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>

@@ -8,9 +8,11 @@ import chisel3.experimental.BundleLiterals._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SquareTests extends AnyFlatSpec with ChiselScalatestTester {
+	implicit val clockFreq = 100_000_000
+
 	behavior of "SquareGen"
 	it should "generate squares" in {
-		test(new SquareGen(100000000, 16, 3)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+		test(new SquareGen(16, 3)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.clock.setTimeout(0)
 			dut.io.freq.poke(10000000)
 			dut.io.max.poke(10000)

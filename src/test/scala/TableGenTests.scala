@@ -7,9 +7,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 
 class TableGenTests extends AnyFlatSpec with ChiselScalatestTester {
+	implicit val clockFreq = 100_000_000
+
 	object Tester {
 		def apply[G <: Generator](gen: G, period: Int, resolution: Int)(block: (TableGen[G], Int => Unit) => Any) = {
-			test(new TableGen(gen, 100000000, period, resolution)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+			test(new TableGen(gen, period, resolution)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 				block(dut, value => {
 					dut.io.out.expect(value.U)
 					dut.clock.step()
