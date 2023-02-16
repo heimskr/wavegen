@@ -10,3 +10,4 @@ test_run_dir
 *.anno.json
 *.fir
 /*.v
+*.raw

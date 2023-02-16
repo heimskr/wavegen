@@ -30,16 +30,27 @@ class NoiseGen(resolution: Int) extends Module {
 		val out = Output(UInt(power.W))
 	})
 
-	val lfsr = Module(new GaloisLFSR(power, fibonacciSet, Some(42)))
-	// lfsr.io.seed.bits := 42.U(power.W).asBools
-	lfsr.io.seed.bits := DontCare
-	lfsr.io.seed.valid := false.B
-	lfsr.io.increment := true.B
+	// val lfsr = Module(new GaloisLFSR(power, fibonacciSet, Some(42)))
+	// // lfsr.io.seed.bits := 42.U(power.W).asBools
+	// lfsr.io.seed.bits := DontCare
+	// lfsr.io.seed.valid := false.B
+	// lfsr.io.increment := true.B
 
-	if ((resolution & (resolution - 1)) == 0) {
-		// Power of two: no modulo necessary
-		io.out := lfsr.io.out.asUInt(power - 1, 0)
-	} else {
-		io.out := lfsr.io.out.asUInt % resolution.U
-	}
+	// if ((resolution & (resolution - 1)) == 0) {
+	// 	// Power of two: no modulo necessary
+	// 	io.out := lfsr.io.out.asUInt(power - 1, 0)
+	// } else {
+	// 	io.out := lfsr.io.out.asUInt % resolution.U
+	// }
+
+	// val lfsr = Module(new FibonacciLFSR(15, Set(0, 6)))
+	// lfsr.io.seed.bits := DontCare
+	// lfsr.io.seed.valid := false.B
+	// lfsr.io.increment := true.B
+
+	val (counter, wrap) = Counter(0 until 50)
+
+	val lfsr = FibonacciLFSR(15, Set(1, 7), wrap)
+
+	io.out := Mux(lfsr(0), (resolution/2-1).U(power.W), (-resolution/2).S(power.W).asUInt)
 }
