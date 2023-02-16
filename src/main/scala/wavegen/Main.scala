@@ -18,23 +18,28 @@ class Main extends Module {
 		val led     = Output(UInt(8.W))
 	})
 
-	val freq = io.sw(7, 1) << 4.U
+	// val freq = io.sw(6, 0) << 6.U
+	val freq = 440.U
 
 	val square = Module(new SquareGen(24))
-	square.io.pause := !io.sw(0)
-	square.io.freq := freq
-	square.io.max := "h0fffff".U
-	square.io.wave := "b10".U
+	square.io.pause := !io.sw(7)
+	square.io.freq  := freq << 1.U
+	square.io.max   := "h0fffff".U
+	square.io.wave  := "b10".U
 
-	when (io.sw(0)) {
+	val sine = Module(new TableGen(new SineGenerator, 1024, 0x0fffff))
+	sine.io.pause := io.sw(7)
+	sine.io.freq  := freq
+
+	when (io.sw(7)) {
 		io.outL := square.io.out
 		io.outR := square.io.out
 	} .otherwise {
-		io.outL := 0.U
-		io.outR := 0.U
+		io.outL := sine.io.out
+		io.outR := sine.io.out
 	}
 
-	io.led := freq(7, 0)
+	io.led := io.sw(3, 0)
 }
 
 object MainRun extends scala.App {
