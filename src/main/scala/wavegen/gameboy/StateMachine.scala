@@ -5,6 +5,7 @@ import chisel3.util._
 
 class StateMachine(data: Seq[Byte]) extends Module {
 	val io = IO(new Bundle {
+		val start     = Input(Bool())
 		val tick      = Input(Bool())
 		val state     = Output(UInt(4.W))
 		val error     = Output(UInt(4.W))
@@ -67,10 +68,10 @@ class StateMachine(data: Seq[Byte]) extends Module {
 		}
 	}
 
-	val sInit :: sPlaying :: sWaiting :: sDone :: Nil = Enum(4)
+	val sIdle :: sInit :: sPlaying :: sWaiting :: sDone :: Nil = Enum(5)
 	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: Nil = Enum(4)
 
-	val rom = VecInit(data.map { _.U(8.W) })
+	val rom = VecInit(data.map { _.S(8.W).asUInt })
 	
 	val state = RegInit(sInit)
 	val error = RegInit(eNone)
@@ -86,7 +87,11 @@ class StateMachine(data: Seq[Byte]) extends Module {
 	val errorInfo = RegInit(0.U(8.W))
 
 	when (error === eNone && io.tick) {
-		when (state === sInit) {
+		when (state === sIdle) {
+			when (io.start) {
+				state := sInit
+			}
+		} .elsewhen (state === sInit) {
 			registers := 0.U.asTypeOf(Registers())
 			pointer := get4(0x34) + "h34".U
 			state := sPlaying
@@ -140,6 +145,10 @@ class StateMachine(data: Seq[Byte]) extends Module {
 				state := sPlaying
 			} .otherwise {
 				waitCounter := waitCounter - 1.U
+			}
+		} .elsewhen (state === sDone) {
+			when (io.start) {
+				state := sInit
 			}
 		}
 	}

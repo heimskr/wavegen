@@ -2,6 +2,7 @@ package wavegen
 
 import chisel3._
 import chisel3.stage._
+import java.nio.file.{Files, Paths}
 
 class Main extends Module {
 	implicit val clockFreq = 100_000_000
@@ -42,6 +43,41 @@ class Main extends Module {
 	io.led := io.sw(3, 0)
 }
 
+class MainGameBoy(filename: String) extends Module {
+	implicit val clockFreq: Int = 100_000_000
+
+	val io = IO(new Bundle {
+		val buttonU = Input(Bool())
+		val buttonR = Input(Bool())
+		val buttonD = Input(Bool())
+		val buttonL = Input(Bool())
+		val buttonC = Input(Bool())
+		val sw      = Input(UInt(8.W))
+		val outL    = Output(UInt(24.W))
+		val outR    = Output(UInt(24.W))
+		val led     = Output(UInt(8.W))
+	})
+
+	var centerReg = RegInit(false.B)
+
+	val start = WireDefault(false.B)
+
+	when (io.buttonC && !centerReg) {
+		centerReg := true.B
+		start := true.B
+	} .otherwise {
+		centerReg := io.buttonC
+	}
+
+	val gameboy = Module(new wavegen.gameboy.GameBoy(Files.readAllBytes(Paths.get(filename))))
+	gameboy.io.start := start
+
+	val signal = gameboy.io.out << 16.U
+	io.outL := signal
+	io.outR := signal
+	io.led  := 0.U
+}
+
 object MainRun extends scala.App {
-	(new ChiselStage).emitVerilog(new Main, args)
+	(new ChiselStage).emitVerilog(new MainGameBoy("worldmap.vgm"), args)
 }

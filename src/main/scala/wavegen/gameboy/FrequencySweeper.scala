@@ -20,12 +20,12 @@ class FrequencySweeper extends Module {
 	val sweepTimer   = RegInit(0.U(4.W))
 
 	def calcFrequency(): UInt = {
-		var newFrequency = shadowFreq >> io.shift
+		val newFrequency = Wire(UInt(11.W))
 
 		when (io.negate) {
-			newFrequency = shadowFreq - newFrequency
+			newFrequency := shadowFreq - (shadowFreq >> io.shift)
 		} .otherwise {
-			newFrequency = shadowFreq + newFrequency
+			newFrequency := shadowFreq + (shadowFreq >> io.shift)
 		}
 
 		when (2047.U < newFrequency) {

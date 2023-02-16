@@ -43,15 +43,15 @@ class Channel1(implicit clockFreq: Int) extends SquareChannel {
 
 	val waveforms = VecInit(Seq("b00000001".U, "b00000011".U, "b00001111".U, "b11111100".U))
 
-	val squareGen = Module(new SquareGen(4, 8))
+	val squareGen = Module(new SquareGen(1, 8))
 	squareGen.io.pause := !lengthCounter.io.channelOn
 	squareGen.io.freq  := sweeper.io.out
-	squareGen.io.max   := "b1111".U
+	squareGen.io.max   := "b1".U
 	squareGen.io.wave  := waveforms(duty)
 
 	io.out := 0.U
 	
 	when (lengthCounter.io.channelOn) {
-		io.out := squareGen.io.out
+		io.out := squareGen.io.out * envelope.io.currentVolume
 	}
 }
