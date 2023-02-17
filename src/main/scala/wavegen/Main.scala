@@ -53,9 +53,11 @@ class MainGameBoy(filename: String) extends Module {
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
 		val sw      = Input(UInt(8.W))
+		val rom     = Input(UInt(8.W))
 		val outL    = Output(UInt(24.W))
 		val outR    = Output(UInt(24.W))
 		val led     = Output(UInt(8.W))
+		val addr    = Output(UInt(18.W))
 	})
 
 	var centerReg = RegInit(false.B)
@@ -76,8 +78,10 @@ class MainGameBoy(filename: String) extends Module {
 	io.outL := signal
 	io.outR := signal
 	io.led  := 0.U
+	io.addr := gameboy.io.addr
+	gameboy.io.rom := io.rom
 }
 
 object MainRun extends scala.App {
-	(new ChiselStage).emitVerilog(new MainGameBoy("worldmap.vgm"), args)
+	(new ChiselStage).emitVerilog(new MainGameBoy, args)
 }

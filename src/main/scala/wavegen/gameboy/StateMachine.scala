@@ -3,14 +3,16 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class StateMachine(data: Seq[Byte]) extends Module {
+class StateMachine extends Module {
 	val io = IO(new Bundle {
 		val start     = Input(Bool())
 		val tick      = Input(Bool())
+		val rom       = Input(UInt(8.W))
 		val state     = Output(UInt(4.W))
 		val error     = Output(UInt(4.W))
 		val errorInfo = Output(UInt(8.W))
 		val registers = Output(Registers())
+		val addr      = Output(UInt(18.W))
 	})
 
 	def get4(index: UInt): UInt = Cat(rom(index + 3.U), rom(index + 2.U), rom(index + 1.U), rom(index))
@@ -68,14 +70,14 @@ class StateMachine(data: Seq[Byte]) extends Module {
 		}
 	}
 
-	val sIdle :: sInit :: sPlaying :: sWaiting :: sDone :: Nil = Enum(5)
-	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: Nil = Enum(4)
+	val sIdle :: sInit :: sGetOpcode :: sOperate :: sWaiting :: Nil = Enum(5)
+	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
-	val rom = VecInit(data.map { _.S(8.W).asUInt })
+	// val rom = VecInit(data.map { _.S(8.W).asUInt })
 	
 	val state = RegInit(sInit)
 	val error = RegInit(eNone)
-	val pointer = RegInit(0.U(32.W))
+	val pointer = RegInit(0.U(18.W))
 
 	val registers = RegInit(0.U.asTypeOf(Registers()))
 
@@ -85,40 +87,76 @@ class StateMachine(data: Seq[Byte]) extends Module {
 	val waitCounter = RegInit(0.U(32.W))
 
 	val errorInfo = RegInit(0.U(8.W))
+	val opcode = RegInit(0.U(8.W))
+	val four = RegInit(VecInit(Seq.fill(4)(0.U(8.W))))
+	val tempByte = RegInit(0.U(8.W))
 
-	when (error === eNone && io.tick) {
+	io.addr := 0.U
+
+	val subpointer = RegInit(0.U(2.W))
+
+	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
+
+	when (error === eNone) {
 		when (state === sIdle) {
 			when (io.start) {
-				state := sInit
+				pointer := "h34".U
+				state   := sInit
 			}
 		} .elsewhen (state === sInit) {
 			registers := 0.U.asTypeOf(Registers())
-			pointer := get4(0x34) + "h34".U
-			state := sPlaying
-		} .elsewhen (state === sPlaying) {
-			val opcode = WireDefault(get(pointer))
+			// pointer := get4(0x34) + "h34".U
+			four(3.U(2.W) - subpointer) := io.rom
+
+			when (subpointer === 3.U) {
+				pointer := four.asUInt
+				state   := sGetOpcode
+				subpointer := 0.U
+			} .otherwise {
+				subpointer := subpointer + 1.U
+			}
+		} .elsewhen (state === sGetOpcode) {
+			opcode := io.rom
+			when (io.tick) {
+				state := sOperate
+			}
+		} .elsewhen (state === sOperate) {
 			val failed = WireDefault(true.B)
 
 			switch (opcode) {
 				is("hb3".U) {
-					val regID = Wire(UInt(8.W))
-					val byte  = Wire(UInt(8.W))
-					regID  := get(pointer + 1.U)
-					byte   := get(pointer + 2.U)
-					setReg(get(pointer + 1.U), get(pointer + 2.U))
-					pointer := pointer + 3.U
-					failed  := false.B
+					failed := false.B
+					when (subpointer === 0.U) {
+						tempByte := io.rom
+						pointer := pointer + 2.U
+						subpointer := 1.U
+					} .elsewhen (subpointer === 1.U) {
+						setReg(tempByte, io.rom)
+						subpointer := 0.U
+						pointer := pointer + 1.U
+						state := sGetOpcode
+					} .otherwise {
+						badSubpointer()
+					}
 				}
 
 				is ("h61".U) {
-					waitCounter := get2(pointer + 1.U)
-					state       := sWaiting
-					pointer     := pointer + 1.U
-					failed      := false.B
+					failed := false.B
+					when (subpointer === 0.U) {
+						tempByte := io.rom
+						io.addr := pointer + 2.U
+					} .elsewhen (subpointer === 1.U) {
+						waitCounter := Cat(io.rom, tempByte)
+						pointer := pointer + 3.U
+						io.addr := pointer
+						state := sWaiting
+					} .otherwise {
+						badSubpointer()
+					}
 				}
 
 				is ("h66".U) {
-					state  := sDone
+					state  := sIdle
 					failed := false.B
 				}
 
@@ -133,6 +171,7 @@ class StateMachine(data: Seq[Byte]) extends Module {
 				waitCounter := opcode - "h6f".U
 				state       := sWaiting
 				pointer     := pointer + 1.U
+				io.addr     := pointer
 				failed      := false.B
 			}
 
@@ -141,18 +180,17 @@ class StateMachine(data: Seq[Byte]) extends Module {
 				errorInfo := opcode
 			}
 		} .elsewhen (state === sWaiting) {
-			when (waitCounter === 0.U) {
-				state := sPlaying
-			} .otherwise {
-				waitCounter := waitCounter - 1.U
-			}
-		} .elsewhen (state === sDone) {
-			when (io.start) {
-				state := sInit
+			when (io.tick) {
+				when (waitCounter === 0.U) {
+					state := sGetOpcode
+				} .otherwise {
+					waitCounter := waitCounter - 1.U
+				}
 			}
 		}
 	}
 
+	io.addr := pointer
 	io.state := state
 	io.error := error
 	io.errorInfo := errorInfo
