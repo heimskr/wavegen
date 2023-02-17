@@ -7,10 +7,11 @@ class Clocker(implicit clockFreq: Int) extends Module {
 	val width = log2Ceil(clockFreq + 1)
 
 	val io = IO(new Bundle {
-		val enable = Input(Bool())
-		val freq   = Input(UInt(width.W))
-		val tick   = Output(Bool())
-		val period = Output(UInt(width.W))
+		val enable  = Input(Bool())
+		val freq    = Input(UInt(width.W))
+		val tick    = Output(Bool())
+		val period  = Output(UInt(width.W))
+		val counter = Output(UInt(width.W))
 	})
 
 	val period = clockFreq.U / io.freq
@@ -36,4 +37,6 @@ class Clocker(implicit clockFreq: Int) extends Module {
 			counter := counter + 1.U
 		}
 	}
+
+	io.counter := counter
 }

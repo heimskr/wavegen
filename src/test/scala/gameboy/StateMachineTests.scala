@@ -10,6 +10,7 @@ import chisel3.experimental.BundleLiterals._
 import org.scalatest.flatspec.AnyFlatSpec
 import java.nio.file.Files
 import java.nio.file.Paths
+import scala.util.control.Breaks._
 
 class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 	val io = IO(new Bundle {
@@ -58,17 +59,20 @@ class StateMachineTests extends AnyFlatSpec with ChiselScalatestTester {
 			dut.clock.step()
 			dut.io.start.poke(false)
 			var oldAddr: Int = -1
-			for (i <- 0 to 10000) {
-				dut.clock.step()
-				val addr = dut.io.addr.peek()
-				val asInt = addr.litValue.toInt
-				if (asInt != oldAddr) {
-					dut.io.data.poke(rom(asInt) & 0xff)
-					oldAddr = asInt
+			breakable {
+				for (i <- 0 to 10000) {
+					dut.clock.step()
+					val addr = dut.io.addr.peek()
+					val asInt = addr.litValue.toInt
+					if (asInt != oldAddr) {
+						dut.io.data.poke(rom(asInt) & 0xff)
+						oldAddr = asInt
+					}
+					if ((i % 250) == 0)
+						println(i)
+					if (dut.io.error.peek().litValue != 0)
+						break()
 				}
-				if ((i % 100) == 0)
-					println(i)
-				// println(f"${i}: ${addr.litValue} -> ${rom(addr.litValue.toInt) & 0xff}")
 			}
 		}
 	}

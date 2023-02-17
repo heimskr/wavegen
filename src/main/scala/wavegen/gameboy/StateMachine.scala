@@ -100,7 +100,7 @@ class StateMachine extends Module {
 			when (io.start) {
 				pointer := "h34".U
 				state   := sInit
-				waitCounter := 1.U
+				waitCounter := 0.U
 			}
 		} .elsewhen (state === sInit) {
 			when (waitCounter === 0.U) {
@@ -161,7 +161,7 @@ class StateMachine extends Module {
 						subpointer := 1.U
 					} .elsewhen (subpointer === 1.U) {
 						waitCounter := Cat(io.rom, tempByte)
-						printf(cf"Waiting 0x${Cat(io.rom, tempByte)}%x cycles.\n")
+						printf(cf"Waiting 0x${Cat(io.rom, tempByte)}%x cycles around 0x${pointer - 1.U}%x.\n")
 						subpointer  := 0.U
 						pointer     := pointer + 1.U
 						state       := sWaiting
@@ -185,11 +185,12 @@ class StateMachine extends Module {
 			when ("h70".U <= opcode && opcode <= "h7f".U) {
 				waitCounter := opcode - "h6f".U
 				state       := sWaiting
-				pointer     := pointer + 1.U
+				// pointer     := pointer + 1.U
 				failed      := false.B
 			}
 
 			when (failed) {
+				printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer - 1.U}%x\n")
 				error     := eInvalidOpcode
 				errorInfo := opcode
 			}

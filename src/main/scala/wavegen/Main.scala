@@ -74,9 +74,9 @@ class MainGameBoy extends Module {
 
 	val gameboy = Module(new wavegen.gameboy.GameBoy)
 	gameboy.io.start := start
-	// gameboy.io.start := io.buttonC
+	gameboy.io.sw    := io.sw
 
-	val signal = gameboy.io.out << 16.U
+	val signal = gameboy.io.out << 20.U
 	io.outL := signal
 	io.outR := signal
 	io.led  := gameboy.io.leds
