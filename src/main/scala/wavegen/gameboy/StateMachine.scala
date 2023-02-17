@@ -15,12 +15,12 @@ class StateMachine extends Module {
 		val addr      = Output(UInt(18.W))
 	})
 
-	def get4(index: UInt): UInt = Cat(rom(index + 3.U), rom(index + 2.U), rom(index + 1.U), rom(index))
-	def get4(index: Int):  UInt = get4(index.U(32.W))
-	def get2(index: UInt): UInt = Cat(rom(index + 1.U), rom(index))
-	def get2(index: Int):  UInt = get2(index.U(32.W))
-	def get(index: UInt):  UInt = rom(index)
-	def get(index: Int):   UInt = get(index.U(32.W))
+	// def get4(index: UInt): UInt = Cat(rom(index + 3.U), rom(index + 2.U), rom(index + 1.U), rom(index))
+	// def get4(index: Int):  UInt = get4(index.U(32.W))
+	// def get2(index: UInt): UInt = Cat(rom(index + 1.U), rom(index))
+	// def get2(index: Int):  UInt = get2(index.U(32.W))
+	// def get(index: UInt):  UInt = rom(index)
+	// def get(index: Int):   UInt = get(index.U(32.W))
 
 	def setReg(index: UInt, value: UInt): Unit = {
 		val failed = WireDefault(true.B)

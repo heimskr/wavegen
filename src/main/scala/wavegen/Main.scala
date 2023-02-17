@@ -43,7 +43,7 @@ class Main extends Module {
 	io.led := io.sw(3, 0)
 }
 
-class MainGameBoy(filename: String) extends Module {
+class MainGameBoy extends Module {
 	implicit val clockFreq: Int = 100_000_000
 
 	val io = IO(new Bundle {
@@ -71,7 +71,7 @@ class MainGameBoy(filename: String) extends Module {
 		centerReg := io.buttonC
 	}
 
-	val gameboy = Module(new wavegen.gameboy.GameBoy(Files.readAllBytes(Paths.get(filename))))
+	val gameboy = Module(new wavegen.gameboy.GameBoy)
 	gameboy.io.start := start
 
 	val signal = gameboy.io.out << 16.U

@@ -10,7 +10,6 @@ class FrequencySweeper extends Module {
 		val period    = Input(UInt(3.W))
 		val negate    = Input(Bool())
 		val shift     = Input(UInt(3.W))
-		val registers = Input(Registers())
 		val out       = Output(UInt(11.W))
 	})
 
