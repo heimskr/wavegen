@@ -66,20 +66,27 @@ class MainGameBoy extends Module {
 
 	when (io.buttonC && !centerReg) {
 		centerReg := true.B
-		start := true.B
+		start     := true.B
 	} .otherwise {
 		centerReg := io.buttonC
+		start     := io.buttonC
 	}
 
 	val gameboy = Module(new wavegen.gameboy.GameBoy)
 	gameboy.io.start := start
+	// gameboy.io.start := io.buttonC
 
 	val signal = gameboy.io.out << 16.U
 	io.outL := signal
 	io.outR := signal
-	io.led  := 0.U
+	io.led  := gameboy.io.leds
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom
+	gameboy.io.buttonD := io.buttonD
+	gameboy.io.buttonU := io.buttonU
+	gameboy.io.buttonL := io.buttonL
+	gameboy.io.buttonR := io.buttonR
+	gameboy.io.buttonC := io.buttonC
 }
 
 object MainRun extends scala.App {

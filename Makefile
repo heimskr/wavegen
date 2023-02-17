@@ -1,5 +1,5 @@
 test:
-	sbt "testOnly *NoiseTests"
+	sbt "testOnly *StateMachineTests"
 
 copy:
-	sbt run && cp Main.v /home/kai/Downloads/hw/hw.srcs/sources_1/new/Main.v
+	sbt run && cp MainGameBoy.v /home/kai/Downloads/hw/hw.srcs/sources_1/new/Main.v

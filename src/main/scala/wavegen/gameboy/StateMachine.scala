@@ -5,27 +5,23 @@ import chisel3.util._
 
 class StateMachine extends Module {
 	val io = IO(new Bundle {
-		val start     = Input(Bool())
-		val tick      = Input(Bool())
-		val rom       = Input(UInt(8.W))
-		val state     = Output(UInt(4.W))
-		val error     = Output(UInt(4.W))
-		val errorInfo = Output(UInt(8.W))
-		val registers = Output(Registers())
-		val addr      = Output(UInt(18.W))
+		val start      = Input(Bool())
+		val tick       = Input(Bool())
+		val rom        = Input(UInt(8.W))
+		val state      = Output(UInt(4.W))
+		val error      = Output(UInt(4.W))
+		val errorInfo  = Output(UInt(8.W))
+		val errorInfo2 = Output(UInt(16.W))
+		val registers  = Output(Registers())
+		val addr       = Output(UInt(18.W))
 	})
 
-	// def get4(index: UInt): UInt = Cat(rom(index + 3.U), rom(index + 2.U), rom(index + 1.U), rom(index))
-	// def get4(index: Int):  UInt = get4(index.U(32.W))
-	// def get2(index: UInt): UInt = Cat(rom(index + 1.U), rom(index))
-	// def get2(index: Int):  UInt = get2(index.U(32.W))
-	// def get(index: UInt):  UInt = rom(index)
-	// def get(index: Int):   UInt = get(index.U(32.W))
-
 	def setReg(index: UInt, value: UInt): Unit = {
+		val adjusted = index + "h10".U
+		printf(cf"setReg (pointer = 0x$pointer%x): *0xff$adjusted%x (unadjusted: 0x$index%x) = 0x$value%x\n")
 		val failed = WireDefault(true.B)
 
-		switch (index) {
+		switch (adjusted) {
 			is("h10".U) { registers.NR10 := value; failed := false.B }
 			is("h11".U) { registers.NR11 := value; failed := false.B }
 			is("h12".U) { registers.NR12 := value; failed := false.B }
@@ -66,7 +62,10 @@ class StateMachine extends Module {
 		}
 
 		when (failed) {
+			printf(cf"Bad reg: 0xff$adjusted%x\n")
 			error := eBadReg
+			errorInfo  := adjusted
+			errorInfo2 := pointer(15, 0)
 		}
 	}
 
@@ -75,7 +74,7 @@ class StateMachine extends Module {
 
 	// val rom = VecInit(data.map { _.S(8.W).asUInt })
 	
-	val state = RegInit(sInit)
+	val state = RegInit(sIdle)
 	val error = RegInit(eNone)
 	val pointer = RegInit(0.U(18.W))
 
@@ -86,14 +85,13 @@ class StateMachine extends Module {
 	// val (waitCounter, waitWrap) = Counter(0 until 65536, counterEnable, counterReset)
 	val waitCounter = RegInit(0.U(32.W))
 
-	val errorInfo = RegInit(0.U(8.W))
-	val opcode = RegInit(0.U(8.W))
-	val four = RegInit(VecInit(Seq.fill(4)(0.U(8.W))))
-	val tempByte = RegInit(0.U(8.W))
-
-	io.addr := 0.U
-
-	val subpointer = RegInit(0.U(2.W))
+	val errorInfo  = RegInit(0.U(8.W))
+	val errorInfo2 = RegInit(0.U(8.W))
+	val errorInfo3 = RegInit(0.U(8.W))
+	val opcode     = RegInit(0.U(8.W))
+	val four       = RegInit(VecInit(Seq.fill(4)(0.U(8.W))))
+	val tempByte   = RegInit(0.U(8.W))
+	val subpointer = RegInit(0.U(3.W))
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
 
@@ -102,23 +100,34 @@ class StateMachine extends Module {
 			when (io.start) {
 				pointer := "h34".U
 				state   := sInit
+				waitCounter := 1.U
 			}
 		} .elsewhen (state === sInit) {
-			registers := 0.U.asTypeOf(Registers())
-			// pointer := get4(0x34) + "h34".U
-			four(3.U(2.W) - subpointer) := io.rom
-
-			when (subpointer === 3.U) {
-				pointer := four.asUInt
-				state   := sGetOpcode
-				subpointer := 0.U
+			when (waitCounter === 0.U) {
+				registers := 0.U.asTypeOf(Registers())
+				four(subpointer) := io.rom
+				pointer := pointer + 1.U
+				when (subpointer === 3.U) {
+					pointer := four.asUInt + "h34".U
+					state   := sGetOpcode
+					subpointer := 0.U
+					waitCounter := 1.U
+				} .otherwise {
+					subpointer := subpointer + 1.U
+				}
 			} .otherwise {
-				subpointer := subpointer + 1.U
+				waitCounter := waitCounter - 1.U
+				pointer := pointer + 1.U
 			}
 		} .elsewhen (state === sGetOpcode) {
-			opcode := io.rom
-			when (io.tick) {
-				state := sOperate
+			when (waitCounter === 0.U) {
+				opcode := io.rom
+				when (io.tick) {
+					state := sOperate
+					pointer := pointer + 1.U
+				}
+			} .otherwise {
+				waitCounter := waitCounter - 1.U
 			}
 		} .elsewhen (state === sOperate) {
 			val failed = WireDefault(true.B)
@@ -127,13 +136,17 @@ class StateMachine extends Module {
 				is("hb3".U) {
 					failed := false.B
 					when (subpointer === 0.U) {
-						tempByte := io.rom
-						pointer := pointer + 2.U
 						subpointer := 1.U
 					} .elsewhen (subpointer === 1.U) {
-						setReg(tempByte, io.rom)
-						subpointer := 0.U
+						tempByte := io.rom
 						pointer := pointer + 1.U
+						subpointer := 2.U
+					} .elsewhen (subpointer === 2.U) {
+						setReg(tempByte, io.rom)
+						subpointer := 3.U
+						pointer := pointer + 1.U
+					} .elsewhen (subpointer === 3.U) {
+						subpointer := 0.U
 						state := sGetOpcode
 					} .otherwise {
 						badSubpointer()
@@ -143,13 +156,15 @@ class StateMachine extends Module {
 				is ("h61".U) {
 					failed := false.B
 					when (subpointer === 0.U) {
-						tempByte := io.rom
-						io.addr := pointer + 2.U
+						tempByte   := io.rom
+						pointer    := pointer + 1.U
+						subpointer := 1.U
 					} .elsewhen (subpointer === 1.U) {
 						waitCounter := Cat(io.rom, tempByte)
-						pointer := pointer + 3.U
-						io.addr := pointer
-						state := sWaiting
+						printf(cf"Waiting 0x${Cat(io.rom, tempByte)}%x cycles.\n")
+						subpointer  := 0.U
+						pointer     := pointer + 1.U
+						state       := sWaiting
 					} .otherwise {
 						badSubpointer()
 					}
@@ -171,7 +186,6 @@ class StateMachine extends Module {
 				waitCounter := opcode - "h6f".U
 				state       := sWaiting
 				pointer     := pointer + 1.U
-				io.addr     := pointer
 				failed      := false.B
 			}
 
@@ -193,6 +207,7 @@ class StateMachine extends Module {
 	io.addr := pointer
 	io.state := state
 	io.error := error
-	io.errorInfo := errorInfo
+	io.errorInfo  := errorInfo
+	io.errorInfo2 := errorInfo2
 	io.registers := registers
 }
