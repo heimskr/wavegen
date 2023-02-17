@@ -17,6 +17,8 @@ class Envelope extends Module {
 	val currentVolume = RegInit(0.U(4.W))
 
 	when (io.trigger && io.period =/= 0.U) {
+		currentVolume := io.initialVolume
+
 		when (0.U < periodTimer) {
 			periodTimer := periodTimer - 1.U
 		}

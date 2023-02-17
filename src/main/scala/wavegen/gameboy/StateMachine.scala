@@ -14,6 +14,7 @@ class StateMachine extends Module {
 		val errorInfo2 = Output(UInt(16.W))
 		val registers  = Output(Registers())
 		val addr       = Output(UInt(18.W))
+		val info       = Output(UInt(8.W))
 	})
 
 	def setReg(index: UInt, value: UInt): Unit = {
@@ -95,45 +96,61 @@ class StateMachine extends Module {
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
 
+	io.info := 1.U
+
 	when (error === eNone) {
 		when (state === sIdle) {
 			when (io.start) {
 				pointer := "h34".U
 				state   := sInit
 				waitCounter := 0.U
+				io.info := 3.U
+			} .otherwise {
+				io.info := 4.U
 			}
 		} .elsewhen (state === sInit) {
+			io.info := 23.U
 			when (waitCounter === 0.U) {
+				io.info := 5.U
 				registers := 0.U.asTypeOf(Registers())
 				four(subpointer) := io.rom
 				pointer := pointer + 1.U
 				when (subpointer === 3.U) {
+					io.info := 6.U
 					pointer := four.asUInt + "h34".U
 					state   := sGetOpcode
 					subpointer := 0.U
 					waitCounter := 1.U
 				} .otherwise {
+					io.info := 7.U
 					subpointer := subpointer + 1.U
 				}
 			} .otherwise {
+				io.info := 8.U
 				waitCounter := waitCounter - 1.U
 				pointer := pointer + 1.U
 			}
 		} .elsewhen (state === sGetOpcode) {
 			when (waitCounter === 0.U) {
+				io.info := 9.U
 				opcode := io.rom
 				when (io.tick) {
+					io.info := 10.U
 					state := sOperate
 					pointer := pointer + 1.U
 				}
 			} .otherwise {
+				io.info := 11.U
 				waitCounter := waitCounter - 1.U
 			}
 		} .elsewhen (state === sOperate) {
+			io.info := 12.U
+
 			val failed = WireDefault(true.B)
 
 			switch (opcode) {
 				is("hb3".U) {
+					io.info := 13.U
 					failed := false.B
 					when (subpointer === 0.U) {
 						subpointer := 1.U
@@ -154,6 +171,7 @@ class StateMachine extends Module {
 				}
 
 				is ("h61".U) {
+					io.info := 14.U
 					failed := false.B
 					when (subpointer === 0.U) {
 						tempByte   := io.rom
@@ -171,11 +189,14 @@ class StateMachine extends Module {
 				}
 
 				is ("h66".U) {
+					io.info := 15.U
 					state  := sIdle
 					failed := false.B
+					errorInfo := "b01010101".U
 				}
 
 				is ("h67".U) {
+					io.info := 16.U
 					error     := eUnimplemented
 					errorInfo := "h67".U
 					failed    := false.B // :^)
@@ -183,26 +204,35 @@ class StateMachine extends Module {
 			}
 
 			when ("h70".U <= opcode && opcode <= "h7f".U) {
+				io.info := 17.U
 				waitCounter := opcode - "h6f".U
 				state       := sWaiting
 				// pointer     := pointer + 1.U
 				failed      := false.B
+				errorInfo2 := opcode
 			}
 
 			when (failed) {
+				io.info := 18.U
 				printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer - 1.U}%x\n")
 				error     := eInvalidOpcode
 				errorInfo := opcode
 			}
 		} .elsewhen (state === sWaiting) {
+			io.info := 19.U
 			when (io.tick) {
+				io.info := 20.U
 				when (waitCounter === 0.U) {
+					io.info := 21.U
 					state := sGetOpcode
 				} .otherwise {
+					io.info := 22.U
 					waitCounter := waitCounter - 1.U
 				}
 			}
 		}
+	} .otherwise {
+		io.info := 2.U
 	}
 
 	io.addr := pointer

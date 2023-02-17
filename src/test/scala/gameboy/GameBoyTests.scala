@@ -23,6 +23,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 		val addr    = Output(UInt(18.W))
 		val error   = Output(UInt(4.W))
 		val leds    = Output(UInt(8.W))
+		val audio   = Output(UInt(7.W))
 	})
 	
 	// val rom = RegNext(VecInit(Files.readAllBytes(Paths.get("worldmap.vgm")).map(_.S(8.W).asUInt)))
@@ -39,6 +40,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 	io.addr  := gameboy.io.addr
 	io.error := gameboy.io.error
 	io.leds  := gameboy.io.leds
+	io.audio := gameboy.io.out
 }
 
 class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
@@ -75,7 +77,7 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 			check()
 
 			breakable {
-				for (i <- 0 to 10000) {
+				for (i <- 0 to 1_000_000) {
 					dut.clock.step()
 					check()
 					if ((i % 250) == 0)

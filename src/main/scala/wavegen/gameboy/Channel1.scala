@@ -4,7 +4,7 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel1(implicit clockFreq: Int) extends SquareChannel {
+class Channel1(freq256: Int = 256)(implicit clockFreq: Int) extends SquareChannel {
 	val duty         = io.registers.NR11(7, 6)
 	val lengthLoad   = io.registers.NR11(5, 0)
 	val startVolume  = io.registers.NR12(7, 4)
@@ -15,11 +15,12 @@ class Channel1(implicit clockFreq: Int) extends SquareChannel {
 	val frequency    = Cat(io.registers.NR14(2, 0), io.registers.NR13)
 	
 	val sweeper = Module(new FrequencySweeper)
-	sweeper.io.tick    := io.tick
-	sweeper.io.trigger := trigger
-	sweeper.io.period  := io.registers.NR10(6, 4)
-	sweeper.io.negate  := io.registers.NR10(3)
-	sweeper.io.shift   := io.registers.NR10(2, 0)
+	sweeper.io.tick        := io.tick
+	sweeper.io.trigger     := trigger
+	sweeper.io.period      := io.registers.NR10(6, 4)
+	sweeper.io.negate      := io.registers.NR10(3)
+	sweeper.io.shift       := io.registers.NR10(2, 0)
+	sweeper.io.frequencyIn := frequency
 
 	val sweepClocker = Module(new Clocker)
 	sweepClocker.io.enable := true.B
@@ -33,7 +34,7 @@ class Channel1(implicit clockFreq: Int) extends SquareChannel {
 
 	val clocker256 = Module(new Clocker)
 	clocker256.io.enable := true.B
-	clocker256.io.freq := 256.U
+	clocker256.io.freq   := freq256.U
 
 	val lengthCounter = Module(new LengthCounter)
 	lengthCounter.io.tick      := clocker256.io.tick

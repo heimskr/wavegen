@@ -90,5 +90,6 @@ class MainGameBoy extends Module {
 }
 
 object MainRun extends scala.App {
-	(new ChiselStage).emitVerilog(new MainGameBoy, args)
+	(new ChiselStage).emitVerilog(new MainGameBoy,  args)
+	(new ChiselStage).emitVerilog(new Debouncer(5), args)
 }

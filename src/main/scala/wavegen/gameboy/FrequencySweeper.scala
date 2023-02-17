@@ -5,12 +5,13 @@ import chisel3.util._
 
 class FrequencySweeper extends Module {
 	val io = IO(new Bundle {
-		val tick      = Input(Bool())
-		val trigger   = Input(Bool())
-		val period    = Input(UInt(3.W))
-		val negate    = Input(Bool())
-		val shift     = Input(UInt(3.W))
-		val out       = Output(UInt(11.W))
+		val tick        = Input(Bool())
+		val trigger     = Input(Bool())
+		val period      = Input(UInt(3.W))
+		val negate      = Input(Bool())
+		val shift       = Input(UInt(3.W))
+		val frequencyIn = Input(UInt(11.W))
+		val out         = Output(UInt(11.W))
 	})
 
 	val sweepEnabled = RegInit(false.B)
@@ -58,7 +59,7 @@ class FrequencySweeper extends Module {
 	}
 
 	when (io.trigger) {
-		shadowFreq := frequency
+		shadowFreq := io.frequencyIn
 
 		when (io.period === 0.U) {
 			sweepTimer := 8.U

@@ -32,10 +32,14 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 	stateMachine.io.start := io.start
 	stateMachine.io.tick  := clocker.io.tick
 	stateMachine.io.rom   := io.rom
-	io.addr := stateMachine.io.addr
+	io.addr  := stateMachine.io.addr
 	io.error := stateMachine.io.error
 
 	io.leds := 0.U
+
+	val channel1 = Module(new Channel1)
+	channel1.io.tick := clocker.io.tick
+	channel1.io.registers := stateMachine.io.registers
 
 	switch (io.sw(3, 0)) {
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
@@ -49,16 +53,14 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 		is ( 8.U) { io.leds := "b10101010".U }
 		is ( 9.U) { io.leds := Fill(8, clocker.io.tick) }
 		is (10.U) { io.leds := Fill(8,    slow.io.tick) }
-		is (11.U) { io.leds := slow.io.period( 7,  0) }
-		is (12.U) { io.leds := slow.io.period(15,  8) }
-		is (13.U) { io.leds := slow.io.counter( 7,  0) }
-		is (14.U) { io.leds := slow.io.counter(15,  8) }
-		is (15.U) { io.leds := slow.io.counter(23, 16) }
+		// is (11.U) { io.leds := slow.io.period( 7,  0) }
+		// is (12.U) { io.leds := slow.io.period(15,  8) }
+		// is (13.U) { io.leds := slow.io.counter( 7,  0) }
+		// is (14.U) { io.leds := slow.io.counter(15,  8) }
+		// is (15.U) { io.leds := slow.io.counter(23, 16) }
+		is (11.U) { io.leds := Cat(0.U(4.W), channel1.io.out) }
+		is (12.U) { io.leds := stateMachine.io.info }
 	}
-
-	val channel1 = Module(new Channel1)
-	channel1.io.tick := clocker.io.tick
-	channel1.io.registers := stateMachine.io.registers
 
 	io.out := channel1.io.out
 }
