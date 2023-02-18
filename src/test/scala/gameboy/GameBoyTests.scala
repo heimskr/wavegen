@@ -77,7 +77,7 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 			check()
 
 			breakable {
-				for (i <- 0 to 1_000_000) {
+				for (i <- 0 to 5_000_000) {
 					dut.clock.step()
 					check()
 					if ((i % 250) == 0)
