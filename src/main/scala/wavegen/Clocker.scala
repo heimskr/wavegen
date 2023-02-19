@@ -18,15 +18,18 @@ class Clocker(implicit clockFreq: Int) extends Module {
 	divider.io.in.bits.numerator   := clockFreq.U
 	divider.io.in.bits.denominator := io.freq.bits
 	val period = divider.io.out.bits.quotient
+	val started = RegInit(false.B)
 
 	val storedFreq = RegInit(0.U(width.W))
 	val storedPeriod = Reg(UInt(width.W))
 
 	// val activateDivider = WireInit(divider.io.out.valid)
-	divider.io.in.valid := io.freq.valid
+	divider.io.in.valid := false.B
 
-	when (io.freq.valid && storedFreq =/= io.freq.bits) {
+	when (io.freq.valid && (storedFreq =/= io.freq.bits || !started)) {
+		storedFreq := io.freq.bits
 		divider.io.in.valid := true.B
+		started := true.B
 	}
 
 	io.period.bits := period

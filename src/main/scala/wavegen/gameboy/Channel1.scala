@@ -4,10 +4,10 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel1(freq256: Int = 256)(implicit clockFreq: Int) extends Module {
-	val io = IO(new SquareChannelIO {
-		val info = Output(UInt(2.W))
-	})
+class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
+	implicit val clockFreq = baseFreq
+
+	val io = IO(new SquareChannelIO)
 
 	val duty         = io.registers.NR11(7, 6)
 	val lengthLoad   = io.registers.NR11(5, 0)
@@ -37,10 +37,8 @@ class Channel1(freq256: Int = 256)(implicit clockFreq: Int) extends Module {
 	envelope.io.rising := addMode
 	envelope.io.period := period
 
-	val clocker256 = Module(new Clocker)
+	val clocker256 = Module(new StaticClocker(freq256, baseFreq))
 	clocker256.io.enable := true.B
-	clocker256.io.freq.bits  := freq256.U
-	clocker256.io.freq.valid := true.B
 
 	val lengthCounter = Module(new LengthCounter)
 	lengthCounter.io.tick      := clocker256.io.tick
@@ -62,8 +60,7 @@ class Channel1(freq256: Int = 256)(implicit clockFreq: Int) extends Module {
 	squareGen.io.wave  := waveforms(duty)
 
 	io.out.bits  := 0.U
-	io.out.valid := sweepClocker.io.period.valid && clocker256.io.period.valid
-	io.info := Cat(sweepClocker.io.period.valid, clocker256.io.period.valid)
+	io.out.valid := sweepClocker.io.period.valid
 
 	when (lengthCounter.io.channelOn) {
 		io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume

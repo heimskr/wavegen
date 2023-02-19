@@ -74,16 +74,28 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 				}
 			}
 
+			val initialSteps = 500
+
+			check()
+			// dut.io.start.poke(true)
+
+			for (i <- 0 until (initialSteps - 1)) {
+				dut.clock.step()
+				check()
+			}
+
+			dut.io.start.poke(true)
+
+			dut.clock.step()
 			check()
 
 			breakable {
-				for (i <- 0 to 5_000_000) {
+				var x = true
+				for (i <- initialSteps to 1_000_000) {
 					dut.clock.step()
 					check()
 					if ((i % 250) == 0)
 						println(i)
-					// if (dut.io.error.peek().litValue != 0)
-					// 	break()
 				}
 			}
 		}

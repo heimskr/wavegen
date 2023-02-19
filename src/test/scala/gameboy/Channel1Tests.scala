@@ -12,7 +12,7 @@ import scala.util.control.Breaks._
 
 class Channel1TestModule(implicit clockFreq: Int) extends Module {
 	val io = IO(new Bundle {
-		val out = Output(UInt(4.W))
+		val out  = Valid(UInt(4.W))
 		val NR10 = Input(UInt(8.W))
 		val NR11 = Input(UInt(8.W))
 		val NR12 = Input(UInt(8.W))
@@ -27,10 +27,9 @@ class Channel1TestModule(implicit clockFreq: Int) extends Module {
 	registers.NR13 := io.NR13
 	registers.NR14 := io.NR14
 
-	val clocker = Module(new Clocker)
+	val clocker = Module(new StaticClocker(1_000_000, clockFreq))
 	clocker.io.enable := true.B
-	clocker.io.freq := 1_000_000.U
-	
+
 	val channel1 = Module(new Channel1(500_000))
 	channel1.io.tick := clocker.io.tick
 	channel1.io.registers := registers
