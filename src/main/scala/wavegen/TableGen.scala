@@ -18,7 +18,8 @@ class TableGen[T <: Generator](gen: T, period: Int, resolution: Int)(implicit cl
 
 	val clocker = Module(new Clocker)
 	clocker.io.enable := !io.pause
-	clocker.io.freq := io.freq * period.U
+	clocker.io.freq.bits := io.freq * period.U
+	clocker.io.freq.valid := io.freq * period.U
 
 	val (counter, wrap) = Counter(clocker.io.tick, period)
 

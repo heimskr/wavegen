@@ -8,34 +8,55 @@ class Clocker(implicit clockFreq: Int) extends Module {
 
 	val io = IO(new Bundle {
 		val enable  = Input(Bool())
-		val freq    = Input(UInt(width.W))
+		val freq    = Flipped(Valid(UInt(width.W)))
 		val tick    = Output(Bool())
-		val period  = Output(UInt(width.W))
+		val period  = Valid(UInt(width.W))
 		val counter = Output(UInt(width.W))
 	})
 
-	val period = clockFreq.U / io.freq
-	io.period := period
-	
+	val divider = Module(new Divider(width))
+	divider.io.in.bits.numerator   := clockFreq.U
+	divider.io.in.bits.denominator := io.freq.bits
+	val period = divider.io.out.bits.quotient
+
+	val storedFreq = RegInit(0.U(width.W))
 	val storedPeriod = Reg(UInt(width.W))
+
+	// val activateDivider = WireInit(divider.io.out.valid)
+	divider.io.in.valid := io.freq.valid
+
+	when (io.freq.valid && storedFreq =/= io.freq.bits) {
+		divider.io.in.valid := true.B
+	}
+
+	io.period.bits := period
+
 	val counter = RegNext(0.U(width.W))
 
 	io.tick := false.B
 
-	when (period < storedPeriod) {
-		storedPeriod := period
-		counter := 0.U
-	} .elsewhen (storedPeriod < period) {
-		storedPeriod := period
+	when (divider.io.out.valid) {
+		when (period < storedPeriod) {
+			storedPeriod := period
+			counter := 0.U
+		} .elsewhen (storedPeriod < period) {
+			storedPeriod := period
+		}
 	}
 
-	when (io.enable) {
-		when (period <= counter + 1.U) {
-			counter := 0.U
-			io.tick := true.B
-		} .otherwise {
-			counter := counter + 1.U
+	when (divider.io.out.valid) {
+		when (io.enable) {
+			when (period <= counter + 1.U) {
+				counter := 0.U
+				io.tick := true.B
+			} .otherwise {
+				counter := counter + 1.U
+			}
 		}
+
+		io.period.valid := true.B
+	} .otherwise {
+		io.period.valid := false.B
 	}
 
 	io.counter := counter

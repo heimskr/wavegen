@@ -5,7 +5,7 @@ package wavegen
 import chisel3._
 import chisel3.util._
 
-class Debouncer(buttonCount: Int = 1, fac: Int = 100000000/100) extends Module {
+class Debouncer(buttonCount: Int = 1, fac: Int = 100_000_000/100) extends Module {
 	val io = IO(new Bundle {
 		val in  = Input(Vec(buttonCount, Bool()))
 		val out = Output(Vec(buttonCount, Bool()))

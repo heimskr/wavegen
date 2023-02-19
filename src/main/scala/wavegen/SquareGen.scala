@@ -18,7 +18,8 @@ class SquareGen(width: Int, waveformWidth: Int = 2)(implicit clockFreq: Int) ext
 
 	val clocker = Module(new Clocker())
 	clocker.io.enable := !io.pause
-	clocker.io.freq := io.freq
+	clocker.io.freq.bits := io.freq
+	clocker.io.freq.valid := true.B
 
 	val (waveCounter, waveWrap) = Counter(0 until waveformWidth, clocker.io.tick && !io.pause)
 

@@ -23,8 +23,8 @@ class Divider(width: Int) extends Module {
 		io.out.bits.remainder := io.in.bits.numerator % io.in.bits.denominator
 	} else {
 		def leadingZeros(x: UInt): UInt = {
-			val out = Wire(chiselTypeOf(x))
 			val priority = PriorityEncoder(Reverse(x))
+			val out = Wire(chiselTypeOf(priority))
 
 			when (x === 0.U) {
 				out := x.getWidth.U

@@ -7,6 +7,7 @@ class StateMachine extends Module {
 	val io = IO(new Bundle {
 		val start      = Input(Bool())
 		val tick       = Input(Bool())
+		val pause      = Input(Bool())
 		val rom        = Input(UInt(8.W))
 		val state      = Output(UInt(4.W))
 		val error      = Output(UInt(4.W))
@@ -73,32 +74,26 @@ class StateMachine extends Module {
 	val sIdle :: sInit :: sGetOpcode :: sOperate :: sWaiting :: Nil = Enum(5)
 	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
-	// val rom = VecInit(data.map { _.S(8.W).asUInt })
-	
-	val state = RegInit(sIdle)
-	val error = RegInit(eNone)
-	val pointer = RegInit(0.U(18.W))
-
-	val registers = RegInit(0.U.asTypeOf(Registers()))
-
-	// val counterEnable = RegInit(false.B)
-	// val counterReset  = RegInit(true.B)
-	// val (waitCounter, waitWrap) = Counter(0 until 65536, counterEnable, counterReset)
+	val state       = RegInit(sIdle)
+	val error       = RegInit(eNone)
+	val pointer     = RegInit(0.U(18.W))
+	val registers   = RegInit(0.U.asTypeOf(Registers()))
 	val waitCounter = RegInit(0.U(32.W))
-
-	val errorInfo  = RegInit(0.U(8.W))
-	val errorInfo2 = RegInit(0.U(8.W))
-	val errorInfo3 = RegInit(0.U(8.W))
-	val opcode     = RegInit(0.U(8.W))
-	val four       = RegInit(VecInit(Seq.fill(4)(0.U(8.W))))
-	val tempByte   = RegInit(0.U(8.W))
-	val subpointer = RegInit(0.U(3.W))
+	val errorInfo   = RegInit(0.U(8.W))
+	val errorInfo2  = RegInit(0.U(8.W))
+	val errorInfo3  = RegInit(0.U(8.W))
+	val opcode      = RegInit(0.U(8.W))
+	val four        = RegInit(VecInit(Seq.fill(4)(0.U(8.W))))
+	val tempByte    = RegInit(0.U(8.W))
+	val subpointer  = RegInit(0.U(3.W))
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
 
 	io.info := 1.U
 
-	when (error === eNone) {
+	when (io.pause) {
+		io.info := 24.U
+	} .elsewhen (error === eNone) {
 		when (state === sIdle) {
 			when (io.start) {
 				pointer := "h34".U
