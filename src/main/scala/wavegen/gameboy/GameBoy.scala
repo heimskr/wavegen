@@ -6,6 +6,8 @@ import chisel3.util._
 
 object GameBoy {
 	val cpuFreq = 4_194_304
+	// val cpuFreq = 25_000_000
+	// val cpuFreq = 1_000_000
 }
 
 class GameBoy(implicit clockFreq: Int) extends Module {
@@ -26,7 +28,7 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 
 	val cpuClocker = Module(new StaticClocker(GameBoy.cpuFreq, clockFreq))
 	// val slow = Module(new Clocker)
-	val stateMachine = Module(new StateMachine)
+	val stateMachine = Module(new StateMachine(GameBoy.cpuFreq))
 	val channel1 = Module(new Channel1(GameBoy.cpuFreq))
 
 	// val freq = io.sw(7, 4) << 4.U
@@ -64,6 +66,7 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 		is ( 8.U) { io.leds := "b10101010".U }
 		is ( 9.U) { io.leds := Fill(8, cpuClocker.io.tick) }
 		// is (10.U) { io.leds := Fill(8,    slow.io.tick) }
+		is (10.U) { io.leds := stateMachine.io.errorInfo3 }
 		// is (11.U) { io.leds := slow.io.period( 7,  0) }
 		// is (12.U) { io.leds := slow.io.period(15,  8) }
 		// is (13.U) { io.leds := slow.io.counter( 7,  0) }
@@ -74,7 +77,7 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 		is (13.U) { io.leds := Cat(io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC) }
 		// is (14.U) { io.leds := Cat(stateMachine.io.info(5, 0), slow.io.period.valid, channel1.io.out.valid) }
 		is (14.U) { io.leds := Cat(stateMachine.io.info(6, 0), channel1.io.out.valid) }
-		is (15.U) { io.leds := Cat(channel1.io.debug) }
+		is (15.U) { io.leds := Cat(io.rom) }
 	}
 
 	io.out := channel1.io.out.bits

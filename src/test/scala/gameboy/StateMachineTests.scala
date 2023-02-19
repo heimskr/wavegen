@@ -30,7 +30,7 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 
 	val (counter, wrap) = Counter(0 until 2)
 
-	val stateMachine = Module(new StateMachine)
+	val stateMachine = Module(new StateMachine(clockFreq))
 	stateMachine.io.start := io.start
 	stateMachine.io.tick  := wrap
 	stateMachine.io.rom   := io.data
