@@ -16,7 +16,7 @@ class TableGen[T <: Generator](gen: T, period: Int, resolution: Int)(implicit cl
 		val out = Output(UInt(outWidth))
 	})
 
-	val clocker = Module(new Clocker)
+	val clocker = Module(new DynamicClocker)
 	clocker.io.enable := !io.pause
 	clocker.io.freq.bits := io.freq * period.U
 	clocker.io.freq.valid := io.freq * period.U

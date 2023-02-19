@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 
 class StaticClocker(wantedFrequency: Int, baseClockFreq: Int) extends Module {
-	val period  = baseClockFreq / wantedFrequency	
+	val period  = baseClockFreq / wantedFrequency
 	val width = log2Ceil(period + 1)
 
 	val io = IO(new Bundle {

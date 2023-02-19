@@ -5,6 +5,7 @@ import chisel3.util._
 
 class Envelope extends Module {
 	val io = IO(new Bundle {
+		val tick          = Input(Bool())
 		val trigger       = Input(Bool())
 		val initialVolume = Input(UInt(4.W))
 		val rising        = Input(Bool())
@@ -16,22 +17,25 @@ class Envelope extends Module {
 	val periodTimer   = RegInit(0.U(3.W))
 	val currentVolume = RegInit(0.U(4.W))
 
-	when (io.trigger && io.period =/= 0.U) {
-		currentVolume := io.initialVolume
+	when (io.tick) {
+		when (io.trigger && io.period =/= 0.U) {
+			currentVolume := io.initialVolume
 
-		when (0.U < periodTimer) {
-			periodTimer := periodTimer - 1.U
-		}
+			when (0.U < periodTimer) {
+				periodTimer := periodTimer - 1.U
+			}
 
-		when (periodTimer === 0.U) {
-			periodTimer := io.period
+			when (periodTimer === 0.U) {
+				periodTimer := io.period
 
-			when (currentVolume < 15.U && io.rising) {
-				currentVolume := currentVolume + 1.U
-			} .elsewhen (0.U < currentVolume && !io.rising) {
-				currentVolume := currentVolume - 1.U
+				when (currentVolume < 15.U && io.rising) {
+					currentVolume := currentVolume + 1.U
+				} .elsewhen (0.U < currentVolume && !io.rising) {
+					currentVolume := currentVolume - 1.U
+				}
 			}
 		}
+
 	}
 
 	io.periodTimer   := periodTimer

@@ -3,7 +3,7 @@ package wavegen
 import chisel3._
 import chisel3.util._
 
-class Clocker(implicit clockFreq: Int) extends Module {
+class DynamicClocker(implicit clockFreq: Int) extends Module {
 	val width = log2Ceil(clockFreq + 1)
 
 	val io = IO(new Bundle {

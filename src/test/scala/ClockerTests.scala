@@ -11,9 +11,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ClockerTests extends AnyFlatSpec with ChiselScalatestTester {
 	implicit val clockFreq = 100_000_000
 
-	behavior of "Clocker"
+	behavior of "DynamicClocker"
 	it should "produce a valid signal" in {
-		test(new Clocker).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+		test(new DynamicClocker).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.io.enable.poke(true)
 			dut.io.freq.valid.poke(true)
 			dut.io.freq.bits.poke(10_000_000)

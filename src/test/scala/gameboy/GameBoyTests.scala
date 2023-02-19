@@ -25,7 +25,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 		val leds    = Output(UInt(8.W))
 		val audio   = Output(UInt(7.W))
 	})
-	
+
 	// val rom = RegNext(VecInit(Files.readAllBytes(Paths.get("worldmap.vgm")).map(_.S(8.W).asUInt)))
 
 	val gameboy = Module(new GameBoy)

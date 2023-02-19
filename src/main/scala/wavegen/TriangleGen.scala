@@ -17,7 +17,7 @@ class TriangleGen(resolution: Int, startHigh: Boolean = false)(implicit clockFre
 
 	val rising = RegInit((!startHigh).B)
 
-	val clocker = Module(new Clocker)
+	val clocker = Module(new DynamicClocker)
 	clocker.io.enable := !io.pause
 
 	val freq = io.freq * ((resolution << 1) + 1).U
