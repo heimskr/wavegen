@@ -11,6 +11,8 @@ import java.nio.file.{Files, Paths}
 import scala.util.control.Breaks._
 
 class GameBoyTestModule(implicit clockFreq: Int) extends Module {
+	implicit val inSimulator = true
+
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
 		val rom     = Input(UInt(8.W))
@@ -44,11 +46,11 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 }
 
 class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
-	implicit val clockFreq = 100_000_000
+	implicit val clockFreq   = 100_000_000
 
 	behavior of "GameBoy"
 	it should "do something?" in {
-		val rom = Files.readAllBytes(Paths.get("worldmap_dbg.vgm"))
+		val rom = Files.readAllBytes(Paths.get("worldmap.fpb"))
 
 		test(new GameBoyTestModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.io.sw.poke("b11111101".U)

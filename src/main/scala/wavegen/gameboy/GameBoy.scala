@@ -8,9 +8,17 @@ object GameBoy {
 	val cpuFreq = 4_194_304
 	// val cpuFreq = 25_000_000
 	// val cpuFreq = 1_000_000
+
+	val simulationFreq = 25_000_000
 }
 
-class GameBoy(implicit clockFreq: Int) extends Module {
+class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
+	val freq =
+		if (inSimulator)
+			GameBoy.simulationFreq
+		else
+			GameBoy.cpuFreq
+
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
 		val rom     = Input(UInt(8.W))
@@ -26,10 +34,10 @@ class GameBoy(implicit clockFreq: Int) extends Module {
 		val error   = Output(UInt(4.W))
 	})
 
-	val cpuClocker = Module(new StaticClocker(GameBoy.cpuFreq, clockFreq))
+	val cpuClocker = Module(new StaticClocker(freq, clockFreq))
 	// val slow = Module(new Clocker)
-	val stateMachine = Module(new StateMachine(GameBoy.cpuFreq))
-	val channel1 = Module(new Channel1(GameBoy.cpuFreq))
+	val stateMachine = Module(new StateMachine(freq))
+	val channel1 = Module(new Channel1(freq))
 
 	// val freq = io.sw(7, 4) << 4.U
 

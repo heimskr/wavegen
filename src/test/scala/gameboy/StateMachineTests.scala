@@ -13,6 +13,8 @@ import java.nio.file.Paths
 import scala.util.control.Breaks._
 
 class StateMachineTestModule(implicit clockFreq: Int) extends Module {
+	implicit val inSimulator = true
+
 	val io = IO(new Bundle {
 		val start      = Input(Bool())
 		val data       = Input(UInt(8.W))
@@ -51,7 +53,7 @@ class StateMachineTests extends AnyFlatSpec with ChiselScalatestTester {
 
 	behavior of "StateMachine"
 	it should "do something (50)" in {
-		val rom = Files.readAllBytes(Paths.get("worldmap_dbg.vgm"))
+		val rom = Files.readAllBytes(Paths.get("worldmap.fpb"))
 		test(new StateMachineTestModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.clock.setTimeout(0)
 			dut.clock.step()

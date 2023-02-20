@@ -71,7 +71,8 @@ class MainROMReader extends Module {
 }
 
 class MainGameBoy extends Module {
-	implicit val clockFreq: Int = 100_000_000
+	implicit val clockFreq   = 100_000_000
+	implicit val inSimulator = false
 
 	val io = IO(new Bundle {
 		val buttonU = Input(Bool())
