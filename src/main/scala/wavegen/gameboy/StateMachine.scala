@@ -19,6 +19,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 		val adjusted    = Output(UInt(8.W))
 		val value       = Output(UInt(8.W))
 		val opcode      = Output(UInt(8.W))
+		val operand1    = Output(UInt(8.W))
+		val operand2    = Output(UInt(8.W))
 		val pointer     = Output(UInt(addressWidth.W))
 		val waitCounter = Output(UInt(32.W))
 	})
@@ -94,6 +96,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 	val errorInfo2  = RegInit(0.U(16.W))
 	val errorInfo3  = RegInit(0.U(8.W))
 	val opcode      = RegInit(0.U(8.W))
+	val operand1    = RegInit(0.U(8.W))
+	val operand2    = RegInit(0.U(8.W))
 	val tempByte    = RegInit(0.U(8.W))
 	val subpointer  = RegInit(0.U(3.W))
 
@@ -120,14 +124,19 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 			}
 		} .elsewhen (state === sGetOpcode) {
 			when (waitCounter === 0.U) {
-				io.info := 9.U
-				opcode  := io.rom(23, 16)
-				state   := sOperate
+				io.info  := 9.U
+				opcode   := io.rom(23, 16)
+				operand1 := io.rom(15,  8)
+				operand2 := io.rom( 7,  0)
+				state    := sOperate
+				subpointer := 0.U
 				// pointer := pointer + 1.U
 			} .otherwise {
 				io.info := 11.U
 				waitCounter := waitCounter - 1.U
 			}
+		} .elsewhen (state === sOperate && subpointer =/= 0.U) {
+			subpointer := subpointer - 1.U
 		} .elsewhen (state === sOperate) {
 			io.info := 12.U
 
@@ -137,7 +146,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 				is("h90".U) {
 					io.info := 13.U
 					failed := false.B
-					setReg(io.rom(15, 8), io.rom(7, 0))
+					setReg(operand1, operand2)
 					advance()
 					state := sGetOpcode
 
@@ -175,8 +184,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 				is ("h91".U) {
 					io.info := 14.U
 					failed := false.B
-					val toWait = if (inSimulator) 2.U else toCycles(Cat(io.rom(7, 0), io.rom(15, 8)))
-					printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer - 1.U}%x (samples: ${Cat(io.rom(7, 0), io.rom(15, 8))}).\n")
+					val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
+					printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
 					waitCounter := toWait
 					advance()
 					state := sWaiting
@@ -254,6 +263,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 	io.adjusted    := adjustedReg
 	io.value       := valueReg
 	io.opcode      := opcode
+	io.operand1    := operand1
+	io.operand2    := operand2
 	io.pointer     := pointer
 	io.waitCounter := waitCounter
 }

@@ -91,6 +91,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (24.U) { io.leds := io.rom(7, 0) }
 		is (25.U) { io.leds := io.rom(15, 8) }
 		is (26.U) { io.leds := io.rom(23, 16) }
+		is (27.U) { io.leds := stateMachine.io.operand1 }
+		is (28.U) { io.leds := stateMachine.io.operand2 }
 	}
 
 	io.out := channel1.io.out.bits
