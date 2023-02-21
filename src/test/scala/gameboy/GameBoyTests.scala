@@ -12,17 +12,19 @@ import scala.util.control.Breaks._
 
 class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 	implicit val inSimulator = true
+	val addressWidth = 17
+	val romWidth = 24
 
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
-		val rom     = Input(UInt(8.W))
+		val rom     = Input(UInt(romWidth.W))
 		val sw      = Input(UInt(8.W))
 		val buttonU = Input(Bool())
 		val buttonR = Input(Bool())
 		val buttonD = Input(Bool())
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
-		val addr    = Output(UInt(18.W))
+		val addr    = Output(UInt(addressWidth.W))
 		val error   = Output(UInt(4.W))
 		val leds    = Output(UInt(8.W))
 		val audio   = Output(UInt(7.W))
@@ -30,7 +32,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 
 	// val rom = RegNext(VecInit(Files.readAllBytes(Paths.get("worldmap.vgm")).map(_.S(8.W).asUInt)))
 
-	val gameboy = Module(new GameBoy)
+	val gameboy = Module(new GameBoy(addressWidth, romWidth))
 	gameboy.io.start   := io.start
 	gameboy.io.rom     := io.rom
 	gameboy.io.sw      := io.sw
@@ -50,7 +52,10 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 
 	behavior of "GameBoy"
 	it should "do something?" in {
-		val rom = Files.readAllBytes(Paths.get("worldmap.fpb"))
+		val bytes = Files.readAllBytes(Paths.get("worldmap.fpb"))
+		val rom = Seq.tabulate(bytes.size / 3) { n =>
+			((bytes(3 * n) & 0xff) << 16) | ((bytes(3 * n + 1) & 0xff) << 8) | (bytes(3 * n + 2) & 0xff)
+		}
 
 		test(new GameBoyTestModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.io.sw.poke("b11111101".U)
@@ -70,7 +75,7 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 				val addr = dut.io.addr.peek()
 				val asInt = addr.litValue.toInt
 				if (asInt != oldAddr) {
-					dut.io.rom.poke(rom(asInt) & 0xff)
+					dut.io.rom.poke(rom(asInt))
 					// println(f"0x$oldAddr%x -> 0x$asInt%x : 0x${rom(asInt) & 0xff}%x")
 					oldAddr = asInt
 				}

@@ -57,22 +57,32 @@ class MainROMReader extends Module {
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
 		val sw      = Input(UInt(8.W))
-		val rom     = Input(UInt(8.W))
+		val rom     = Input(UInt(24.W))
 		val outL    = Output(UInt(24.W))
 		val outR    = Output(UInt(24.W))
 		val led     = Output(UInt(8.W))
-		val addr    = Output(UInt(18.W))
+		val addr    = Output(UInt(17.W))
 	})
 
 	io.addr := io.sw << Cat(io.buttonL, io.buttonR)
-	io.led := io.rom
+
+	when (io.buttonU) {
+		io.led := io.rom(23, 16)
+	} .elsewhen (io.buttonD) {
+		io.led := io.rom(15, 8)
+	} .otherwise {
+		io.led := io.rom(7, 0)
+	}
+
 	io.outL := 0.U
 	io.outR := 0.U
 }
 
 class MainGameBoy extends Module {
-	implicit val clockFreq   = 100_000_000
-	implicit val inSimulator = false
+	implicit val clockFreq    = 100_000_000
+	implicit val inSimulator  = false
+	val addressWidth = 17
+	val romWidth = 24
 
 	val io = IO(new Bundle {
 		val buttonU = Input(Bool())
@@ -81,11 +91,11 @@ class MainGameBoy extends Module {
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
 		val sw      = Input(UInt(8.W))
-		val rom     = Input(UInt(8.W))
+		val rom     = Input(UInt(romWidth.W))
 		val outL    = Output(UInt(24.W))
 		val outR    = Output(UInt(24.W))
 		val led     = Output(UInt(8.W))
-		val addr    = Output(UInt(18.W))
+		val addr    = Output(UInt(addressWidth.W))
 	})
 
 	var centerReg = RegInit(false.B)
@@ -100,12 +110,13 @@ class MainGameBoy extends Module {
 		start     := io.buttonC
 	}
 
-	val gameboy = Module(new wavegen.gameboy.GameBoy)
+	val gameboy = Module(new wavegen.gameboy.GameBoy(addressWidth, romWidth))
 	// gameboy.io.start := start
 	gameboy.io.start := io.buttonC
 	gameboy.io.sw    := io.sw
 
-	val signal = gameboy.io.out << 20.U
+	// val signal = gameboy.io.out << 20.U
+	val signal = gameboy.io.out * "h111111".U
 	io.outL := signal
 	io.outR := signal
 	io.led  := gameboy.io.leds
@@ -123,5 +134,5 @@ object MainRun extends scala.App {
 	// (new ChiselStage).emitVerilog(new Main,  args)
 	(new ChiselStage).emitVerilog(new MainGameBoy,  args)
 	// (new ChiselStage).emitVerilog(new MainROMReader, args)
-	(new ChiselStage).emitVerilog(new Debouncer(5), args)
+	// (new ChiselStage).emitVerilog(new Debouncer(5), args)
 }

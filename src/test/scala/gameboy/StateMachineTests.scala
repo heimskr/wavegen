@@ -14,6 +14,8 @@ import scala.util.control.Breaks._
 
 class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 	implicit val inSimulator = true
+	val addressWidth = 17
+	val romWidth = 24
 
 	val io = IO(new Bundle {
 		val start      = Input(Bool())
@@ -30,11 +32,8 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 
 	val addr = RegInit(0.U(18.W))
 
-	val (counter, wrap) = Counter(0 until 2)
-
-	val stateMachine = Module(new StateMachine(clockFreq))
+	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
 	stateMachine.io.start := io.start
-	stateMachine.io.tick  := wrap
 	stateMachine.io.rom   := io.data
 	addr := stateMachine.io.addr
 
@@ -53,7 +52,7 @@ class StateMachineTests extends AnyFlatSpec with ChiselScalatestTester {
 
 	behavior of "StateMachine"
 	it should "do something (50)" in {
-		val rom = Files.readAllBytes(Paths.get("worldmap.fpb"))
+		val rom = Files.readAllBytes(Paths.get("worldmap.fpb")) // TODO: fix
 		test(new StateMachineTestModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
 			dut.clock.setTimeout(0)
 			dut.clock.step()

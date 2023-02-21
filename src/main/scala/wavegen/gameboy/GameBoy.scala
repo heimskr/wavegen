@@ -12,16 +12,12 @@ object GameBoy {
 	val simulationFreq = 25_000_000
 }
 
-class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
-	val freq =
-		if (inSimulator)
-			GameBoy.simulationFreq
-		else
-			GameBoy.cpuFreq
+class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
+	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
 
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
-		val rom     = Input(UInt(8.W))
+		val rom     = Input(UInt(romWidth.W))
 		val sw      = Input(UInt(8.W))
 		val buttonU = Input(Bool())
 		val buttonR = Input(Bool())
@@ -29,15 +25,14 @@ class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
 		val out     = Output(UInt(7.W))
-		val addr    = Output(UInt(18.W))
+		val addr    = Output(UInt(addressWidth.W))
 		val leds    = Output(UInt(8.W))
 		val error   = Output(UInt(4.W))
 	})
 
-	val cpuClocker = Module(new StaticClocker(freq, clockFreq))
-	// val slow = Module(new Clocker)
-	val stateMachine = Module(new StateMachine(freq))
-	val channel1 = Module(new Channel1(freq))
+	val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq))
+	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
+	val channel1 = Module(new Channel1(slowFreq))
 
 	// val freq = io.sw(7, 4) << 4.U
 
@@ -49,7 +44,6 @@ class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 
 	stateMachine.io.start := io.start
 	// stateMachine.io.start := io.buttonC
-	stateMachine.io.tick  := cpuClocker.io.tick
 	stateMachine.io.rom   := io.rom
 	// stateMachine.io.pause := !(slow.io.period.valid && channel1.io.out.valid)
 	stateMachine.io.pause := !channel1.io.out.valid
@@ -61,16 +55,16 @@ class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 	channel1.io.tick := cpuClocker.io.tick
 	channel1.io.registers := stateMachine.io.registers
 
-	switch (io.sw(3, 0)) {
+	switch (io.sw(4, 0)) {
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
 		is ( 1.U) { io.leds := stateMachine.io.errorInfo2(15, 8) }
 		is ( 2.U) { io.leds := stateMachine.io.errorInfo }
 		// is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.pause, slow.io.period.valid, channel1.io.out.valid, stateMachine.io.state) }
 		is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.pause, 0.U(2.W), stateMachine.io.state) }
 		is ( 4.U) { io.leds := Cat(io.start, reset.asBool, 0.U(2.W), stateMachine.io.error) }
-		is ( 5.U) { io.leds := stateMachine.io.addr(17, 16) }
-		is ( 6.U) { io.leds := stateMachine.io.addr( 7,  0) }
-		is ( 7.U) { io.leds := stateMachine.io.addr(15,  8) }
+		is ( 5.U) { io.leds := stateMachine.io.addr(16) }
+		is ( 6.U) { io.leds := stateMachine.io.addr( 7, 0) }
+		is ( 7.U) { io.leds := stateMachine.io.addr(15, 8) }
 		is ( 8.U) { io.leds := "b10101010".U }
 		is ( 9.U) { io.leds := Fill(8, cpuClocker.io.tick) }
 		// is (10.U) { io.leds := Fill(8,    slow.io.tick) }
@@ -84,8 +78,19 @@ class GameBoy(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 		is (12.U) { io.leds := stateMachine.io.info }
 		is (13.U) { io.leds := Cat(io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC) }
 		// is (14.U) { io.leds := Cat(stateMachine.io.info(5, 0), slow.io.period.valid, channel1.io.out.valid) }
-		is (14.U) { io.leds := Cat(stateMachine.io.info(6, 0), channel1.io.out.valid) }
-		is (15.U) { io.leds := Cat(io.rom) }
+		// is (14.U) { io.leds := io.rom }
+		is (15.U) { io.leds := stateMachine.io.adjusted }
+		is (16.U) { io.leds := stateMachine.io.value }
+		is (17.U) { io.leds := stateMachine.io.pointer(7, 0) }
+		is (18.U) { io.leds := stateMachine.io.pointer(15, 8) }
+		is (19.U) { io.leds := stateMachine.io.opcode }
+		is (20.U) { io.leds := stateMachine.io.waitCounter( 7,  0) }
+		is (21.U) { io.leds := stateMachine.io.waitCounter(15,  8) }
+		is (22.U) { io.leds := stateMachine.io.waitCounter(23, 16) }
+		is (23.U) { io.leds := stateMachine.io.waitCounter(31, 24) }
+		is (24.U) { io.leds := io.rom(7, 0) }
+		is (25.U) { io.leds := io.rom(15, 8) }
+		is (26.U) { io.leds := io.rom(23, 16) }
 	}
 
 	io.out := channel1.io.out.bits

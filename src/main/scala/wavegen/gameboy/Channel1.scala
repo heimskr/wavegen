@@ -71,6 +71,7 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	io.debug     := sweeper.io.out >> 7.U
 
 	when (lengthCounter.io.channelOn) {
-		io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume
+		// io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume
+		io.out.bits := squareGen.io.out(0) * "b1111".U
 	}
 }

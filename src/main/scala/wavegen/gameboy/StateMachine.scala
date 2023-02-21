@@ -3,26 +3,36 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module {
+class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
-		val start      = Input(Bool())
-		val tick       = Input(Bool())
-		val pause      = Input(Bool())
-		val rom        = Input(UInt(8.W))
-		val state      = Output(UInt(4.W))
-		val error      = Output(UInt(4.W))
-		val errorInfo  = Output(UInt(8.W))
-		val errorInfo2 = Output(UInt(16.W))
-		val errorInfo3 = Output(UInt(8.W))
-		val registers  = Output(Registers())
-		val addr       = Output(UInt(18.W))
-		val info       = Output(UInt(8.W))
+		val start       = Input(Bool())
+		val pause       = Input(Bool())
+		val rom         = Input(UInt(romWidth.W))
+		val state       = Output(UInt(4.W))
+		val error       = Output(UInt(4.W))
+		val errorInfo   = Output(UInt(8.W))
+		val errorInfo2  = Output(UInt(16.W))
+		val errorInfo3  = Output(UInt(8.W))
+		val registers   = Output(Registers())
+		val addr        = Output(UInt(addressWidth.W))
+		val info        = Output(UInt(8.W))
+		val adjusted    = Output(UInt(8.W))
+		val value       = Output(UInt(8.W))
+		val opcode      = Output(UInt(8.W))
+		val pointer     = Output(UInt(addressWidth.W))
+		val waitCounter = Output(UInt(32.W))
 	})
+
+	val adjustedReg = RegInit(0.U(8.W))
+	val valueReg    = RegInit(0.U(8.W))
 
 	def setReg(index: UInt, value: UInt): Unit = {
 		val adjusted = index + "h10".U
 		printf(cf"setReg (pointer = 0x$pointer%x): *0xff$adjusted%x (unadjusted: 0x$index%x) = 0x$value%x\n")
 		val failed = WireDefault(true.B)
+
+		adjustedReg := adjusted
+		valueReg    := value
 
 		switch (adjusted) {
 			is("h10".U) { registers.NR10 := value; failed := false.B }
@@ -77,8 +87,8 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 
 	val state       = RegInit(sIdle)
 	val error       = RegInit(eNone)
-	val pointer     = RegInit(0.U(18.W))
-	val registers   = RegInit(0.U.asTypeOf(Registers()))
+	val pointer     = RegInit(0.U(addressWidth.W))
+	val registers   = RegNext(RegInit(0.U.asTypeOf(Registers())))
 	val waitCounter = RegInit(0.U(32.W))
 	val errorInfo   = RegInit(0.U(8.W))
 	val errorInfo2  = RegInit(0.U(16.W))
@@ -88,8 +98,11 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 	val subpointer  = RegInit(0.U(3.W))
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
+	// def advance(): Unit = { pointer := pointer + (romWidth / 8).U }
+	def advance(): Unit = { pointer := pointer + 1.U }
 
-	def toCycles(samples: UInt): UInt = samples * (tickFreq / 44100).U
+	// def toCycles(samples: UInt): UInt = samples * (clockFreq / 44100).U
+	def toCycles(samples: UInt) = (samples << 11.U) + (samples << 7.U) + (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U)
 
 	io.info := 1.U
 
@@ -108,12 +121,9 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 		} .elsewhen (state === sGetOpcode) {
 			when (waitCounter === 0.U) {
 				io.info := 9.U
-				opcode := io.rom
-				when (io.tick) {
-					io.info := 10.U
-					state   := sOperate
-					pointer := pointer + 1.U
-				}
+				opcode  := io.rom(23, 16)
+				state   := sOperate
+				// pointer := pointer + 1.U
 			} .otherwise {
 				io.info := 11.U
 				waitCounter := waitCounter - 1.U
@@ -127,42 +137,77 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 				is("h90".U) {
 					io.info := 13.U
 					failed := false.B
-					when (subpointer === 0.U) {
-						subpointer := 1.U
-					} .elsewhen (subpointer === 1.U) {
-						tempByte := io.rom
-						pointer := pointer + 1.U
-						subpointer := 2.U
-					} .elsewhen (subpointer === 2.U) {
-						setReg(tempByte, io.rom)
-						subpointer := 3.U
-						pointer := pointer + 1.U
-						subpointer := 0.U
-						state := sGetOpcode
-					} .otherwise {
-						badSubpointer()
-					}
+					setReg(io.rom(15, 8), io.rom(7, 0))
+					advance()
+					state := sGetOpcode
+
+					// when (subpointer === 0.U) {
+
+					// 	subpointer := 1.U
+					// 	// pointer := pointer + 1.U
+
+					// } .elsewhen (subpointer === 1.U) {
+
+					// 	tempByte := io.rom
+					// 	pointer := pointer + 1.U
+					// 	subpointer := 2.U
+
+					// } .elsewhen (subpointer === 2.U) {
+
+					// 	subpointer := 3.U
+
+					// } .elsewhen (subpointer === 3.U) {
+
+					// 	setReg(tempByte, io.rom)
+					// 	subpointer := 4.U
+					// 	pointer := pointer + 1.U
+
+					// } .elsewhen (subpointer === 4.U) {
+
+					// 	state := sGetOpcode
+					// 	subpointer := 0.U
+
+					// } .otherwise {
+					// 	badSubpointer()
+					// }
 				}
 
 				is ("h91".U) {
 					io.info := 14.U
 					failed := false.B
-					when (subpointer === 0.U) {
-						subpointer := 1.U
-					} .elsewhen (subpointer === 1.U) {
-						tempByte   := io.rom
-						pointer    := pointer + 1.U
-						subpointer := 2.U
-					} .elsewhen (subpointer === 2.U) {
-						val toWait = if (inSimulator) 2.U else toCycles(Cat(io.rom, tempByte))
-						printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer - 1.U}%x (samples: ${Cat(io.rom, tempByte)}).\n")
-						waitCounter := toWait
-						pointer     := pointer + 1.U
-						subpointer  := 0.U
-						state       := sWaiting
-					} .otherwise {
-						badSubpointer()
-					}
+					val toWait = if (inSimulator) 2.U else toCycles(Cat(io.rom(7, 0), io.rom(15, 8)))
+					printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer - 1.U}%x (samples: ${Cat(io.rom(7, 0), io.rom(15, 8))}).\n")
+					waitCounter := toWait
+					advance()
+					state := sWaiting
+
+					// when (subpointer === 0.U) {
+
+					// 	subpointer := 1.U
+					// 	// pointer := pointer + 1.U
+
+					// } .elsewhen (subpointer === 1.U) {
+
+					// 	tempByte   := io.rom
+					// 	pointer    := pointer + 1.U
+					// 	subpointer := 2.U
+
+					// } .elsewhen (subpointer === 2.U) {
+
+					// 	subpointer := 3.U
+
+					// } .elsewhen (subpointer === 3.U) {
+
+					// 	val toWait = if (inSimulator) 2.U else toCycles(Cat(io.rom, tempByte))
+					// 	printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer - 1.U}%x (samples: ${Cat(io.rom, tempByte)}).\n")
+					// 	waitCounter := toWait
+					// 	pointer     := pointer + 1.U
+					// 	subpointer  := 0.U
+					// 	state       := sWaiting
+
+					// } .otherwise {
+					// 	badSubpointer()
+					// }
 				}
 
 				is ("h92".U) {
@@ -170,6 +215,8 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 					state     := sIdle
 					failed    := false.B
 					errorInfo := "b01010101".U
+					printf(cf"Finishing with 0x92 around $pointer.\n")
+					// pointer := pointer + 3.U
 				}
 			}
 
@@ -181,30 +228,32 @@ class StateMachine(tickFreq: Int)(implicit inSimulator: Boolean) extends Module 
 				val actualAddress = pointer - 1.U
 				errorInfo  := opcode
 				errorInfo2 := actualAddress(15, 0)
-				errorInfo3 := Cat(0.U(6.W), actualAddress(17, 16))
+				errorInfo3 := Cat(0.U(6.W), actualAddress(16))
 			}
 		} .elsewhen (state === sWaiting) {
 			io.info := 19.U
-			when (io.tick) {
-				io.info := 20.U
-				when (waitCounter === 0.U) {
-					io.info := 21.U
-					state := sGetOpcode
-				} .otherwise {
-					io.info := 22.U
-					waitCounter := waitCounter - 1.U
-				}
+			when (waitCounter === 0.U) {
+				io.info := 21.U
+				state := sGetOpcode
+			} .otherwise {
+				io.info := 22.U
+				waitCounter := waitCounter - 1.U
 			}
 		}
 	} .otherwise {
 		io.info := 2.U
 	}
 
-	io.addr       := pointer
-	io.state      := state
-	io.error      := error
-	io.errorInfo  := errorInfo
-	io.errorInfo2 := errorInfo2
-	io.errorInfo3 := errorInfo3
-	io.registers  := registers
+	io.addr        := pointer
+	io.state       := state
+	io.error       := error
+	io.errorInfo   := errorInfo
+	io.errorInfo2  := errorInfo2
+	io.errorInfo3  := errorInfo3
+	io.registers   := registers
+	io.adjusted    := adjustedReg
+	io.value       := valueReg
+	io.opcode      := opcode
+	io.pointer     := pointer
+	io.waitCounter := waitCounter
 }

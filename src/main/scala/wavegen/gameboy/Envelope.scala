@@ -35,7 +35,6 @@ class Envelope extends Module {
 				}
 			}
 		}
-
 	}
 
 	io.periodTimer   := periodTimer
