@@ -52,7 +52,7 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 
 	behavior of "GameBoy"
 	it should "do something?" in {
-		val bytes = Files.readAllBytes(Paths.get("worldmap.fpb"))
+		val bytes = Files.readAllBytes(Paths.get("worldmap_dbg2.fpb"))
 		val rom = Seq.tabulate(bytes.size / 3) { n =>
 			((bytes(3 * n) & 0xff) << 16) | ((bytes(3 * n + 1) & 0xff) << 8) | (bytes(3 * n + 2) & 0xff)
 		}
@@ -98,7 +98,7 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 
 			breakable {
 				var x = true
-				for (i <- initialSteps to 1_000_000) {
+				for (i <- initialSteps to 10_000_000) {
 					dut.clock.step()
 					check()
 					if ((i % 250) == 0)

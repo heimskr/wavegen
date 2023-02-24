@@ -23,8 +23,12 @@ class PeriodClocker(width: Int = 16) extends Module {
 
 	io.tickOut := false.B
 
-	when (counter === periodReg - 1.U) {
-		counter    := 0.U
-		io.tickOut := true.B
+	when (io.tickIn) {
+		when (counter === periodReg - 1.U) {
+			counter    := 0.U
+			io.tickOut := true.B
+		} .otherwise {
+			counter := counter + 1.U
+		}
 	}
 }

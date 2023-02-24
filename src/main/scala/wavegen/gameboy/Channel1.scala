@@ -72,6 +72,6 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 
 	when (lengthCounter.io.channelOn) {
 		// io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume
-		io.out.bits := squareGen.io.out(0) * "b1111".U
+		io.out.bits := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
 	}
 }
