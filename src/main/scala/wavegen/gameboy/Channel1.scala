@@ -11,15 +11,18 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 		val debug = Output(UInt(8.W))
 		val nr13  = Valid(UInt(8.W))
 		val nr14  = Valid(UInt(8.W))
+		val buttonD = Input(Bool())
+		val buttonR = Input(Bool())
+		val freq = Output(UInt(11.W))
 	})
 
-	val duty         = io.registers.NR11(7, 6)
-	val lengthLoad   = io.registers.NR11(5, 0)
-	val startVolume  = io.registers.NR12(7, 4)
-	val addMode      = io.registers.NR12(3)
-	val period       = io.registers.NR12(2, 0)
-	val trigger      = io.registers.NR14(7)
-	val lengthEnable = io.registers.NR14(6)
+	val duty         = WireInit(io.registers.NR11(7, 6))
+	val lengthLoad   = WireInit(io.registers.NR11(5, 0))
+	val startVolume  = WireInit(io.registers.NR12(7, 4))
+	val addMode      = WireInit(io.registers.NR12(3))
+	val period       = WireInit(io.registers.NR12(2, 0))
+	val trigger      = WireInit(io.registers.NR14(7))
+	val lengthEnable = WireInit(io.registers.NR14(6))
 	val frequency    = Cat(io.registers.NR14(2, 0), io.registers.NR13)
 
 	val sequencer = Module(new FrameSequencer(baseFreq))
@@ -62,14 +65,14 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	// squareGen.io.wave  := waveforms(duty)
 
 	val latestFrequency = WireInit(frequency)
-	when (sweeper.io.nr13Out.valid && sweeper.io.nr14Out.valid) {
-		latestFrequency := Cat(sweeper.io.nr14Out.bits(2, 0), sweeper.io.nr13Out.bits)
-	}
+	// when (sweeper.io.nr13Out.valid && sweeper.io.nr14Out.valid) {
+	// 	latestFrequency := Cat(sweeper.io.nr14Out.bits(2, 0), sweeper.io.nr13Out.bits)
+	// }
 
 	val sweepClocker = Module(new PeriodClocker)
 	sweepClocker.io.tickIn := io.tick
-	// sweepClocker.io.period.bits  := (2048.U - latestFrequency) << 2.U
-	sweepClocker.io.period.bits  := (2048.U - 1024.U) << 2.U
+	sweepClocker.io.period.bits  := (2048.U - latestFrequency) << 2.U
+	// sweepClocker.io.period.bits  := (2048.U - 1024.U) << 2.U
 	sweepClocker.io.period.valid := true.B
 
 	val squareGen = Module(new SquareGenExternal(1, 8))
@@ -78,14 +81,20 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	squareGen.io.wave := waveforms(duty)
 
 	io.out.bits  := 0.U
-	io.out.valid := sweepClocker.io.period.valid
+	io.out.valid := false.B
 	io.debug     := sweeper.io.out >> 7.U
+	// io.debug := latestFrequency >> 3.U
+	io.freq := latestFrequency
 
-	when (lengthCounter.io.channelOn) {
-		// io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume
-		io.out.bits := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
+	when (lengthCounter.io.channelOn || io.buttonD) {
+		io.out.valid := true.B
+		when (io.buttonR) {
+			io.out.bits := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
+		} .otherwise {
+			io.out.bits := Mux(squareGen.io.out(0), envelope.io.currentVolume, 0.U)
+		}
 	}
 
-	io.out.valid := true.B
-	io.out.bits  := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
+	// io.out.valid := true.B
+	// io.out.bits  := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
 }

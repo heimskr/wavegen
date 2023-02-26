@@ -115,18 +115,24 @@ class MainGameBoy extends Module {
 	gameboy.io.start := io.buttonC
 	gameboy.io.sw    := io.sw
 
-	val signalReg = RegInit(false.B)
-	val (counter1, wrap1) = Counter(0 until (100_000_000/440))
-	when (wrap1) { signalReg := !signalReg }
-	val signal = Fill(24, signalReg)
+	// val (counter1, wrap1) = Counter(0 until (100_000_000/440))
+	// when (wrap1) { signalReg := !signalReg }
+	// val signal = Fill(24, signalReg)
 
-	// val signal = gameboy.io.out << 20.U
-	// val signal = gameboy.io.out * "h111111".U
+	// val signalReg = RegInit(false.B)
+	// val sc = Module(new StaticClocker(220, clockFreq))
+	// sc.io.enable := true.B
+	// when (sc.io.tick) { signalReg := !signalReg }
+	// val signal = Wire(UInt(24.W))
+	// signal := signalReg << 23.U
+
+
+	val signal = gameboy.io.out << 20.U
 	// val signal = gameboy.io.out * "h111111".U
 	io.outL := signal
 	io.outR := signal
 	io.led  := gameboy.io.leds
-	when (io.sw === 30.U) { io.led := signal >> 16.U }
+	when (io.sw(5, 0) === 32.U) { io.led := signal >> 16.U }
 	// io.led := Fill(8, reset.asBool)
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom

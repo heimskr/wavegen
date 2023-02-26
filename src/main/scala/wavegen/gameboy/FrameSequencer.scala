@@ -4,7 +4,7 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class FrameSequencer(baseFreq: Int = GameBoy.cpuFreq) extends Module {
+class FrameSequencer(baseFreq: Int) extends Module {
 	val io = IO(new Bundle {
 		val lengthCounter = Output(Bool())
 		val envelope      = Output(Bool())

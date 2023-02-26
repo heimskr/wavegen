@@ -56,6 +56,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	channel1.io.tick := cpuClocker.io.tick
 	channel1.io.registers := stateMachine.io.registers
+	channel1.io.buttonD := io.buttonD
+	channel1.io.buttonR := io.buttonR
 
 	switch (io.sw(4, 0)) {
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
@@ -95,6 +97,9 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (26.U) { io.leds := io.rom(23, 16) }
 		is (27.U) { io.leds := stateMachine.io.operand1 }
 		is (28.U) { io.leds := stateMachine.io.operand2 }
+		is (29.U) {  }
+		is (30.U) { io.leds := channel1.io.freq(7, 0) }
+		is (31.U) { io.leds := channel1.io.freq(10, 8) }
 	}
 
 	io.out := channel1.io.out.bits

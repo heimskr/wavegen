@@ -14,9 +14,9 @@ class PeriodClocker(width: Int = 16) extends Module {
 	val counter   = RegInit(0.U(width.W))
 
 	when (io.period.valid && io.period.bits =/= periodReg) {
-		when (io.period.bits <= counter) {
-			counter := 0.U
-		}
+		// when (io.period.bits <= counter) {
+		// 	counter := 0.U
+		// }
 
 		periodReg := io.period.bits
 	}
@@ -24,7 +24,7 @@ class PeriodClocker(width: Int = 16) extends Module {
 	io.tickOut := false.B
 
 	when (io.tickIn && 0.U < periodReg) {
-		when (counter === periodReg - 1.U) {
+		when (counter >= periodReg - 1.U) {
 			counter    := 0.U
 			io.tickOut := true.B
 		} .otherwise {
