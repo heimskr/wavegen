@@ -128,11 +128,13 @@ class MainGameBoy extends Module {
 
 
 	// val signal = gameboy.io.out << 20.U
-	val signal = gameboy.io.out * "h111111".U
-	io.outL := signal
-	io.outR := signal
+	// val signal = gameboy.io.out * "h111111".U
+	val signalL = gameboy.io.outL * "h011111".U
+	val signalR = gameboy.io.outR * "h011111".U
+	io.outL := signalL
+	io.outR := signalR
 	io.led  := gameboy.io.leds
-	when (io.sw(5, 0) === 32.U) { io.led := signal >> 16.U }
+	// when (io.sw(5, 0) === 32.U) { io.led := signal >> 16.U }
 	// io.led := Fill(8, reset.asBool)
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom

@@ -5,30 +5,42 @@ import chisel3.util._
 
 class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
-		val start       = Input(Bool())
-		val pause       = Input(Bool())
-		val rom         = Input(UInt(romWidth.W))
-		val state       = Output(UInt(4.W))
-		val error       = Output(UInt(4.W))
-		val errorInfo   = Output(UInt(8.W))
-		val errorInfo2  = Output(UInt(16.W))
-		val errorInfo3  = Output(UInt(8.W))
-		val registers   = Output(Registers())
-		val addr        = Output(UInt(addressWidth.W))
-		val info        = Output(UInt(8.W))
-		val adjusted    = Output(UInt(8.W))
-		val value       = Output(UInt(8.W))
-		val opcode      = Output(UInt(8.W))
-		val operand1    = Output(UInt(8.W))
-		val operand2    = Output(UInt(8.W))
-		val pointer     = Output(UInt(addressWidth.W))
-		val waitCounter = Output(UInt(32.W))
-		val nr13In      = Flipped(Valid(UInt(8.W)))
-		val nr14In      = Flipped(Valid(UInt(8.W)))
+		val start           = Input(Bool())
+		val pause           = Input(Bool())
+		val rom             = Input(UInt(romWidth.W))
+		val state           = Output(UInt(4.W))
+		val error           = Output(UInt(4.W))
+		val errorInfo       = Output(UInt(8.W))
+		val errorInfo2      = Output(UInt(16.W))
+		val errorInfo3      = Output(UInt(8.W))
+		val registers       = Output(Registers())
+		val addr            = Output(UInt(addressWidth.W))
+		val channelsEnabled = Output(UInt(4.W))
+		val info            = Output(UInt(8.W))
+		val adjusted        = Output(UInt(8.W))
+		val value           = Output(UInt(8.W))
+		val opcode          = Output(UInt(8.W))
+		val operand1        = Output(UInt(8.W))
+		val operand2        = Output(UInt(8.W))
+		val pointer         = Output(UInt(addressWidth.W))
+		val waitCounter     = Output(UInt(32.W))
+		val nr13In          = Flipped(Valid(UInt(8.W)))
+		val nr14In          = Flipped(Valid(UInt(8.W)))
 	})
 
-	val adjustedReg = RegInit(0.U(8.W))
-	val valueReg    = RegInit(0.U(8.W))
+	val adjustedReg     = RegInit(0.U(8.W))
+	val valueReg        = RegInit(0.U(8.W))
+	val channelsEnabled = RegInit(0.U(4.W)) // {ch4, ch3, ch2, ch1}
+
+	def setChannel(channel: Int, value: Boolean): Unit = {
+		val bit = if (value) 1.U else 0.U
+		if (channel == 0)
+			channelsEnabled := Cat(channelsEnabled(3, 1), bit)
+		else if (channel == 3)
+			channelsEnabled := Cat(bit, channelsEnabled(2, 0))
+		else
+			channelsEnabled := Cat(channelsEnabled(3, channel + 1), bit, channelsEnabled(channel - 1, 0))
+	}
 
 	def setReg(index: UInt, value: UInt): Unit = {
 		val adjusted = index + "h10".U
@@ -41,9 +53,19 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 		switch (adjusted) {
 			is("h10".U) { registers.NR10 := value; failed := false.B }
 			is("h11".U) { registers.NR11 := value; failed := false.B }
-			is("h12".U) { registers.NR12 := value; failed := false.B }
+			is("h12".U) { failed := false.B
+				registers.NR12   := value
+				when (value(7, 3) === 0.U) {
+					setChannel(0, false)
+				}
+			}
 			is("h13".U) { registers.NR13 := value; failed := false.B }
-			is("h14".U) { registers.NR14 := value; failed := false.B }
+			is("h14".U) { failed := false.B
+				registers.NR14   := value
+				when (value(7)) {
+					setChannel(0, true)
+				}
+			}
 			is("h16".U) { registers.NR21 := value; failed := false.B }
 			is("h17".U) { registers.NR22 := value; failed := false.B }
 			is("h18".U) { registers.NR23 := value; failed := false.B }
@@ -59,7 +81,10 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 			is("h23".U) { registers.NR44 := value; failed := false.B }
 			is("h24".U) { registers.NR50 := value; failed := false.B }
 			is("h25".U) { registers.NR51 := value; failed := false.B }
-			is("h26".U) { registers.NR52 := value; failed := false.B }
+			is("h26".U) { failed := false.B
+				channelsEnabled  := Fill(4, value(7))
+				registers.NR52   := Cat(value(7), 0.U(3.W), channelsEnabled)
+			}
 			is("h30".U) { registers.WT0  := value; failed := false.B }
 			is("h31".U) { registers.WT1  := value; failed := false.B }
 			is("h32".U) { registers.WT2  := value; failed := false.B }
@@ -263,18 +288,19 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 		registers.NR14 := io.nr14In.bits
 	}
 
-	io.addr        := pointer
-	io.state       := state
-	io.error       := error
-	io.errorInfo   := errorInfo
-	io.errorInfo2  := errorInfo2
-	io.errorInfo3  := errorInfo3
-	io.registers   := registers
-	io.adjusted    := adjustedReg
-	io.value       := valueReg
-	io.opcode      := opcode
-	io.operand1    := operand1
-	io.operand2    := operand2
-	io.pointer     := pointer
-	io.waitCounter := waitCounter
+	io.addr            := pointer
+	io.state           := state
+	io.error           := error
+	io.errorInfo       := errorInfo
+	io.errorInfo2      := errorInfo2
+	io.errorInfo3      := errorInfo3
+	io.registers       := registers
+	io.adjusted        := adjustedReg
+	io.value           := valueReg
+	io.opcode          := opcode
+	io.operand1        := operand1
+	io.operand2        := operand2
+	io.pointer         := pointer
+	io.waitCounter     := waitCounter
+	io.channelsEnabled := channelsEnabled
 }

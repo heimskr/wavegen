@@ -24,7 +24,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		val buttonD = Input(Bool())
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
-		val out     = Output(UInt(7.W))
+		val outL    = Output(UInt(7.W))
+		val outR    = Output(UInt(7.W))
 		val addr    = Output(UInt(addressWidth.W))
 		val leds    = Output(UInt(8.W))
 		val error   = Output(UInt(4.W))
@@ -49,6 +50,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	stateMachine.io.pause := !channel1.io.out.valid
 	stateMachine.io.nr13In <> channel1.io.nr13
 	stateMachine.io.nr14In <> channel1.io.nr14
+
+	val registers = stateMachine.io.registers
 
 	io.addr  := stateMachine.io.addr
 	io.error := stateMachine.io.error
@@ -102,5 +105,12 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (31.U) { io.leds := channel1.io.freq(10, 8) }
 	}
 
-	io.out := channel1.io.out.bits
+	val channels = VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), channel1.io.out.bits)
+
+	// Some silliness to account for channel enable/disable in NR51 and panning in NR50
+	Seq(io.outR, io.outL).zipWithIndex.foreach { case (out, i) =>
+		out := ((1.U + registers.NR50(2 + 4 * i, 4 * i)) * (channels.zipWithIndex.map { case (channel, j) =>
+			Mux(registers.NR51(3 + 4 * i - j), channel, 0.U)
+		}.foldLeft(0.U)(_ +& _))(7, 0)) >> 3.U
+	}
 }
