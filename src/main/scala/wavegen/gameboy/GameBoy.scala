@@ -47,6 +47,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	stateMachine.io.rom   := io.rom
 	// stateMachine.io.pause := !(slow.io.period.valid && channel1.io.out.valid)
 	stateMachine.io.pause := !channel1.io.out.valid
+	stateMachine.io.nr13In <> channel1.io.nr13
+	stateMachine.io.nr14In <> channel1.io.nr14
 
 	io.addr  := stateMachine.io.addr
 	io.error := stateMachine.io.error

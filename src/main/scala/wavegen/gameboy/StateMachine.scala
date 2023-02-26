@@ -23,6 +23,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 		val operand2    = Output(UInt(8.W))
 		val pointer     = Output(UInt(addressWidth.W))
 		val waitCounter = Output(UInt(32.W))
+		val nr13In      = Flipped(Valid(UInt(8.W)))
+		val nr14In      = Flipped(Valid(UInt(8.W)))
 	})
 
 	val adjustedReg = RegInit(0.U(8.W))
@@ -251,6 +253,14 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 		}
 	} .otherwise {
 		io.info := 2.U
+	}
+
+	when (io.nr13In.valid) {
+		registers.NR13 := io.nr13In.bits
+	}
+
+	when (io.nr14In.valid) {
+		registers.NR14 := io.nr14In.bits
 	}
 
 	io.addr        := pointer

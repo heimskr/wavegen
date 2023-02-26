@@ -13,6 +13,9 @@ class FrequencySweeper extends Module {
 		val frequencyIn = Input(UInt(11.W))
 		val out         = Output(UInt(11.W))
 		val info        = Output(UInt(8.W))
+		val nr14In      = Input(UInt(8.W))
+		val nr13Out     = Valid(UInt(8.W))
+		val nr14Out     = Valid(UInt(8.W))
 	})
 
 	val sweepEnabled = RegInit(false.B)
@@ -22,8 +25,13 @@ class FrequencySweeper extends Module {
 
 	val info = RegInit(0.U(8.W))
 
-	def calcFrequency(): UInt = {
-		val newFrequency = Wire(UInt(11.W))
+	io.nr13Out.valid := false.B
+	io.nr14Out.valid := false.B
+	io.nr13Out.bits  := DontCare
+	io.nr14Out.bits  := DontCare
+
+	def calcFrequency(writeBack: Boolean): UInt = {
+		val newFrequency = Wire(UInt(12.W))
 
 		when (io.negate) {
 			newFrequency := shadowFreq - (shadowFreq >> io.shift)
@@ -33,6 +41,13 @@ class FrequencySweeper extends Module {
 
 		when (2047.U < newFrequency) {
 			sweepEnabled := false.B
+		}
+
+		if (writeBack) {
+			io.nr13Out.bits  := newFrequency(7, 0)
+			io.nr14Out.bits  := Cat(io.nr14In(7, 3), newFrequency(10, 8))
+			io.nr13Out.valid := true.B
+			io.nr14Out.valid := true.B
 		}
 
 		newFrequency
@@ -61,12 +76,12 @@ class FrequencySweeper extends Module {
 
 			when (sweepEnabled && 0.U < io.period) {
 				newInfo := 7.U
-				val newFrequency = calcFrequency()
+				val newFrequency = calcFrequency(true)
 				when (newFrequency <= 2047.U && 0.U < io.shift) {
 					newInfo := 8.U
 					frequency := newFrequency
 					shadowFreq := newFrequency
-					calcFrequency() // For overflow check
+					calcFrequency(false) // For overflow check
 				}
 			}
 		}
@@ -91,7 +106,7 @@ class FrequencySweeper extends Module {
 
 		when (io.shift =/= 0.U) {
 			newInfo := 13.U
-			calcFrequency()
+			calcFrequency(true)
 		}
 	}
 

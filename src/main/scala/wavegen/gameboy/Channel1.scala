@@ -9,6 +9,8 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 
 	val io = IO(new SquareChannelIO {
 		val debug = Output(UInt(8.W))
+		val nr13  = Valid(UInt(8.W))
+		val nr14  = Valid(UInt(8.W))
 	})
 
 	val duty         = io.registers.NR11(7, 6)
@@ -29,6 +31,9 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	sweeper.io.negate      := io.registers.NR10(3)
 	sweeper.io.shift       := io.registers.NR10(2, 0)
 	sweeper.io.frequencyIn := frequency
+	sweeper.io.nr14In      := io.registers.NR14
+	io.nr13 <> sweeper.io.nr13Out
+	io.nr14 <> sweeper.io.nr14Out
 
 	// val sweepClocker = Module(new Clocker)
 	// sweepClocker.io.enable     := true.B
@@ -56,9 +61,15 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	// squareGen.io.max   := "b1".U
 	// squareGen.io.wave  := waveforms(duty)
 
+	val latestFrequency = WireInit(frequency)
+	when (sweeper.io.nr13Out.valid && sweeper.io.nr14Out.valid) {
+		latestFrequency := Cat(sweeper.io.nr14Out.bits(2, 0), sweeper.io.nr13Out.bits)
+	}
+
 	val sweepClocker = Module(new PeriodClocker)
 	sweepClocker.io.tickIn := io.tick
-	sweepClocker.io.period.bits  := (2048.U - sweeper.io.out) << 2.U
+	// sweepClocker.io.period.bits  := (2048.U - latestFrequency) << 2.U
+	sweepClocker.io.period.bits  := (2048.U - 1024.U) << 2.U
 	sweepClocker.io.period.valid := true.B
 
 	val squareGen = Module(new SquareGenExternal(1, 8))
@@ -74,4 +85,7 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 		// io.out.bits := squareGen.io.out(0) * envelope.io.currentVolume
 		io.out.bits := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
 	}
+
+	io.out.valid := true.B
+	io.out.bits  := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
 }
