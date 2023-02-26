@@ -81,13 +81,13 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	squareGen.io.wave := waveforms(duty)
 
 	io.out.bits  := 0.U
-	io.out.valid := false.B
+	io.out.valid := true.B
 	io.debug     := sweeper.io.out >> 7.U
 	// io.debug := latestFrequency >> 3.U
 	io.freq := latestFrequency
 
 	when (lengthCounter.io.channelOn || io.buttonD) {
-		io.out.valid := true.B
+		// io.out.valid := true.B
 		when (io.buttonR) {
 			io.out.bits := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
 		} .otherwise {

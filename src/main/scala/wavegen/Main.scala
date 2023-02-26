@@ -127,8 +127,8 @@ class MainGameBoy extends Module {
 	// signal := signalReg << 23.U
 
 
-	val signal = gameboy.io.out << 20.U
-	// val signal = gameboy.io.out * "h111111".U
+	// val signal = gameboy.io.out << 20.U
+	val signal = gameboy.io.out * "h111111".U
 	io.outL := signal
 	io.outR := signal
 	io.led  := gameboy.io.leds

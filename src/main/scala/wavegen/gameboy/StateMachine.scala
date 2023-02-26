@@ -92,7 +92,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 	val state       = RegInit(sIdle)
 	val error       = RegInit(eNone)
 	val pointer     = RegInit(0.U(addressWidth.W))
-	val registers   = RegNext(RegInit(0.U.asTypeOf(Registers())))
+	val registers   = RegInit(0.U.asTypeOf(Registers()))
 	val waitCounter = RegInit(0.U(32.W))
 	val errorInfo   = RegInit(0.U(8.W))
 	val errorInfo2  = RegInit(0.U(16.W))
@@ -236,7 +236,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 				io.info := 18.U
 				error   := eInvalidOpcode
 
-				val actualAddress = pointer - 1.U
+				val actualAddress = pointer - 0.U
 				errorInfo  := opcode
 				errorInfo2 := actualAddress(15, 0)
 				errorInfo3 := Cat(0.U(6.W), actualAddress(16))
