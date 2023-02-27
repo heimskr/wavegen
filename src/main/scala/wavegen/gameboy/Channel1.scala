@@ -4,10 +4,10 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel1(baseFreq: Int, fsFreq: Int = -1, freq256: Int = 256) extends Module {
+class Channel1(baseFreq: Int, fsFreq: Int = -1) extends Module {
 	implicit val clockFreq = baseFreq
 
-	val io = IO(new SquareChannelIO {
+	val io = IO(new ChannelIO {
 		val debug = Output(UInt(8.W))
 		val nr13  = Valid(UInt(8.W))
 		val nr14  = Valid(UInt(8.W))
@@ -58,7 +58,7 @@ class Channel1(baseFreq: Int, fsFreq: Int = -1, freq256: Int = 256) extends Modu
 		latestFrequency := Cat(sweeper.io.nr14Out.bits(2, 0), sweeper.io.nr13Out.bits)
 	}
 
-	val sweepClocker = Module(new PeriodClocker)
+	val sweepClocker = Module(new PeriodClocker(14))
 	sweepClocker.io.tickIn       := io.tick
 	sweepClocker.io.period.bits  := (2048.U - latestFrequency) << 2.U
 	sweepClocker.io.period.valid := true.B

@@ -4,10 +4,10 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel2(baseFreq: Int, fsFreq: Int = -1, freq256: Int = 256) extends Module {
+class Channel2(baseFreq: Int, fsFreq: Int = -1) extends Module {
 	implicit val clockFreq = baseFreq
 
-	val io = IO(new SquareChannelIO {
+	val io = IO(new ChannelIO {
 		val buttonD = Input(Bool())
 		val buttonR = Input(Bool())
 		val freq    = Output(UInt(11.W))
@@ -39,13 +39,13 @@ class Channel2(baseFreq: Int, fsFreq: Int = -1, freq256: Int = 256) extends Modu
 
 	val waveforms = VecInit(Seq("b00000001".U, "b00000011".U, "b00001111".U, "b11111100".U))
 
-	val sweepClocker = Module(new PeriodClocker)
-	sweepClocker.io.tickIn       := io.tick
-	sweepClocker.io.period.bits  := (2048.U - frequency) << 2.U
-	sweepClocker.io.period.valid := true.B
+	val periodClocker = Module(new PeriodClocker)
+	periodClocker.io.tickIn       := io.tick
+	periodClocker.io.period.bits  := (2048.U - frequency) << 2.U
+	periodClocker.io.period.valid := true.B
 
 	val squareGen = Module(new SquareGenExternal(1, 8))
-	squareGen.io.tick := sweepClocker.io.tickOut
+	squareGen.io.tick := periodClocker.io.tickOut
 	squareGen.io.max  := "b1".U
 	squareGen.io.wave := waveforms(duty)
 

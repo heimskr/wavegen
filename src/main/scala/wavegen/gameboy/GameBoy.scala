@@ -33,6 +33,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1(slowFreq, fsFreq))
 	val channel2     = Module(new Channel2(slowFreq, fsFreq))
+	val channel4     = Module(new Channel4(slowFreq, fsFreq))
 
 	cpuClocker.io.enable := !io.sw(7) | io.buttonD
 
@@ -58,6 +59,9 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	channel2.io.buttonD   := io.buttonD
 	channel2.io.buttonR   := io.buttonR
 
+	channel4.io.tick      := cpuClocker.io.tick
+	channel4.io.registers := stateMachine.io.registers
+
 	switch (io.sw(4, 0)) {
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
 		is ( 1.U) { io.leds := stateMachine.io.errorInfo2(15, 8) }
@@ -73,7 +77,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (11.U) { io.leds := Cat(0.U(4.W), channel1.io.out) }
 		is (12.U) { io.leds := stateMachine.io.info }
 		is (13.U) { io.leds := Cat(io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC) }
-		is (14.U) {  }
+		is (14.U) { io.leds := Cat(channel4.io.channelOn, 0.U(3.W), channel4.io.currentVolume) }
 		is (15.U) { io.leds := stateMachine.io.adjusted }
 		is (16.U) { io.leds := stateMachine.io.value }
 		is (17.U) { io.leds := stateMachine.io.pointer(7, 0) }
@@ -93,7 +97,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (31.U) { io.leds := channel1.io.freq(10, 8) }
 	}
 
-	val channels = VecInit(channel1.io.out, channel2.io.out, 0.U(4.W), 0.U(4.W))
+	val channels = VecInit(channel1.io.out, channel2.io.out, 0.U(4.W), channel4.io.out)
 	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
 
 	val mixer = Module(new ChannelMixer)
