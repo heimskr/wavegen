@@ -3,7 +3,7 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
+class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
 		val start           = Input(Bool())
 		val pause           = Input(Bool())
@@ -133,7 +133,9 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, in
 	def advance(): Unit = { pointer := pointer + 1.U }
 
 	// def toCycles(samples: UInt): UInt = samples * (clockFreq / 44100).U
-	def toCycles(samples: UInt) = (samples << 11.U) + (samples << 7.U) + (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U)
+	// def toCycles(samples: UInt) = (samples << 11.U) + (samples << 7.U) + (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U)
+	def toCycles(samples: UInt) = (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U) + (samples << 1.U) + samples
+
 
 	io.info := 1.U
 

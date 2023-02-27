@@ -32,16 +32,16 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		val error   = Output(UInt(4.W))
 	})
 
-	val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq))
+	val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
 	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
-	val channel1 = Module(new Channel1(slowFreq, fsFreq))
-	val channel2 = Module(new Channel2(slowFreq, fsFreq))
+	val channel1     = Module(new Channel1(slowFreq, fsFreq))
+	val channel2     = Module(new Channel2(slowFreq, fsFreq))
 
 	cpuClocker.io.enable := true.B
 
 	stateMachine.io.start := io.start
 	stateMachine.io.rom   := io.rom
-	stateMachine.io.pause := false.B
+	stateMachine.io.pause := !cpuClocker.io.tick
 	stateMachine.io.nr13In <> channel1.io.nr13
 	stateMachine.io.nr14In <> channel1.io.nr14
 
@@ -104,13 +104,22 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (31.U) { io.leds := channel1.io.freq(10, 8) }
 	}
 
-	val channels = VecInit(0.U(4.W), 0.U(4.W), channel2.io.out, channel1.io.out)
+	val channels = VecInit(channel1.io.out, channel2.io.out, 0.U(4.W), 0.U(4.W))
+	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
 
-	// Some silliness to account for channel enable/disable in NR51 and panning in NR50
-	Seq(io.outR, io.outL).zipWithIndex.foreach { case (out, i) =>
-		val to_mult = (channels.zipWithIndex.map { case (channel, j) =>
-			Mux(registers.NR51(3 + 4 * i - j), channel, 0.U(4.W))
-		}.foldLeft(0.U)(_ +& _))(7, 0)
-		out := (registers.NR50(2 + 4 * i, 4 * i) * to_mult +& to_mult) >> 3.U
+	val mixer = Module(new ChannelMixer)
+	mixer.io.in.valid := !(channels === storedChannels)
+	mixer.io.in.bits  := channels
+	mixer.io.nr50     := registers.NR50
+	mixer.io.nr51     := registers.NR51
+
+	when (mixer.io.out.valid) {
+		io.outL := mixer.io.out.bits.left
+		io.outR := mixer.io.out.bits.right
+	} .otherwise {
+		io.outL := 0.U
+		io.outR := 0.U
 	}
+
+	storedChannels := channels
 }

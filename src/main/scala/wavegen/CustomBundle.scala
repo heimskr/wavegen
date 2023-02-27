@@ -3,14 +3,14 @@
 package wavegen
 
 import chisel3._
-import chisel3.experimental.{requireIsChiselType, DataMirror}
+import chisel3.experimental.{requireIsChiselType, DataMirror, AutoCloneType}
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
 // In this case, CustomBundle is a Record constructed from a Tuple of (String, Data)
 //   it is a possible implementation of a programmatic "Bundle"
 //   (and can by connected to MyBundle below)
-final class CustomBundle(elts: Seq[(String, Data)]) extends Record {
+final class CustomBundle(elts: Seq[(String, Data)]) extends Record with AutoCloneType {
 	val elements = ListMap(elts.map {
 		case (field, elt) =>
 			requireIsChiselType(elt)
@@ -18,9 +18,4 @@ final class CustomBundle(elts: Seq[(String, Data)]) extends Record {
 	}: _*)
 
 	def apply(elt: String): Data = elements(elt)
-
-	override def cloneType: this.type = {
-		val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }
-		(new CustomBundle(cloned)).asInstanceOf[this.type]
-	}
 }
