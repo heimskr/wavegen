@@ -6,7 +6,7 @@ import chisel3.util._
 class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
 		val start           = Input(Bool())
-		val pause           = Input(Bool())
+		val tick            = Input(Bool())
 		val rom             = Input(UInt(romWidth.W))
 		val state           = Output(UInt(4.W))
 		val error           = Output(UInt(4.W))
@@ -135,89 +135,97 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 	// def toCycles(samples: UInt) = (samples << 11.U) + (samples << 7.U) + (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U)
 	def toCycles(samples: UInt) = (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U) + (samples << 1.U) + samples
 
-
 	io.info := 1.U
 
-	when (io.pause) {
+	when (!io.tick) {
 		io.info := 24.U
-	} .elsewhen (error === eNone) {
-		when (state === sIdle) {
-			when (io.start) {
-				pointer := 0.U
-				state   := sGetOpcode
-				waitCounter := 0.U
-				io.info := 3.U
-			} .otherwise {
-				io.info := 4.U
-			}
-		} .elsewhen (state === sGetOpcode) {
-			when (waitCounter === 0.U) {
-				io.info    := 9.U
-				opcode     := io.rom(23, 16)
-				operand1   := io.rom(15,  8)
-				operand2   := io.rom( 7,  0)
-				state      := sOperate
-				subpointer := 0.U
-			} .otherwise {
-				io.info := 11.U
-				waitCounter := waitCounter - 1.U
-			}
-		} .elsewhen (state === sOperate && subpointer =/= 0.U) {
-			subpointer := subpointer - 1.U
-		} .elsewhen (state === sOperate) {
-			io.info := 12.U
-
-			val failed = WireDefault(true.B)
-
-			switch (opcode) {
-				is("h90".U) {
-					io.info := 13.U
-					failed := false.B
-					setReg(operand1, operand2)
-					advance()
-					state := sGetOpcode
-				}
-
-				is ("h91".U) {
-					io.info := 14.U
-					failed := false.B
-					val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
-					printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
-					waitCounter := toWait
-					advance()
-					state := sWaiting
-				}
-
-				is ("h92".U) {
-					io.info   := 15.U
-					state     := sDone
-					registers := 0.U.asTypeOf(Registers())
-					failed    := false.B
-					errorInfo := "b01010101".U
-					printf(cf"Finishing with 0x92 around $pointer.\n")
-				}
-			}
-
-			when (failed) {
-				printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer}%x\n")
-				io.info    := 18.U
-				error      := eInvalidOpcode
-				errorInfo  := opcode
-				errorInfo2 := pointer(15, 0)
-				errorInfo3 := Cat(0.U(6.W), pointer(17, 16))
-			}
-		} .elsewhen (state === sWaiting) {
-			io.info := 19.U
-			when (waitCounter === 0.U) {
-				io.info := 21.U
-				state := sGetOpcode
-			} .otherwise {
-				io.info := 22.U
-				waitCounter := waitCounter - 1.U
-			}
-		}
 	} .otherwise {
-		io.info := 2.U
+
+		// Disable triggers
+		registers.NR14 := Cat(0.U(1.W), registers.NR14(6, 0))
+		registers.NR24 := Cat(0.U(1.W), registers.NR24(6, 0))
+		registers.NR34 := Cat(0.U(1.W), registers.NR34(6, 0))
+		registers.NR44 := Cat(0.U(1.W), registers.NR44(6, 0))
+
+		when (error === eNone) {
+			when (state === sIdle) {
+				when (io.start) {
+					pointer := 0.U
+					state   := sGetOpcode
+					waitCounter := 0.U
+					io.info := 3.U
+				} .otherwise {
+					io.info := 4.U
+				}
+			} .elsewhen (state === sGetOpcode) {
+				when (waitCounter === 0.U) {
+					io.info    := 9.U
+					opcode     := io.rom(23, 16)
+					operand1   := io.rom(15,  8)
+					operand2   := io.rom( 7,  0)
+					state      := sOperate
+					subpointer := 0.U
+				} .otherwise {
+					io.info := 11.U
+					waitCounter := waitCounter - 1.U
+				}
+			} .elsewhen (state === sOperate && subpointer =/= 0.U) {
+				subpointer := subpointer - 1.U
+			} .elsewhen (state === sOperate) {
+				io.info := 12.U
+
+				val failed = WireDefault(true.B)
+
+				switch (opcode) {
+					is("h90".U) {
+						io.info := 13.U
+						failed := false.B
+						setReg(operand1, operand2)
+						advance()
+						state := sGetOpcode
+					}
+
+					is ("h91".U) {
+						io.info := 14.U
+						failed := false.B
+						val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
+						printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
+						waitCounter := toWait
+						advance()
+						state := sWaiting
+					}
+
+					is ("h92".U) {
+						io.info   := 15.U
+						state     := sDone
+						registers := 0.U.asTypeOf(Registers())
+						failed    := false.B
+						errorInfo := "b01010101".U
+						printf(cf"Finishing with 0x92 around $pointer.\n")
+					}
+				}
+
+				when (failed) {
+					printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer}%x\n")
+					io.info    := 18.U
+					error      := eInvalidOpcode
+					errorInfo  := opcode
+					errorInfo2 := pointer(15, 0)
+					errorInfo3 := Cat(0.U(6.W), pointer(17, 16))
+				}
+			} .elsewhen (state === sWaiting) {
+				io.info := 19.U
+				when (waitCounter === 0.U) {
+					io.info := 21.U
+					state := sGetOpcode
+				} .otherwise {
+					io.info := 22.U
+					waitCounter := waitCounter - 1.U
+				}
+			}
+		} .otherwise {
+			io.info := 2.U
+		}
 	}
 
 	when (io.nr13In.valid) {

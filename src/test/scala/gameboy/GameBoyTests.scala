@@ -12,7 +12,7 @@ import scala.util.control.Breaks._
 
 class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 	implicit val inSimulator = true
-	val addressWidth = 17
+	val addressWidth = 18
 	val romWidth = 24
 
 	val io = IO(new Bundle {
@@ -54,13 +54,13 @@ class GameBoyTests extends AnyFlatSpec with ChiselScalatestTester {
 
 	behavior of "GameBoy"
 	it should "do something?" in {
-		val bytes = Files.readAllBytes(Paths.get("worldmap_dbg2.fpb"))
+		val bytes = Files.readAllBytes(Paths.get("duel_dbg.fpb"))
 		val rom = Seq.tabulate(bytes.size / 3) { n =>
 			((bytes(3 * n) & 0xff) << 16) | ((bytes(3 * n + 1) & 0xff) << 8) | (bytes(3 * n + 2) & 0xff)
 		}
 
 		test(new GameBoyTestModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-			dut.io.sw.poke("b11111101".U)
+			dut.io.sw.poke("b01111101".U)
 			dut.io.buttonU.poke(false)
 			dut.io.buttonR.poke(false)
 			dut.io.buttonD.poke(false)

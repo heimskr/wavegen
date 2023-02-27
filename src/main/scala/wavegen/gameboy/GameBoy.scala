@@ -35,11 +35,11 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel2     = Module(new Channel2(slowFreq, fsFreq))
 	val channel4     = Module(new Channel4(slowFreq, fsFreq))
 
-	cpuClocker.io.enable := !io.sw(7) | io.buttonD
+	cpuClocker.io.enable := !io.sw(7) ^ io.buttonD
 
 	stateMachine.io.start := io.start
 	stateMachine.io.rom   := io.rom
-	stateMachine.io.pause := !cpuClocker.io.tick
+	stateMachine.io.tick  := cpuClocker.io.tick
 	stateMachine.io.nr13In <> channel1.io.nr13
 	stateMachine.io.nr14In <> channel1.io.nr14
 
@@ -66,7 +66,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
 		is ( 1.U) { io.leds := stateMachine.io.errorInfo2(15, 8) }
 		is ( 2.U) { io.leds := stateMachine.io.errorInfo }
-		is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.pause, 0.U(2.W), stateMachine.io.state) }
+		is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.tick, 0.U(2.W), stateMachine.io.state) }
 		is ( 4.U) { io.leds := Cat(io.start, reset.asBool, 0.U(2.W), stateMachine.io.error) }
 		is ( 5.U) { io.leds := stateMachine.io.addr(16) }
 		is ( 6.U) { io.leds := stateMachine.io.addr( 7, 0) }

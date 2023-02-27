@@ -18,10 +18,11 @@ class FrequencySweeper extends Module {
 		val nr14Out     = Valid(UInt(8.W))
 	})
 
-	val sweepEnabled = RegInit(false.B)
-	val shadowFreq   = RegInit(0.U(11.W))
-	val frequency    = RegInit(0.U(11.W))
-	val sweepTimer   = RegInit(0.U(4.W))
+	val sweepEnabled  = RegInit(false.B)
+	val shadowFreq    = RegInit(0.U(11.W))
+	val frequency     = RegInit(0.U(11.W))
+	val sweepTimer    = RegInit(0.U(4.W))
+	val periodCounter = RegInit(0.U(3.W))
 
 	val info = RegInit(0.U(8.W))
 
@@ -30,91 +31,135 @@ class FrequencySweeper extends Module {
 	io.nr13Out.bits  := DontCare
 	io.nr14Out.bits  := DontCare
 
-	def calcFrequency(writeBack: Boolean): UInt = {
-		val newFrequency = Wire(UInt(12.W))
+	io.out := shadowFreq
 
-		when (io.negate) {
-			newFrequency := shadowFreq - (shadowFreq >> io.shift)
+	val newFrequency = Wire(UInt(11.W))
+
+	when (io.negate) {
+		newFrequency := shadowFreq - (shadowFreq >> io.shift)
+	} .otherwise {
+		newFrequency := shadowFreq + (shadowFreq >> io.shift)
+	}
+
+	when (io.trigger) {
+		shadowFreq    := io.frequencyIn
+		periodCounter := 0.U
+		sweepEnabled  := (io.period =/= 0.U) || (io.shift =/= 0.U)
+		io.nr13Out.bits  := io.frequencyIn(7, 0)
+		io.nr14Out.bits  := Cat(0.U(1.W), io.nr14In(6, 3), io.frequencyIn(10, 8))
+		io.nr13Out.valid := true.B
+		io.nr14Out.valid := true.B
+		io.out := io.frequencyIn
+	}
+
+	when (io.tick) {
+		val isZero = WireInit(false.B)
+
+		when ((0.U < io.period) && (periodCounter < io.period - 1.U)) {
+			periodCounter := periodCounter + 1.U
 		} .otherwise {
-			newFrequency := shadowFreq + (shadowFreq >> io.shift)
+			periodCounter := 0.U
+			isZero := true.B
 		}
 
-		when (2047.U < newFrequency) {
-			sweepEnabled := false.B
-		}
-
-		if (writeBack) {
+		// TODO: investigate behavior with registers/wires
+		when (isZero && sweepEnabled) {
 			io.nr13Out.bits  := newFrequency(7, 0)
 			io.nr14Out.bits  := Cat(io.nr14In(7, 3), newFrequency(10, 8))
 			io.nr13Out.valid := true.B
 			io.nr14Out.valid := true.B
-		}
-
-		newFrequency
-	}
-
-	val newInfo = Wire(UInt(8.W))
-
-	newInfo := 1.U
-
-	when (io.tick) {
-		newInfo := 2.U
-		when (0.U < sweepTimer) {
-			newInfo := 3.U
-			sweepTimer := sweepTimer - 1.U
-		}
-
-		when (sweepTimer === 0.U) {
-			newInfo := 4.U
-			when (0.U < io.period) {
-				newInfo := 5.U
-				sweepTimer := io.period
-			} .otherwise {
-				newInfo := 6.U
-				sweepTimer := 8.U
-			}
-
-			when (sweepEnabled && 0.U < io.period) {
-				newInfo := 7.U
-				val newFrequency = calcFrequency(true)
-				when (newFrequency <= 2047.U && 0.U < io.shift) {
-					newInfo := 8.U
-					frequency := newFrequency
-					shadowFreq := newFrequency
-					calcFrequency(false) // For overflow check
-				}
-			}
+			shadowFreq := newFrequency
+			io.out := newFrequency
 		}
 	}
 
-	when (io.trigger) {
-		newInfo := 9.U
-		shadowFreq := io.frequencyIn
+	// def calcFrequency(writeBack: Boolean): UInt = {
+	// 	val newFrequency = Wire(UInt(12.W))
 
-		when (io.period === 0.U) {
-			newInfo := 10.U
-			sweepTimer := 8.U
-		} .otherwise {
-			newInfo := 11.U
-			sweepTimer := io.period
-		}
+	// 	when (io.negate) {
+	// 		newFrequency := shadowFreq - (shadowFreq >> io.shift)
+	// 	} .otherwise {
+	// 		newFrequency := shadowFreq + (shadowFreq >> io.shift)
+	// 	}
 
-		when (io.period =/= 0.U || io.shift =/= 0.U) {
-			newInfo := 12.U
-			sweepEnabled := true.B
-		}
+	// 	when (2047.U < newFrequency) {
+	// 		sweepEnabled := false.B
+	// 	}
 
-		when (io.shift =/= 0.U) {
-			newInfo := 13.U
-			calcFrequency(true)
-		}
-	}
+	// 	if (writeBack) {
+	// 		io.nr13Out.bits  := newFrequency(7, 0)
+	// 		io.nr14Out.bits  := Cat(io.nr14In(7, 3), newFrequency(10, 8))
+	// 		io.nr13Out.valid := true.B
+	// 		io.nr14Out.valid := true.B
+	// 	}
 
-	when (newInfo =/= info) {
+	// 	newFrequency
+	// }
+
+	// val newInfo = Wire(UInt(8.W))
+
+	// newInfo := 1.U
+
+	// when (io.tick) {
+	// 	newInfo := 2.U
+	// 	when (0.U < sweepTimer) {
+	// 		newInfo := 3.U
+	// 		sweepTimer := sweepTimer - 1.U
+	// 	}
+
+	// 	when (sweepTimer === 0.U) {
+	// 		newInfo := 4.U
+	// 		when (0.U < io.period) {
+	// 			newInfo := 5.U
+	// 			sweepTimer := io.period
+	// 		} .otherwise {
+	// 			newInfo := 6.U
+	// 			sweepTimer := 8.U
+	// 		}
+
+	// 		when (sweepEnabled && 0.U < io.period) {
+	// 			newInfo := 7.U
+	// 			val newFrequency = calcFrequency(true)
+	// 			when (newFrequency <= 2047.U && 0.U < io.shift) {
+	// 				newInfo := 8.U
+	// 				frequency := newFrequency
+	// 				shadowFreq := newFrequency
+	// 				calcFrequency(false) // For overflow check
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// when (io.trigger) {
+	// 	newInfo := 9.U
+	// 	shadowFreq := io.frequencyIn
+
+	// 	when (io.period === 0.U) {
+	// 		newInfo := 10.U
+	// 		sweepTimer := 8.U
+	// 	} .otherwise {
+	// 		newInfo := 11.U
+	// 		sweepTimer := io.period
+	// 	}
+
+	// 	when (io.period =/= 0.U || io.shift =/= 0.U) {
+	// 		newInfo := 12.U
+	// 		sweepEnabled := true.B
+	// 	}
+
+	// 	when (io.shift =/= 0.U) {
+	// 		newInfo := 13.U
+	// 		calcFrequency(true)
+	// 	}
+	// }
+
+	// when (newInfo =/= info) {
 		// printf(cf"FrequencySweeper info: $info -> $newInfo\n")
-		info := newInfo
-	}
+	// 	info := newInfo
+	// }
 
-	io.out := frequency
-	io.info := newInfo
+	// io.out := frequency
+	// io.info := newInfo
+
+	io.info := 0.U
 }
