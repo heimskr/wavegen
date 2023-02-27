@@ -38,10 +38,9 @@ class ChannelMixer extends Module {
 	val sIdle :: sSL0 :: sSL1 :: sSL2 :: sSL3 :: sAL :: sSR0 :: sSR1 :: sSR2 :: sSR3 :: sAR :: Nil = Enum(11)
 
 	val state = RegInit(sIdle)
-
-	val valid    = RegInit(false.B)
-	val left     = RegInit(0.U(7.W))
-	val right    = RegInit(0.U(7.W))
+	val valid = RegInit(false.B)
+	val left  = RegInit(0.U(7.W))
+	val right = RegInit(0.U(7.W))
 
 	io.out.valid      := false.B
 	io.out.bits.left  := left

@@ -32,13 +32,12 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		val error   = Output(UInt(4.W))
 	})
 
-	// val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
-	val cpuClocker   = Module(new StaticClocker(slowFreq, 100_000_000))
+	val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
 	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1(slowFreq, fsFreq))
 	val channel2     = Module(new Channel2(slowFreq, fsFreq))
 
-	cpuClocker.io.enable := true.B
+	cpuClocker.io.enable := !io.sw(7) | io.buttonD
 
 	stateMachine.io.start := io.start
 	stateMachine.io.rom   := io.rom

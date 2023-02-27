@@ -81,7 +81,7 @@ class MainROMReader extends Module {
 class MainGameBoy extends Module {
 	implicit val clockFreq   = 100_000_000
 	implicit val inSimulator = false
-	val addressWidth = 17
+	val addressWidth = 18
 	val romWidth = 24
 
 	val io = IO(new Bundle {
@@ -126,13 +126,20 @@ class MainGameBoy extends Module {
 	// val signal = Wire(UInt(24.W))
 	// signal := signalReg << 23.U
 
+	// def increase7to24(value: UInt): UInt = ((value << 17.U) | (value << 10.U) | (value << 3.U)) >> 4.U
+	// def increase7to24(value: UInt): UInt = (value << 14.U) | (value << 7.U) | value
+	def increase7to24(value: UInt, boost: Int = 2): UInt = (value << (14 + boost).U) | (value << (7 + boost).U) | (value << boost.U)
 
 	// val signal = gameboy.io.out << 20.U
 	// val signal = gameboy.io.out * "h111111".U
 	// val signalL = gameboy.io.outL * "h011111".U
 	// val signalR = gameboy.io.outR * "h011111".U
-	val signalL = Fill(5, gameboy.io.outL)
-	val signalR = Fill(5, gameboy.io.outR)
+	// val signalL = Fill(3, gameboy.io.outL)
+	// val signalR = Fill(3, gameboy.io.outR)
+	// val signalL = gameboy.io.outL * "h020408".U
+	// val signalR = gameboy.io.outR * "h020408".U
+	val signalL = increase7to24(gameboy.io.outL)
+	val signalR = increase7to24(gameboy.io.outR)
 	io.outL := signalL
 	io.outR := signalR
 	io.led  := gameboy.io.leds
