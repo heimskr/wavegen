@@ -1,5 +1,7 @@
 ELSEWHERE ?= /home/kai/Downloads/hw/hw.srcs/sources_1/new
 
+all: copy
+
 test:
 	sbt "testOnly *GameBoyTests"
 	# sbt "testOnly *Channel1Tests"

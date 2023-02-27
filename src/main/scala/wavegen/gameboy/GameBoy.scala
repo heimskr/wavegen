@@ -14,6 +14,7 @@ object GameBoy {
 
 class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
+	val fsFreq = if (inSimulator) 2048 else slowFreq
 
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
@@ -33,7 +34,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq))
 	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
-	val channel1 = Module(new Channel1(slowFreq))
+	val channel1 = Module(new Channel1(slowFreq, fsFreq))
 
 	// val freq = io.sw(7, 4) << 4.U
 
@@ -109,8 +110,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	// Some silliness to account for channel enable/disable in NR51 and panning in NR50
 	Seq(io.outR, io.outL).zipWithIndex.foreach { case (out, i) =>
-		out := ((1.U + registers.NR50(2 + 4 * i, 4 * i)) * (channels.zipWithIndex.map { case (channel, j) =>
-			Mux(registers.NR51(3 + 4 * i - j), channel, 0.U)
+		out := ((1.U +& registers.NR50(2 + 4 * i, 4 * i)) * (channels.zipWithIndex.map { case (channel, j) =>
+			Mux(registers.NR51(3 + 4 * i - j), channel, 0.U(4.W))
 		}.foldLeft(0.U)(_ +& _))(7, 0)) >> 3.U
 	}
 }

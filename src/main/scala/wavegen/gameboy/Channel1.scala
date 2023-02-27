@@ -4,7 +4,7 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
+class Channel1(baseFreq: Int, fsFreq: Int = -1, freq256: Int = 256) extends Module {
 	implicit val clockFreq = baseFreq
 
 	val io = IO(new SquareChannelIO {
@@ -25,7 +25,7 @@ class Channel1(baseFreq: Int, freq256: Int = 256) extends Module {
 	val lengthEnable = WireInit(io.registers.NR14(6))
 	val frequency    = Cat(io.registers.NR14(2, 0), io.registers.NR13)
 
-	val sequencer = Module(new FrameSequencer(baseFreq))
+	val sequencer = Module(new FrameSequencer(if (fsFreq == -1) baseFreq else fsFreq))
 
 	val sweeper = Module(new FrequencySweeper)
 	sweeper.io.tick        := io.tick
