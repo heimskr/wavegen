@@ -4,13 +4,13 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel2(baseFreq: Int, fsFreq: Int = -1) extends Module {
-	implicit val clockFreq = baseFreq
-
+class Channel2 extends Module {
 	val io = IO(new ChannelIO {
-		val buttonD = Input(Bool())
-		val buttonR = Input(Bool())
-		val freq    = Output(UInt(11.W))
+		val envelopeTick = Input(Bool())
+		val lengthTick   = Input(Bool())
+		val buttonD      = Input(Bool())
+		val buttonR      = Input(Bool())
+		val freq         = Output(UInt(11.W))
 	})
 
 	val duty         = WireInit(io.registers.NR21(7, 6))
@@ -22,17 +22,15 @@ class Channel2(baseFreq: Int, fsFreq: Int = -1) extends Module {
 	val lengthEnable = WireInit(io.registers.NR24(6))
 	val frequency    = Cat(io.registers.NR24(2, 0), io.registers.NR23)
 
-	val sequencer = Module(new FrameSequencer(if (fsFreq == -1) baseFreq else fsFreq))
-
 	val envelope = Module(new Envelope)
-	envelope.io.tick          := sequencer.io.envelope
+	envelope.io.tick          := io.envelopeTick
 	envelope.io.trigger       := trigger
 	envelope.io.initialVolume := startVolume
 	envelope.io.rising        := addMode
 	envelope.io.period        := period
 
 	val lengthCounter = Module(new LengthCounter)
-	lengthCounter.io.tick      := sequencer.io.lengthCounter
+	lengthCounter.io.tick      := io.lengthTick
 	lengthCounter.io.trigger   := trigger
 	lengthCounter.io.enable    := lengthEnable
 	lengthCounter.io.loadValue := lengthLoad

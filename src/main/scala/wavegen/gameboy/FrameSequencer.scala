@@ -6,13 +6,14 @@ import chisel3.util._
 
 class FrameSequencer(baseFreq: Int) extends Module {
 	val io = IO(new Bundle {
+		val tick          = Input(Bool())
 		val lengthCounter = Output(Bool())
 		val envelope      = Output(Bool())
 		val sweeper       = Output(Bool())
 	})
 
 	val clocker = Module(new StaticClocker(512, baseFreq))
-	clocker.io.enable := true.B
+	clocker.io.enable := io.tick
 
 	val (count, wrap) = Counter(0 to 7, clocker.io.tick)
 

@@ -4,16 +4,17 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class Channel1(baseFreq: Int, fsFreq: Int = -1) extends Module {
-	implicit val clockFreq = baseFreq
-
+class Channel1 extends Module {
 	val io = IO(new ChannelIO {
-		val debug = Output(UInt(8.W))
-		val nr13  = Valid(UInt(8.W))
-		val nr14  = Valid(UInt(8.W))
-		val buttonD = Input(Bool())
-		val buttonR = Input(Bool())
-		val freq = Output(UInt(11.W))
+		val sweeperTick  = Input(Bool())
+		val envelopeTick = Input(Bool())
+		val lengthTick   = Input(Bool())
+		val debug        = Output(UInt(8.W))
+		val nr13         = Valid(UInt(8.W))
+		val nr14         = Valid(UInt(8.W))
+		val buttonD      = Input(Bool())
+		val buttonR      = Input(Bool())
+		val freq         = Output(UInt(11.W))
 	})
 
 	val duty         = WireInit(io.registers.NR11(7, 6))
@@ -25,10 +26,8 @@ class Channel1(baseFreq: Int, fsFreq: Int = -1) extends Module {
 	val lengthEnable = WireInit(io.registers.NR14(6))
 	val frequency    = Cat(io.registers.NR14(2, 0), io.registers.NR13)
 
-	val sequencer = Module(new FrameSequencer(if (fsFreq == -1) baseFreq else fsFreq))
-
 	val sweeper = Module(new FrequencySweeper)
-	sweeper.io.tick        := io.tick
+	sweeper.io.tick        := io.sweeperTick
 	sweeper.io.trigger     := trigger
 	sweeper.io.period      := io.registers.NR10(6, 4)
 	sweeper.io.negate      := io.registers.NR10(3)
@@ -39,14 +38,14 @@ class Channel1(baseFreq: Int, fsFreq: Int = -1) extends Module {
 	io.nr14 <> sweeper.io.nr14Out
 
 	val envelope = Module(new Envelope)
-	envelope.io.tick          := sequencer.io.envelope
+	envelope.io.tick          := io.envelopeTick
 	envelope.io.trigger       := trigger
 	envelope.io.initialVolume := startVolume
 	envelope.io.rising        := addMode
 	envelope.io.period        := period
 
 	val lengthCounter = Module(new LengthCounter)
-	lengthCounter.io.tick      := sequencer.io.lengthCounter
+	lengthCounter.io.tick      := io.lengthTick
 	lengthCounter.io.trigger   := trigger
 	lengthCounter.io.enable    := lengthEnable
 	lengthCounter.io.loadValue := lengthLoad
