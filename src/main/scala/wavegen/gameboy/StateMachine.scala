@@ -137,19 +137,16 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 
 	io.info := 1.U
 
-	when (io.tick) {
+	when (!io.tick) {
+		io.info := 24.U
+	} .otherwise {
+
 		// Disable triggers
 		registers.NR14 := Cat(0.U(1.W), registers.NR14(6, 0))
 		registers.NR24 := Cat(0.U(1.W), registers.NR24(6, 0))
 		registers.NR34 := Cat(0.U(1.W), registers.NR34(6, 0))
 		registers.NR44 := Cat(0.U(1.W), registers.NR44(6, 0))
-	}
 
-	// when (!io.tick) {
-	// 	io.info := 24.U
-	// } .otherwise {
-
-	when (true.B) {
 		when (error === eNone) {
 			when (state === sIdle) {
 				when (io.start) {
