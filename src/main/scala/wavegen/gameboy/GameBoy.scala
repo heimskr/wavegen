@@ -110,8 +110,9 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	// Some silliness to account for channel enable/disable in NR51 and panning in NR50
 	Seq(io.outR, io.outL).zipWithIndex.foreach { case (out, i) =>
-		out := ((1.U +& registers.NR50(2 + 4 * i, 4 * i)) * (channels.zipWithIndex.map { case (channel, j) =>
+		val to_mult = (channels.zipWithIndex.map { case (channel, j) =>
 			Mux(registers.NR51(3 + 4 * i - j), channel, 0.U(4.W))
-		}.foldLeft(0.U)(_ +& _))(7, 0)) >> 3.U
+		}.foldLeft(0.U)(_ +& _))(7, 0)
+		out := (registers.NR50(2 + 4 * i, 4 * i) * to_mult +& to_mult) >> 3.U
 	}
 }
