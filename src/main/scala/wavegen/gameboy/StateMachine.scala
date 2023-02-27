@@ -111,7 +111,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 		}
 	}
 
-	val sIdle :: sGetOpcode :: sOperate :: sWaiting :: Nil = Enum(4)
+	val sIdle :: sGetOpcode :: sOperate :: sWaiting :: sDone :: Nil = Enum(5)
 	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
 	val state       = RegInit(sIdle)
@@ -250,7 +250,8 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 
 				is ("h92".U) {
 					io.info   := 15.U
-					state     := sIdle
+					state     := sDone
+					registers := 0.U.asTypeOf(Registers())
 					failed    := false.B
 					errorInfo := "b01010101".U
 					printf(cf"Finishing with 0x92 around $pointer.\n")
