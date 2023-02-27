@@ -111,40 +111,17 @@ class MainGameBoy extends Module {
 	}
 
 	val gameboy = Module(new wavegen.gameboy.GameBoy(addressWidth, romWidth))
-	// gameboy.io.start := start
 	gameboy.io.start := io.buttonC
 	gameboy.io.sw    := io.sw
 
-	// val (counter1, wrap1) = Counter(0 until (100_000_000/440))
-	// when (wrap1) { signalReg := !signalReg }
-	// val signal = Fill(24, signalReg)
-
-	// val signalReg = RegInit(false.B)
-	// val sc = Module(new StaticClocker(220, clockFreq))
-	// sc.io.enable := true.B
-	// when (sc.io.tick) { signalReg := !signalReg }
-	// val signal = Wire(UInt(24.W))
-	// signal := signalReg << 23.U
-
-	// def increase7to24(value: UInt): UInt = ((value << 17.U) | (value << 10.U) | (value << 3.U)) >> 4.U
-	// def increase7to24(value: UInt): UInt = (value << 14.U) | (value << 7.U) | value
 	def increase7to24(value: UInt, boost: Int = 2): UInt = (value << (14 + boost).U) | (value << (7 + boost).U) | (value << boost.U)
 
-	// val signal = gameboy.io.out << 20.U
-	// val signal = gameboy.io.out * "h111111".U
-	// val signalL = gameboy.io.outL * "h011111".U
-	// val signalR = gameboy.io.outR * "h011111".U
-	// val signalL = Fill(3, gameboy.io.outL)
-	// val signalR = Fill(3, gameboy.io.outR)
-	// val signalL = gameboy.io.outL * "h020408".U
-	// val signalR = gameboy.io.outR * "h020408".U
 	val signalL = increase7to24(gameboy.io.outL)
 	val signalR = increase7to24(gameboy.io.outR)
 	io.outL := signalL
 	io.outR := signalR
 	io.led  := gameboy.io.leds
-	when (io.sw(5, 0) === 32.U) { io.led := signalL >> 16.U }
-	// io.led := Fill(8, reset.asBool)
+	when (io.sw(5)) { io.led := signalL >> 16.U }
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom
 	gameboy.io.buttonD := io.buttonD

@@ -129,7 +129,6 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 	val subpointer  = RegInit(0.U(3.W))
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
-	// def advance(): Unit = { pointer := pointer + (romWidth / 8).U }
 	def advance(): Unit = { pointer := pointer + 1.U }
 
 	// def toCycles(samples: UInt): UInt = samples * (clockFreq / 44100).U
@@ -153,13 +152,12 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 			}
 		} .elsewhen (state === sGetOpcode) {
 			when (waitCounter === 0.U) {
-				io.info  := 9.U
-				opcode   := io.rom(23, 16)
-				operand1 := io.rom(15,  8)
-				operand2 := io.rom( 7,  0)
-				state    := sOperate
+				io.info    := 9.U
+				opcode     := io.rom(23, 16)
+				operand1   := io.rom(15,  8)
+				operand2   := io.rom( 7,  0)
+				state      := sOperate
 				subpointer := 0.U
-				// pointer := pointer + 1.U
 			} .otherwise {
 				io.info := 11.U
 				waitCounter := waitCounter - 1.U
@@ -178,36 +176,6 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 					setReg(operand1, operand2)
 					advance()
 					state := sGetOpcode
-
-					// when (subpointer === 0.U) {
-
-					// 	subpointer := 1.U
-					// 	// pointer := pointer + 1.U
-
-					// } .elsewhen (subpointer === 1.U) {
-
-					// 	tempByte := io.rom
-					// 	pointer := pointer + 1.U
-					// 	subpointer := 2.U
-
-					// } .elsewhen (subpointer === 2.U) {
-
-					// 	subpointer := 3.U
-
-					// } .elsewhen (subpointer === 3.U) {
-
-					// 	setReg(tempByte, io.rom)
-					// 	subpointer := 4.U
-					// 	pointer := pointer + 1.U
-
-					// } .elsewhen (subpointer === 4.U) {
-
-					// 	state := sGetOpcode
-					// 	subpointer := 0.U
-
-					// } .otherwise {
-					// 	badSubpointer()
-					// }
 				}
 
 				is ("h91".U) {
@@ -218,34 +186,6 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 					waitCounter := toWait
 					advance()
 					state := sWaiting
-
-					// when (subpointer === 0.U) {
-
-					// 	subpointer := 1.U
-					// 	// pointer := pointer + 1.U
-
-					// } .elsewhen (subpointer === 1.U) {
-
-					// 	tempByte   := io.rom
-					// 	pointer    := pointer + 1.U
-					// 	subpointer := 2.U
-
-					// } .elsewhen (subpointer === 2.U) {
-
-					// 	subpointer := 3.U
-
-					// } .elsewhen (subpointer === 3.U) {
-
-					// 	val toWait = if (inSimulator) 2.U else toCycles(Cat(io.rom, tempByte))
-					// 	printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer - 1.U}%x (samples: ${Cat(io.rom, tempByte)}).\n")
-					// 	waitCounter := toWait
-					// 	pointer     := pointer + 1.U
-					// 	subpointer  := 0.U
-					// 	state       := sWaiting
-
-					// } .otherwise {
-					// 	badSubpointer()
-					// }
 				}
 
 				is ("h92".U) {
@@ -255,19 +195,16 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 					failed    := false.B
 					errorInfo := "b01010101".U
 					printf(cf"Finishing with 0x92 around $pointer.\n")
-					// pointer := pointer + 3.U
 				}
 			}
 
 			when (failed) {
-				printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer - 1.U}%x\n")
-				io.info := 18.U
-				error   := eInvalidOpcode
-
-				val actualAddress = pointer - 0.U
+				printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer}%x\n")
+				io.info    := 18.U
+				error      := eInvalidOpcode
 				errorInfo  := opcode
-				errorInfo2 := actualAddress(15, 0)
-				errorInfo3 := Cat(0.U(6.W), actualAddress(16))
+				errorInfo2 := pointer(15, 0)
+				errorInfo3 := Cat(0.U(6.W), pointer(17, 16))
 			}
 		} .elsewhen (state === sWaiting) {
 			io.info := 19.U

@@ -6,9 +6,6 @@ import chisel3.util._
 
 object GameBoy {
 	val cpuFreq = 4_194_304
-	// val cpuFreq = 25_000_000
-	// val cpuFreq = 1_000_000
-
 	val simulationFreq = 25_000_000
 }
 
@@ -41,7 +38,6 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	stateMachine.io.start := io.start
 	stateMachine.io.rom   := io.rom
-	// stateMachine.io.pause := false.B
 	stateMachine.io.pause := !cpuClocker.io.tick
 	stateMachine.io.nr13In <> channel1.io.nr13
 	stateMachine.io.nr14In <> channel1.io.nr14
@@ -66,7 +62,6 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
 		is ( 1.U) { io.leds := stateMachine.io.errorInfo2(15, 8) }
 		is ( 2.U) { io.leds := stateMachine.io.errorInfo }
-		// is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.pause, slow.io.period.valid, channel1.io.out.valid, stateMachine.io.state) }
 		is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.pause, 0.U(2.W), stateMachine.io.state) }
 		is ( 4.U) { io.leds := Cat(io.start, reset.asBool, 0.U(2.W), stateMachine.io.error) }
 		is ( 5.U) { io.leds := stateMachine.io.addr(16) }
@@ -74,18 +69,11 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is ( 7.U) { io.leds := stateMachine.io.addr(15, 8) }
 		is ( 8.U) { io.leds := "b10101010".U }
 		is ( 9.U) { io.leds := Fill(8, cpuClocker.io.tick) }
-		// is (10.U) { io.leds := Fill(8,    slow.io.tick) }
 		is (10.U) { io.leds := stateMachine.io.errorInfo3 }
-		// is (11.U) { io.leds := slow.io.period( 7,  0) }
-		// is (12.U) { io.leds := slow.io.period(15,  8) }
-		// is (13.U) { io.leds := slow.io.counter( 7,  0) }
-		// is (14.U) { io.leds := slow.io.counter(15,  8) }
-		// is (15.U) { io.leds := slow.io.counter(23, 16) }
 		is (11.U) { io.leds := Cat(0.U(4.W), channel1.io.out) }
 		is (12.U) { io.leds := stateMachine.io.info }
 		is (13.U) { io.leds := Cat(io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC) }
-		// is (14.U) { io.leds := Cat(stateMachine.io.info(5, 0), slow.io.period.valid, channel1.io.out.valid) }
-		// is (14.U) { io.leds := io.rom }
+		is (14.U) {  }
 		is (15.U) { io.leds := stateMachine.io.adjusted }
 		is (16.U) { io.leds := stateMachine.io.value }
 		is (17.U) { io.leds := stateMachine.io.pointer(7, 0) }
@@ -104,14 +92,6 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		is (30.U) { io.leds := channel1.io.freq(7, 0) }
 		is (31.U) { io.leds := channel1.io.freq(10, 8) }
 	}
-
-	// val channels = VecInit(0.U(4.W), 0.U(4.W), channel2.io.out, channel1.io.out)
-	// Seq(io.outR, io.outL).zipWithIndex.foreach { case (out, i) =>
-    //     val to_mult = (channels.zipWithIndex.map { case (channel, j) =>
-    //         Mux(registers.NR51(3 + 4 * i - j), channel, 0.U(4.W))
-    //     }.foldLeft(0.U)(_ +& _))(7, 0)
-    //     out := (registers.NR50(2 + 4 * i, 4 * i) * to_mult +& to_mult) >> 3.U
-    // }
 
 	val channels = VecInit(channel1.io.out, channel2.io.out, 0.U(4.W), 0.U(4.W))
 	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
