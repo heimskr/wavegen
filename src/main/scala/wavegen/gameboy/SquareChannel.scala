@@ -6,5 +6,5 @@ import chisel3.util._
 class SquareChannelIO extends Bundle {
 	val tick      = Input(Bool())
 	val registers = Input(Registers())
-	val out       = Valid(UInt(4.W))
+	val out       = Output(UInt(4.W))
 }
