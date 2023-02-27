@@ -35,12 +35,11 @@ class ChannelMixer extends Module {
 		})
 	})
 
-	val sIdle :: sSumLeft :: sAdjustLeft :: sSumRight :: sAdjustRight :: Nil = Enum(5)
+	val sIdle :: sSL0 :: sSL1 :: sSL2 :: sSL3 :: sAL :: sSR0 :: sSR1 :: sSR2 :: sSR3 :: sAR :: Nil = Enum(11)
 
 	val state = RegInit(sIdle)
 
 	val valid    = RegInit(false.B)
-	val channel  = RegInit(0.U(2.W))
 	val left     = RegInit(0.U(7.W))
 	val right    = RegInit(0.U(7.W))
 
@@ -53,50 +52,50 @@ class ChannelMixer extends Module {
 		io.out.valid := valid
 
 		when (io.in.valid) {
-			left         := Mux(io.nr51(3), io.in.bits(0), 0.U(4.W))
+			left         := 0.U
 			right        := 0.U
-			channel      := 1.U
-			state        := sSumLeft
+			state        := sSL0
 			valid        := false.B
 			io.out.valid := false.B
 		}
 
-	} .elsewhen (state === sSumLeft) {
+	} .elsewhen (state === sSL0) {
+		when (io.nr51(3.U)) { left := io.in.bits(0) }
+		state := sSL1
+	} .elsewhen (state === sSL1) {
+		when (io.nr51(2.U)) { left := left + io.in.bits(1) }
+		state := sSL2
+	} .elsewhen (state === sSL2) {
+		when (io.nr51(1.U)) { left := left + io.in.bits(2) }
+		state := sSL3
+	} .elsewhen (state === sSL3) {
+		when (io.nr51(0.U)) { left := left + io.in.bits(3) }
+		state := sAL
 
-		when (io.nr51(3.U - channel)) {
-			left := left + io.in.bits(channel)
-		}
-
-		when (channel === 3.U) {
-			channel := 0.U
-			state   := sAdjustLeft
-		} .otherwise {
-			channel := channel + 1.U
-		}
-
-	} .elsewhen (state === sAdjustLeft) {
+	} .elsewhen (state === sAL) {
 
 		left := ((io.nr50(6, 4) * left) + left) >> 3.U
-		state := sSumRight
+		state := sSR0
 
-	} .elsewhen (state === sSumRight) {
+	} .elsewhen (state === sSR0) {
+		when (io.nr51(7.U)) { right := io.in.bits(0) }
+		state := sSR1
+	} .elsewhen (state === sSR1) {
+		when (io.nr51(6.U)) { right := right + io.in.bits(1) }
+		state := sSR2
+	} .elsewhen (state === sSR2) {
+		when (io.nr51(5.U)) { right := right + io.in.bits(2) }
+		state := sSR3
+	} .elsewhen (state === sSR3) {
+		when (io.nr51(4.U)) { right := right + io.in.bits(3) }
+		state := sAR
 
-		when (io.nr51(3.U - channel)) {
-			right := right + io.in.bits(channel)
-		}
-
-		when (channel === 3.U) {
-			channel := 0.U
-			state   := sAdjustRight
-		} .otherwise {
-			channel := channel + 1.U
-		}
-
-	} .elsewhen (state === sAdjustRight) {
+	} .elsewhen (state === sAR) {
 
 		right := ((io.nr50(2, 0) * right) + right) >> 3.U
 		state := sIdle
 		valid := true.B
+		io.out.valid := true.B
 
 	}
 }
