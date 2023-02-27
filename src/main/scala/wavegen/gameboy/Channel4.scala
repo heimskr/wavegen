@@ -58,7 +58,7 @@ class Channel4 extends Module {
 			}
 		}
 
-		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume)
+		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume >> 1.U)
 	}
 
 	io.channelOn     := lengthCounter.io.channelOn

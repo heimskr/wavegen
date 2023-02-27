@@ -30,8 +30,8 @@ class ChannelMixer extends Module {
 		val nr50 = Input(UInt(8.W))
 		val nr51 = Input(UInt(8.W))
 		val out  = Valid(new Bundle {
-			val left  = UInt(4.W)
-			val right = UInt(4.W)
+			val left  = UInt(8.W)
+			val right = UInt(8.W)
 		})
 	})
 
@@ -39,8 +39,8 @@ class ChannelMixer extends Module {
 
 	val state = RegInit(sIdle)
 	val valid = RegInit(false.B)
-	val left  = RegInit(0.U(7.W))
-	val right = RegInit(0.U(7.W))
+	val left  = RegInit(0.U(8.W))
+	val right = RegInit(0.U(8.W))
 
 	io.out.valid      := false.B
 	io.out.bits.left  := left
@@ -73,7 +73,7 @@ class ChannelMixer extends Module {
 
 	} .elsewhen (state === sAL) {
 
-		left := ((io.nr50(6, 4) * left) + left) >> 3.U
+		left := ((io.nr50(6, 4) * left) + left)
 		state := sSR0
 
 	} .elsewhen (state === sSR0) {
@@ -91,7 +91,7 @@ class ChannelMixer extends Module {
 
 	} .elsewhen (state === sAR) {
 
-		right := ((io.nr50(2, 0) * right) + right) >> 3.U
+		right := ((io.nr50(2, 0) * right) + right)
 		state := sIdle
 		valid := true.B
 		io.out.valid := true.B

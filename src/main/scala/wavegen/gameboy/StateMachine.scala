@@ -34,12 +34,12 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 
 	def setChannel(channel: Int, value: Boolean): Unit = {
 		val bit = if (value) 1.U else 0.U
-		if (channel == 0)
+		if (channel == 1)
 			channelsEnabled := Cat(channelsEnabled(3, 1), bit)
-		else if (channel == 3)
+		else if (channel == 4)
 			channelsEnabled := Cat(bit, channelsEnabled(2, 0))
 		else
-			channelsEnabled := Cat(channelsEnabled(3, channel + 1), bit, channelsEnabled(channel - 1, 0))
+			channelsEnabled := Cat(channelsEnabled(3, channel), bit, channelsEnabled(channel - 2, 0))
 	}
 
 	def setReg(index: UInt, value: UInt): Unit = {
@@ -56,29 +56,49 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 			is("h12".U) { failed := false.B
 				registers.NR12   := value
 				when (value(7, 3) === 0.U) {
-					setChannel(0, false)
+					setChannel(1, false)
 				}
 			}
 			is("h13".U) { registers.NR13 := value; failed := false.B }
 			is("h14".U) { failed := false.B
 				registers.NR14   := value
 				when (value(7)) {
-					setChannel(0, true)
+					setChannel(1, true)
 				}
 			}
 			is("h16".U) { registers.NR21 := value; failed := false.B }
-			is("h17".U) { registers.NR22 := value; failed := false.B }
+			is("h17".U) { failed := false.B
+				registers.NR22   := value
+				when (value(7, 3) === 0.U) {
+					setChannel(2, false)
+				}
+			}
 			is("h18".U) { registers.NR23 := value; failed := false.B }
-			is("h19".U) { registers.NR24 := value; failed := false.B }
+			is("h19".U) { failed := false.B
+				registers.NR24   := value
+				when (value(7)) {
+					setChannel(2, true)
+				}
+			}
 			is("h1a".U) { registers.NR30 := value; failed := false.B }
 			is("h1b".U) { registers.NR31 := value; failed := false.B }
 			is("h1c".U) { registers.NR32 := value; failed := false.B }
 			is("h1d".U) { registers.NR33 := value; failed := false.B }
 			is("h1e".U) { registers.NR34 := value; failed := false.B }
 			is("h20".U) { registers.NR41 := value; failed := false.B }
-			is("h21".U) { registers.NR42 := value; failed := false.B }
+			is("h21".U) { failed := false.B
+				registers.NR42   := value
+				when (value(7, 3) === 0.U) {
+					setChannel(4, false)
+				}
+			}
 			is("h22".U) { registers.NR43 := value; failed := false.B }
-			is("h23".U) { registers.NR44 := value; failed := false.B }
+			is("h23".U) { failed := false.B
+				registers.NR44   := value
+				when (value(7) === 0.U) {
+					setChannel(4, true)
+				}
+			}
 			is("h24".U) { registers.NR50 := value; failed := false.B }
 			is("h25".U) { registers.NR51 := value; failed := false.B }
 			is("h26".U) { failed := false.B
@@ -202,6 +222,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 						failed    := false.B
 						errorInfo := "b01010101".U
 						printf(cf"Finishing with 0x92 around $pointer.\n")
+						Seq.tabulate(4)(c => setChannel(c + 1, false))
 					}
 				}
 
