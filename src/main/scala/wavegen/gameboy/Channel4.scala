@@ -58,7 +58,8 @@ class Channel4 extends Module {
 			}
 		}
 
-		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume)
+		// Shifting isn't the standard behavior, but the noise is too loud otherwise in my opinion.
+		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume >> 1.U)
 	}
 
 	io.channelOn     := lengthCounter.io.channelOn

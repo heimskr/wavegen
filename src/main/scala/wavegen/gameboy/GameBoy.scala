@@ -111,7 +111,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channels = VecInit(channel1.io.out, channel2.io.out, 0.U(4.W), channel4.io.out)
 	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
 
-	val mixer = Module(new ChannelMixer)
+	val mixer = Module(new ChannelMixer(4))
 	mixer.io.in.valid := !(channels === storedChannels)
 	mixer.io.in.bits  := channels
 	mixer.io.nr50     := registers.NR50

@@ -24,14 +24,16 @@ import chisel3.util._
 //         Else,
 //             Output(side) = 0
 
-class ChannelMixer extends Module {
+class ChannelMixer(inWidth: Int) extends Module {
+	val outWidth = 2 + inWidth + 3 // 2 extra bits from summing 2^2 values, 3 extra bits from multiplying by 2^3
+
 	val io = IO(new Bundle {
-		val in   = Flipped(Valid(Vec(4, UInt(4.W)))) // (0) => channel0, (1) => channel1, ...
+		val in   = Flipped(Valid(Vec(4, UInt(inWidth.W)))) // (0) => channel0, (1) => channel1, ...
 		val nr50 = Input(UInt(8.W))
 		val nr51 = Input(UInt(8.W))
 		val out  = Valid(new Bundle {
-			val left  = UInt(8.W)
-			val right = UInt(8.W)
+			val left  = UInt(outWidth.W)
+			val right = UInt(outWidth.W)
 		})
 	})
 
@@ -39,8 +41,8 @@ class ChannelMixer extends Module {
 
 	val state = RegInit(sIdle)
 	val valid = RegInit(false.B)
-	val left  = RegInit(0.U(8.W))
-	val right = RegInit(0.U(8.W))
+	val left  = RegInit(0.U(outWidth.W))
+	val right = RegInit(0.U(outWidth.W))
 
 	io.out.valid      := false.B
 	io.out.bits.left  := left
