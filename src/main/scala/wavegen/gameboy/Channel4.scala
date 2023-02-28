@@ -8,7 +8,6 @@ class Channel4 extends Module {
 	val io = IO(new ChannelIO {
 		val envelopeTick  = Input(Bool())
 		val lengthTick    = Input(Bool())
-		val sw            = Input(UInt(4.W))
 		val channelOn     = Output(Bool())
 		val currentVolume = Output(UInt(4.W))
 	})

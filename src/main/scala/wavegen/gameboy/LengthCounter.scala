@@ -6,16 +6,18 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-class LengthCounter extends Module {
+class LengthCounter(minuend: Int = 64) extends Module {
+	val width = log2Ceil(minuend)
+
 	val io = IO(new Bundle {
 		val tick      = Input(Bool()) // 256 Hz, please.
 		val trigger   = Input(Bool())
 		val enable    = Input(Bool())
-		val loadValue = Input(UInt(6.W))
+		val loadValue = Input(UInt(width.W))
 		val channelOn = Output(Bool())
 	})
 
-	val length    = RegInit(0.U(7.W))
+	val length    = RegInit(0.U((width + 1).W))
 	val channelOn = RegInit(false.B)
 
 	when (io.tick && io.enable && length =/= 0.U && !io.trigger) {
@@ -24,7 +26,7 @@ class LengthCounter extends Module {
 	}
 
 	when (io.trigger) {
-		length := 64.U - io.loadValue
+		length := minuend.U - io.loadValue
 		channelOn := true.B
 	}
 

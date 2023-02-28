@@ -77,7 +77,6 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	channel4.io.registers    := stateMachine.io.registers
 	channel4.io.envelopeTick := sequencer.io.envelope
 	channel4.io.lengthTick   := sequencer.io.lengthCounter
-	channel4.io.sw := io.sw
 
 	// io.leds := io.sw
 	io.leds := stateMachine.io.state

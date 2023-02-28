@@ -10,9 +10,8 @@ class Channel3(val instant: Boolean) extends Module {
 		val channelOn  = Output(Bool())
 	})
 
-	// Pan Docs says it's bits 7–0, but in both worldmap.vgm and duel.vgm bits 7 and 6 are never set to 1, so presumably
-	// it's only bits 5–0 that matter (just like in channels 1, 2 and 4).
-	val lengthLoad     = io.registers.NR31(5, 0)
+	val dacOn          = io.registers.NR30(7)
+	val lengthLoad     = io.registers.NR31
 	val volume         = io.registers.NR32(6, 5)
 	val wavelengthLow  = io.registers.NR33
 	val wavelengthHigh = io.registers.NR34(2, 0)
@@ -20,7 +19,7 @@ class Channel3(val instant: Boolean) extends Module {
 	val trigger        = io.registers.NR34(7)
 	val wavelength     = Cat(wavelengthHigh, wavelengthLow)
 
-	val lengthCounter = Module(new LengthCounter)
+	val lengthCounter = Module(new LengthCounter(256))
 	lengthCounter.io.tick      := io.lengthTick
 	lengthCounter.io.trigger   := trigger
 	lengthCounter.io.enable    := lengthEnable
@@ -98,4 +97,8 @@ class Channel3(val instant: Boolean) extends Module {
 	}
 
 	io.channelOn := lengthCounter.io.channelOn
+
+	when (!dacOn) {
+		io.out := 0.U
+	}
 }
