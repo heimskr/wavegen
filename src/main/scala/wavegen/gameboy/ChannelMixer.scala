@@ -75,7 +75,7 @@ class ChannelMixer(inWidth: Int) extends Module {
 
 	} .elsewhen (state === sAL) {
 
-		left := ((io.nr50(6, 4) * left) + left)
+		left := (io.nr50(6, 4) * left) + left
 		state := sSR0
 
 	} .elsewhen (state === sSR0) {
@@ -93,7 +93,7 @@ class ChannelMixer(inWidth: Int) extends Module {
 
 	} .elsewhen (state === sAR) {
 
-		right := ((io.nr50(2, 0) * right) + right)
+		right := (io.nr50(2, 0) * right) + right
 		state := sIdle
 		valid := true.B
 		io.out.valid := true.B
