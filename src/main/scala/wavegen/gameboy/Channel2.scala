@@ -8,8 +8,6 @@ class Channel2 extends Module {
 	val io = IO(new ChannelIO {
 		val envelopeTick = Input(Bool())
 		val lengthTick   = Input(Bool())
-		val buttonD      = Input(Bool())
-		val buttonR      = Input(Bool())
 		val freq         = Output(UInt(11.W))
 	})
 
@@ -50,11 +48,7 @@ class Channel2 extends Module {
 	io.out  := 0.U
 	io.freq := frequency
 
-	when (lengthCounter.io.channelOn || io.buttonD) {
-		when (io.buttonR) {
-			io.out := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
-		} .otherwise {
-			io.out := Mux(squareGen.io.out(0), envelope.io.currentVolume, 0.U)
-		}
+	when (lengthCounter.io.channelOn) {
+		io.out := Mux(squareGen.io.out(0), envelope.io.currentVolume, 0.U)
 	}
 }

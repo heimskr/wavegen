@@ -9,11 +9,8 @@ class Channel1 extends Module {
 		val sweeperTick  = Input(Bool())
 		val envelopeTick = Input(Bool())
 		val lengthTick   = Input(Bool())
-		val debug        = Output(UInt(8.W))
 		val nr13         = Valid(UInt(8.W))
 		val nr14         = Valid(UInt(8.W))
-		val buttonD      = Input(Bool())
-		val buttonR      = Input(Bool())
 		val freq         = Output(UInt(11.W))
 	})
 
@@ -67,15 +64,10 @@ class Channel1 extends Module {
 	squareGen.io.max  := "b1".U
 	squareGen.io.wave := waveforms(duty)
 
-	io.out   := 0.U
-	io.debug := sweeper.io.out >> 7.U
-	io.freq  := latestFrequency
+	io.out  := 0.U
+	io.freq := latestFrequency
 
-	when (lengthCounter.io.channelOn || io.buttonD) {
-		when (io.buttonR) {
-			io.out := Mux(squareGen.io.out(0), "b1111".U, "b0000".U)
-		} .otherwise {
-			io.out := Mux(squareGen.io.out(0), envelope.io.currentVolume, 0.U)
-		}
+	when (lengthCounter.io.channelOn) {
+		io.out := Mux(squareGen.io.out(0), envelope.io.currentVolume, 0.U)
 	}
 }

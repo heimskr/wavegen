@@ -59,15 +59,11 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	channel1.io.envelopeTick := sequencer.io.envelope
 	channel1.io.lengthTick   := sequencer.io.lengthCounter
 	channel1.io.registers    := stateMachine.io.registers
-	channel1.io.buttonD      := io.buttonD
-	channel1.io.buttonR      := io.buttonR
 
 	channel2.io.tick         := cpuTick
 	channel2.io.envelopeTick := sequencer.io.envelope
 	channel2.io.lengthTick   := sequencer.io.lengthCounter
 	channel2.io.registers    := stateMachine.io.registers
-	channel2.io.buttonD      := io.buttonD
-	channel2.io.buttonR      := io.buttonR
 
 	channel3.io.tick         := cpuTick
 	channel3.io.lengthTick   := sequencer.io.lengthCounter
