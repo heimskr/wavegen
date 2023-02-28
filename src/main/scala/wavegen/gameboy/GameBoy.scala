@@ -22,8 +22,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		val buttonD = Input(Bool())
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
-		val outL    = Output(UInt(8.W))
-		val outR    = Output(UInt(8.W))
+		val outL    = Output(UInt(9.W))
+		val outR    = Output(UInt(9.W))
 		val addr    = Output(UInt(addressWidth.W))
 		val leds    = Output(UInt(8.W))
 		val error   = Output(UInt(4.W))
@@ -37,7 +37,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel4     = Module(new Channel4)
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
-	cpuClocker.io.enable := !io.sw(7) ^ io.buttonD
+	cpuClocker.io.enable := !io.sw(0) ^ io.buttonD
 	val cpuTick = cpuClocker.io.tick
 
 	sequencer.io.tick := cpuTick
@@ -77,41 +77,9 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	channel4.io.registers    := stateMachine.io.registers
 	channel4.io.envelopeTick := sequencer.io.envelope
 	channel4.io.lengthTick   := sequencer.io.lengthCounter
+	channel4.io.sw := io.sw
 
-	switch (io.sw(4, 0)) {
-		is ( 0.U) { io.leds := stateMachine.io.errorInfo2(7, 0) }
-		is ( 1.U) { io.leds := stateMachine.io.errorInfo2(15, 8) }
-		is ( 2.U) { io.leds := stateMachine.io.errorInfo }
-		is ( 3.U) { io.leds := Cat(io.start, stateMachine.io.tick, 0.U(2.W), stateMachine.io.state) }
-		is ( 4.U) { io.leds := Cat(io.start, reset.asBool, 0.U(2.W), stateMachine.io.error) }
-		is ( 5.U) { io.leds := stateMachine.io.addr(16) }
-		is ( 6.U) { io.leds := stateMachine.io.addr( 7, 0) }
-		is ( 7.U) { io.leds := stateMachine.io.addr(15, 8) }
-		is ( 8.U) { io.leds := "b10101010".U }
-		is ( 9.U) { io.leds := Fill(8, cpuTick) }
-		is (10.U) { io.leds := stateMachine.io.errorInfo3 }
-		is (11.U) { io.leds := Cat(0.U(4.W), channel1.io.out) }
-		is (12.U) { io.leds := stateMachine.io.info }
-		is (13.U) { io.leds := Cat(io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC) }
-		is (14.U) { io.leds := Cat(channel4.io.channelOn, 0.U(3.W), channel4.io.currentVolume) }
-		is (15.U) { io.leds := stateMachine.io.adjusted }
-		is (16.U) { io.leds := stateMachine.io.value }
-		is (17.U) { io.leds := stateMachine.io.pointer(7, 0) }
-		is (18.U) { io.leds := stateMachine.io.pointer(15, 8) }
-		is (19.U) { io.leds := stateMachine.io.opcode }
-		is (20.U) { io.leds := stateMachine.io.waitCounter( 7,  0) }
-		is (21.U) { io.leds := stateMachine.io.waitCounter(15,  8) }
-		is (22.U) { io.leds := stateMachine.io.waitCounter(23, 16) }
-		is (23.U) { io.leds := stateMachine.io.waitCounter(31, 24) }
-		is (24.U) { io.leds := io.rom(7, 0) }
-		is (25.U) { io.leds := io.rom(15, 8) }
-		is (26.U) { io.leds := io.rom(23, 16) }
-		is (27.U) { io.leds := stateMachine.io.operand1 }
-		is (28.U) { io.leds := stateMachine.io.operand2 }
-		is (29.U) { io.leds := Cat(0.U(4.W), channel2.io.out) }
-		is (30.U) { io.leds := channel1.io.freq(7, 0) }
-		is (31.U) { io.leds := channel1.io.freq(10, 8) }
-	}
+	io.leds := io.sw
 
 	val channels = VecInit(channel1.io.out, channel2.io.out, channel3.io.out, channel4.io.out)
 	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))

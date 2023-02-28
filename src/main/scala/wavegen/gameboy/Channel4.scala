@@ -8,6 +8,7 @@ class Channel4 extends Module {
 	val io = IO(new ChannelIO {
 		val envelopeTick  = Input(Bool())
 		val lengthTick    = Input(Bool())
+		val sw            = Input(UInt(4.W))
 		val channelOn     = Output(Bool())
 		val currentVolume = Output(UInt(4.W))
 	})
@@ -59,7 +60,7 @@ class Channel4 extends Module {
 		}
 
 		// Shifting isn't the standard behavior, but the noise is too loud otherwise in my opinion.
-		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume >> 1.U)
+		io.out := Mux(lfsr(0), 0.U, envelope.io.currentVolume >> io.sw(1))
 	}
 
 	io.channelOn     := lengthCounter.io.channelOn

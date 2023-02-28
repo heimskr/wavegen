@@ -37,7 +37,7 @@ class ChannelMixer(inWidth: Int) extends Module {
 		})
 	})
 
-	val sIdle :: sSL0 :: sSL1 :: sSL2 :: sSL3 :: sAL :: sSR0 :: sSR1 :: sSR2 :: sSR3 :: sAR :: Nil = Enum(11)
+	val sIdle :: sS0 :: sS1 :: sS2 :: sS3 :: sA :: Nil = Enum(6)
 
 	val state = RegInit(sIdle)
 	val valid = RegInit(false.B)
@@ -55,44 +55,38 @@ class ChannelMixer(inWidth: Int) extends Module {
 		when (io.in.valid) {
 			left         := 0.U
 			right        := 0.U
-			state        := sSL0
+			state        := sS0
 			valid        := false.B
 			io.out.valid := false.B
 		}
 
-	} .elsewhen (state === sSL0) {
-		when (io.nr51(3.U)) { left := io.in.bits(0) }
-		state := sSL1
-	} .elsewhen (state === sSL1) {
-		when (io.nr51(2.U)) { left := left + io.in.bits(1) }
-		state := sSL2
-	} .elsewhen (state === sSL2) {
-		when (io.nr51(1.U)) { left := left + io.in.bits(2) }
-		state := sSL3
-	} .elsewhen (state === sSL3) {
-		when (io.nr51(0.U)) { left := left + io.in.bits(3) }
-		state := sAL
+	} .elsewhen (state === sS0) {
 
-	} .elsewhen (state === sAL) {
-
-		left := (io.nr50(6, 4) * left) + left
-		state := sSR0
-
-	} .elsewhen (state === sSR0) {
+		when (io.nr51(3.U)) { left  := io.in.bits(0) }
 		when (io.nr51(7.U)) { right := io.in.bits(0) }
-		state := sSR1
-	} .elsewhen (state === sSR1) {
+		state := sS1
+
+	} .elsewhen (state === sS1) {
+
+		when (io.nr51(2.U)) { left  := left  + io.in.bits(1) }
 		when (io.nr51(6.U)) { right := right + io.in.bits(1) }
-		state := sSR2
-	} .elsewhen (state === sSR2) {
+		state := sS2
+
+	} .elsewhen (state === sS2) {
+
+		when (io.nr51(1.U)) { left  := left  + io.in.bits(2) }
 		when (io.nr51(5.U)) { right := right + io.in.bits(2) }
-		state := sSR3
-	} .elsewhen (state === sSR3) {
+		state := sS3
+
+	} .elsewhen (state === sS3) {
+
+		when (io.nr51(0.U)) { left  := left  + io.in.bits(3) }
 		when (io.nr51(4.U)) { right := right + io.in.bits(3) }
-		state := sAR
+		state := sA
 
-	} .elsewhen (state === sAR) {
+	} .elsewhen (state === sA) {
 
+		left  := (io.nr50(6, 4) * left)  + left
 		right := (io.nr50(2, 0) * right) + right
 		state := sIdle
 		valid := true.B

@@ -117,7 +117,7 @@ class MainGameBoy extends Module {
 	// def increase7to24(value: UInt, boost: Int = 2): UInt = (value << (14 + boost).U) | (value << (7 + boost).U) | (value << boost.U)
 	def increase7to24(value: UInt, boost: Int = 2): UInt = value << 16.U
 	def increase8to24(value: UInt, boost: Int = 2): UInt = value << 15.U
-	def increase9to24(value: UInt, boost: Int = 2): UInt = value << (9.U +& io.sw(6, 5))
+	def increase9to24(value: UInt, boost: Int = 2): UInt = value << (8.U +& io.sw(5, 3))
 	// def increase9to24(value: UInt, boost: Int = 2): UInt = value << 15.U
 
 	val signalL = increase9to24(gameboy.io.outL)
