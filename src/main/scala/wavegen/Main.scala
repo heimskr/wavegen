@@ -79,6 +79,7 @@ class MainROMReader extends Module {
 }
 
 class MainGameBoy extends Module {
+	// implicit val clockFreq   = 100_000_000
 	implicit val clockFreq   = 100_000_000
 	implicit val inSimulator = false
 	val addressWidth = 18
@@ -115,15 +116,16 @@ class MainGameBoy extends Module {
 	gameboy.io.sw    := io.sw
 
 	// def increase7to24(value: UInt, boost: Int = 2): UInt = (value << (14 + boost).U) | (value << (7 + boost).U) | (value << boost.U)
-	def increase7to24(value: UInt, boost: Int = 2): UInt = value << 16.U
-	def increase8to24(value: UInt, boost: Int = 2): UInt = value << 15.U
-	// def increase9to24(value: UInt, boost: Int = 2): UInt = value << (8.U +& io.sw(5, 3))
-	def increase9to24(value: UInt, boost: Int = 2): UInt = value << 11.U
+	def increase7to24(value: UInt): UInt = value << 16.U
+	def increase8to24(value: UInt): UInt = value << 15.U
+	// def increase9to24(value: UInt): UInt = value << (8.U +& io.sw(5, 3))
+	def increase9to24(value: UInt): UInt = value << 11.U
+	// def increase9to16(value: UInt): UInt = value << (1.U + io.sw(0) - io.sw(1))
 
-	val signalL = increase9to24(gameboy.io.outL)
-	val signalR = increase9to24(gameboy.io.outR)
-	io.outL := signalL
-	io.outR := signalR
+	// io.outL := increase9to16(gameboy.io.outL)
+	// io.outR := increase9to16(gameboy.io.outR)
+	io.outL := increase9to24(gameboy.io.outL)
+	io.outR := increase9to24(gameboy.io.outR)
 	io.led  := gameboy.io.leds
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom
@@ -136,7 +138,8 @@ class MainGameBoy extends Module {
 
 object MainRun extends scala.App {
 	// (new ChiselStage).emitVerilog(new Main,  args)
-	(new ChiselStage).emitVerilog(new MainGameBoy,  args)
+	(new ChiselStage).emitVerilog(new MainGameBoy, args)
+	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
 	// (new ChiselStage).emitVerilog(new MainROMReader, args)
 	// (new ChiselStage).emitVerilog(new Debouncer(5), args)
 }

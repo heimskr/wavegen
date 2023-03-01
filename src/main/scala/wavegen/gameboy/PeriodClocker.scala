@@ -6,25 +6,16 @@ import chisel3.util._
 class PeriodClocker(width: Int = 16) extends Module {
 	val io = IO(new Bundle {
 		val tickIn  = Input(Bool())
-		val period  = Flipped(Valid(UInt(width.W)))
+		val period  = Input(UInt(width.W))
 		val tickOut = Output(Bool())
 	})
 
-	val periodReg = RegInit(0.U(width.W))
-	val counter   = RegInit(0.U(width.W))
-
-	when (io.period.valid && io.period.bits =/= periodReg) {
-		when (io.period.bits <= counter) {
-			counter := 0.U
-		}
-
-		periodReg := io.period.bits
-	}
+	val counter = RegInit(0.U(width.W))
 
 	io.tickOut := false.B
 
-	when (io.tickIn && 0.U < periodReg) {
-		when (counter >= periodReg - 1.U) {
+	when (io.tickIn) {
+		when (io.period - 1.U <= counter) {
 			counter    := 0.U
 			io.tickOut := true.B
 		} .otherwise {

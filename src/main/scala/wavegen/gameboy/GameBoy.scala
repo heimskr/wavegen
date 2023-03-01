@@ -37,7 +37,8 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel4     = Module(new Channel4)
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
-	cpuClocker.io.enable := !io.sw(0) ^ io.buttonD
+	// cpuClocker.io.enable := !io.sw(0) ^ io.buttonD
+	cpuClocker.io.enable := true.B
 	val cpuTick = cpuClocker.io.tick
 
 	sequencer.io.tick := cpuTick

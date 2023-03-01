@@ -36,9 +36,8 @@ class Channel2 extends Module {
 	val waveforms = VecInit(Seq("b00000001".U, "b00000011".U, "b00001111".U, "b11111100".U))
 
 	val periodClocker = Module(new PeriodClocker)
-	periodClocker.io.tickIn       := io.tick
-	periodClocker.io.period.bits  := (2048.U - frequency) << 2.U
-	periodClocker.io.period.valid := true.B
+	periodClocker.io.tickIn := io.tick
+	periodClocker.io.period := (2048.U - frequency) << 2.U
 
 	val squareGen = Module(new SquareGenExternal(1, 8))
 	squareGen.io.tick := periodClocker.io.tickOut

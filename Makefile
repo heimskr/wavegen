@@ -8,6 +8,7 @@ test:
 	# sbt "testOnly *DividerTests"
 
 copy:
-	# sbt run && cp Main.v $(ELSEWHERE)/Main.v && cp Debouncer.v $(ELSEWHERE)/Debouncer.v
-	sbt run && cp MainGameBoy.v $(ELSEWHERE)/Main.v && cp Debouncer.v $(ELSEWHERE)/Debouncer.v
-	# sbt run && cp MainROMReader.v $(ELSEWHERE)/Main.v && cp Debouncer.v $(ELSEWHERE)/Debouncer.v
+	sbt run \
+		&& cp MainGameBoy.v $(ELSEWHERE)/Main.v \
+		&& cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v \
+		&& sed -i '1s/^/`default_nettype wire\n/' $(ELSEWHERE)/ImageOutput.v

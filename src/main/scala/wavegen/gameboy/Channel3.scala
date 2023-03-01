@@ -26,9 +26,8 @@ class Channel3(val instant: Boolean) extends Module {
 	lengthCounter.io.loadValue := lengthLoad
 
 	val periodClocker = Module(new PeriodClocker)
-	periodClocker.io.tickIn       := io.tick
-	periodClocker.io.period.valid := true.B
-	periodClocker.io.period.bits  := (2048.U - wavelength) << 1.U
+	periodClocker.io.tickIn := io.tick
+	periodClocker.io.period := (2048.U - wavelength) << 1.U
 
 	io.out := 0.U
 
