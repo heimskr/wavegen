@@ -241,19 +241,9 @@ logic [5:0] control_data = 6'd0;
 logic [11:0] data_island_data = 12'd0;
 
 logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word [1:0];
-logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word_stored0 [3:0];
-logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word_stored1 [3:0];
 
 always_ff @(posedge clk_pixel) begin
-    audio_sample_word_stored0[0] <= audio_sample_word_in[0];
-    audio_sample_word_stored1[0] <= audio_sample_word_in[1];
-    audio_sample_word_stored0[1] <= audio_sample_word_stored0[0];
-    audio_sample_word_stored1[1] <= audio_sample_word_stored1[0];
-    audio_sample_word_stored0[2] <= audio_sample_word_stored0[1];
-    audio_sample_word_stored1[2] <= audio_sample_word_stored1[1];
-    audio_sample_word_stored0[3] <= audio_sample_word_stored0[2];
-    audio_sample_word_stored1[3] <= audio_sample_word_stored1[2];
-    audio_sample_word <= {audio_sample_word_stored1[3], audio_sample_word_stored0[3]};
+    audio_sample_word <= audio_sample_word_in;
 end
 
 generate

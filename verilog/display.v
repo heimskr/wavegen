@@ -120,21 +120,14 @@ module Display (
 
 	wire clk_audio;
 
-	reg [11:0] counter = 1'd0;
-	always @(posedge clk) begin
-		counter <= counter == 12'd2268 ? 1'd0 : counter + 1'd1;
-	end
-
-	// Magic value to turn the 100 MHz clk to 44.1 kHz.
-	assign clk_audio = pix_clk && counter == 12'd2268;
-
-	reg [23:0] storedL;
-	reg [23:0] storedR;
-
+	reg [10:0] counter = 1'd0;
 	always @(posedge pix_clk) begin
-		storedL <= audioL;
-		storedR <= audioR;
+		counter <= counter == 11'd1683 ? 1'd0 : counter + 1'd1;
+		// counter <= counter == 12'd2268 ? 1'd0 : counter + 1'd1;
+		// counter <= counter == 14'd8417 ? 1'd0 : counter + 1'd1;
 	end
+
+	assign clk_audio = pix_clk && counter == 11'd1683;
 
 	hdmi #(
 		.VIDEO_ID_CODE(4),
@@ -146,7 +139,7 @@ module Display (
 		.clk_audio(clk_audio),
 		.reset(!rst_n),
 		.rgb({red, green, blue}),
-		.audio_sample_word_in({storedL, storedR}),
+		.audio_sample_word_in({audioL, audioR}),
 		.tmds({tmds_ch2_serial, tmds_ch1_serial, tmds_ch0_serial}),
 		.tmds_clock(tmds_chc_serial),
 		.cx(cx),
