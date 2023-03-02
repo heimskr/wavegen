@@ -75,14 +75,23 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	channel4.io.envelopeTick := sequencer.io.envelope
 	channel4.io.lengthTick   := sequencer.io.lengthCounter
 
+	val channel1Stored = Reg(UInt(4.W))
+	val channel2Stored = Reg(UInt(4.W))
+	val channel3Stored = Reg(UInt(4.W))
+	val channel4Stored = Reg(UInt(4.W))
+	channel1Stored := channel1.io.out
+	channel2Stored := channel2.io.out
+	channel3Stored := channel3.io.out
+	channel4Stored := channel4.io.out
+
 	// io.leds := io.sw
 	io.leds := stateMachine.io.state
 
-	val channels = VecInit(channel1.io.out, channel2.io.out, channel3.io.out, channel4.io.out)
-	val storedChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
+	val channels    = VecInit(channel1Stored, channel2Stored, channel3Stored, channel4Stored)
+	val oldChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
 
 	val mixer = Module(new ChannelMixer(4))
-	mixer.io.in.valid := !(channels === storedChannels)
+	mixer.io.in.valid := !(channels === oldChannels)
 	mixer.io.in.bits  := channels
 	mixer.io.nr50     := registers.NR50
 	mixer.io.nr51     := registers.NR51
@@ -95,5 +104,5 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		io.outR := 0.U
 	}
 
-	storedChannels := channels
+	oldChannels := channels
 }
