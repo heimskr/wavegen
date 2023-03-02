@@ -26,11 +26,13 @@ class ImageOutput extends Module {
 
 	val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
 
+	val adjustedHue = ((hue - (io.y >> 2.U)) << 1.U)(7, 0)
+
 	val region = RegInit(0.U(3.W))
-	region := hue / 43.U
+	region := adjustedHue / 43.U
 
 	val remainder = RegInit(0.U(9.W))
-	remainder := (hue - (region * 43.U)) * 6.U
+	remainder := (adjustedHue - (region * 43.U)) * 6.U
 
 	val v = 255.U
 	val p = 0.U

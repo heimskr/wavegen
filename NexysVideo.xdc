@@ -11,14 +11,7 @@ create_clock -period 10.000 -name sys_clk_pin -waveform {0.000 5.000} -add [get_
 
 set_multicycle_path -start -setup -from [get_clocks sys_clk_pin] -to [get_clocks clk_pix1_clk_wiz_hdmi] 2
 set_multicycle_path -start -hold  -from [get_clocks sys_clk_pin] -to [get_clocks clk_pix1_clk_wiz_hdmi] 1
-# set_multicycle_path -start -setup -from [get_clocks clk_pix1_clk_wiz_hdmi] -to [get_clocks sys_clk_pin] 2
-# set_multicycle_path -start -hold  -from [get_clocks clk_pix1_clk_wiz_hdmi] -to [get_clocks sys_clk_pin] 1
-# set_multicycle_path -start -setup -from [get_clocks sys_clk_pin] -to [get_clocks clk_pix5_clk_wiz_hdmi] 2
-# set_multicycle_path -start -hold  -from [get_clocks sys_clk_pin] -to [get_clocks clk_pix5_clk_wiz_hdmi] 1
-# set_multicycle_path -start -setup -from [get_clocks clk_pix5_clk_wiz_hdmi] -to [get_clocks clk_pix1_clk_wiz_hdmi] 2
-# set_multicycle_path -start -hold  -from [get_clocks clk_pix5_clk_wiz_hdmi] -to [get_clocks clk_pix1_clk_wiz_hdmi] 1
-
-# set_multicycle_path 2 -setup -from [get_clocks sys_clk_pin] -to [get_clocks clk_pix1_clk_wiz_hdmi]
+set_clock_groups -asynchronous -group clk30_clk_wiz_0 -group clk_pix1_clk_wiz_hdmi
 
 # set_output_delay -clock [get_clocks sys_clk_pin] -min 0.0   [get_ports led[0]]
 # set_output_delay -clock [get_clocks sys_clk_pin] -max 100.0 [get_ports led[0]]
