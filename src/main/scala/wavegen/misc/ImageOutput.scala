@@ -57,7 +57,7 @@ class ImageOutput extends Module {
 	                      "hf2ddd7".U, "hf8f8f8".U)
 
 	// Might mess up the top left pixel.
-	io.addr := (x + y * imageWidth.S + 1.S).asUInt
+	io.addr := (x + y * imageWidth.S).asUInt
 
 	when (0.S <= x && x < imageWidth.S && 0.S <= y && y < imageHeight.S) {
 		val color = palette(io.rom)
