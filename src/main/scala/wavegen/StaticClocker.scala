@@ -3,7 +3,9 @@ package wavegen
 import chisel3._
 import chisel3.util._
 
-class StaticClocker(wantedFrequency: Int, baseClockFreq: Int) extends Module {
+class StaticClocker(wantedFrequency: Int, baseClockFreq: Int, moduleName: String = "StaticClocker") extends Module {
+	override val desiredName = moduleName
+
 	val period  = baseClockFreq / wantedFrequency
 	val width = log2Ceil(period + 1)
 
