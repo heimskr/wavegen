@@ -35,12 +35,13 @@ class Channel4 extends Module {
 	lengthCounter.io.enable    := lengthEnable
 	lengthCounter.io.loadValue := lengthLoad
 
-	val periodClocker = Module(new PeriodClocker)
+	val periodClocker = Module(new StoredPeriodClocker(14))
 	periodClocker.io.tickIn := io.tick
+	periodClocker.io.period.valid := true.B
 	when (clockDivider === 0.U) {
-		periodClocker.io.period := 1.U << (clockShift + 3.U) // 16(0.5 * 2^s) = 8 * (2^s) = 2^(s+3) = 1 << (s+3)
+		periodClocker.io.period.bits := 1.U << (clockShift + 3.U) // 16(0.5 * 2^s) = 8 * (2^s) = 2^(s+3) = 1 << (s+3)
 	} .otherwise {
-		periodClocker.io.period := clockDivider << (clockShift + 4.U) // 16(r * 2^s) = r << s << 4 = r << (s + 4)
+		periodClocker.io.period.bits := clockDivider << (clockShift + 4.U) // 16(r * 2^s) = r << s << 4 = r << (s + 4)
 	}
 
 	val lfsr = RegInit(1.U(15.W))

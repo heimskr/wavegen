@@ -54,9 +54,10 @@ class Channel1 extends Module {
 		latestFrequency := Cat(sweeper.io.nr14Out.bits(2, 0), sweeper.io.nr13Out.bits)
 	}
 
-	val sweepClocker = Module(new PeriodClocker(14))
-	sweepClocker.io.tickIn := io.tick
-	sweepClocker.io.period := (2048.U - latestFrequency) << 2.U
+	val sweepClocker = Module(new StoredPeriodClocker(14))
+	sweepClocker.io.tickIn       := io.tick
+	sweepClocker.io.period.bits  := (2048.U - latestFrequency) << 2.U
+	sweepClocker.io.period.valid := true.B
 
 	val squareGen = Module(new SquareGenExternal(1, 8))
 	squareGen.io.tick := sweepClocker.io.tickOut
