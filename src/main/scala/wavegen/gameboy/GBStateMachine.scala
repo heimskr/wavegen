@@ -243,6 +243,10 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 					io.info := 22.U
 					waitCounter := waitCounter - 1.U
 				}
+			} .elsewhen (state === sDone && io.start) {
+				registers := 0.U.asTypeOf(GBRegisters())
+				errorInfo := 0.U
+				state     := sIdle
 			}
 		} .otherwise {
 			io.info := 2.U

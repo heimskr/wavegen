@@ -13,3 +13,6 @@ copy:
 		&& cp Debouncer.v   $(ELSEWHERE)/Debouncer.v   \
 		&& cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v \
 		&& sed -i '1s/^/`default_nettype wire\n/' $(ELSEWHERE)/ImageOutput.v
+
+slides:
+	textrom < slides.txt | makecoe > slides.coe
