@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 
 class Channel3(val instant: Boolean) extends Module {
-	val io = IO(new ChannelIO {
+	val io = IO(new GBChannelIO {
 		val lengthTick = Input(Bool())
 		val channelOn  = Output(Bool())
 	})

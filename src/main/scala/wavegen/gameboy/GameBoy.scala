@@ -30,7 +30,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	})
 
 	val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
-	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
+	val stateMachine = Module(new GBStateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1)
 	val channel2     = Module(new Channel2)
 	val channel3     = Module(new Channel3(true))

@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 
 class Channel2 extends Module {
-	val io = IO(new ChannelIO {
+	val io = IO(new GBChannelIO {
 		val envelopeTick = Input(Bool())
 		val lengthTick   = Input(Bool())
 		val freq         = Output(UInt(11.W))

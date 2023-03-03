@@ -3,7 +3,7 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boolean) extends Module {
+class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
 		val start           = Input(Bool())
 		val tick            = Input(Bool())
@@ -13,7 +13,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 		val errorInfo       = Output(UInt(8.W))
 		val errorInfo2      = Output(UInt(16.W))
 		val errorInfo3      = Output(UInt(8.W))
-		val registers       = Output(Registers())
+		val registers       = Output(GBRegisters())
 		val addr            = Output(UInt(addressWidth.W))
 		val channelsEnabled = Output(UInt(4.W))
 		val info            = Output(UInt(8.W))
@@ -137,7 +137,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 	val state       = RegInit(sIdle)
 	val error       = RegInit(eNone)
 	val pointer     = RegInit(0.U(addressWidth.W))
-	val registers   = RegInit(0.U.asTypeOf(Registers()))
+	val registers   = RegInit(0.U.asTypeOf(GBRegisters()))
 	val waitCounter = RegInit(0.U(32.W))
 	val errorInfo   = RegInit(0.U(8.W))
 	val errorInfo2  = RegInit(0.U(16.W))
@@ -218,7 +218,7 @@ class StateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boole
 					is ("h92".U) {
 						io.info   := 15.U
 						state     := sDone
-						registers := 0.U.asTypeOf(Registers())
+						registers := 0.U.asTypeOf(GBRegisters())
 						failed    := false.B
 						errorInfo := "b01010101".U
 						printf(cf"Finishing with 0x92 around $pointer.\n")

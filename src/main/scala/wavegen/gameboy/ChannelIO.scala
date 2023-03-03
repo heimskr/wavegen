@@ -3,8 +3,8 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class ChannelIO extends Bundle {
+class GBChannelIO extends Bundle {
 	val tick      = Input(Bool())
-	val registers = Input(Registers())
+	val registers = Input(GBRegisters())
 	val out       = Output(UInt(4.W))
 }

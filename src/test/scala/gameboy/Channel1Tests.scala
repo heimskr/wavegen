@@ -30,7 +30,7 @@ class Channel1TestModule(implicit clockFreq: Int) extends Module {
 	val clocker = Module(new StaticClocker(1_000_000, clockFreq))
 	clocker.io.enable := true.B
 
-	val channel1 = Module(new Channel1(500_000))
+	val channel1 = Module(new Channel1)
 	channel1.io.tick := clocker.io.tick
 	channel1.io.registers := registers
 	io.out := channel1.io.out

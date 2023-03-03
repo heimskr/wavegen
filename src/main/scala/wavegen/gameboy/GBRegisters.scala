@@ -3,7 +3,7 @@ package wavegen.gameboy
 import chisel3._
 import chisel3.util._
 
-class Registers extends Bundle {
+class GBRegisters extends Bundle {
 	val NR10 = UInt(8.W)
 	val NR11 = UInt(8.W)
 	val NR12 = UInt(8.W)
@@ -43,6 +43,6 @@ class Registers extends Bundle {
 	val WTF  = UInt(8.W)
 }
 
-object Registers {
-	def apply() = new Registers
+object GBRegisters {
+	def apply() = new GBRegisters
 }
