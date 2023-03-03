@@ -10,6 +10,7 @@ class ImageOutput extends Module {
 	val io = IO(new Bundle {
 		val x       = Input(UInt(11.W))
 		val y       = Input(UInt(10.W))
+		val sw      = Input(UInt(8.W))
 		val rom     = Input(UInt(4.W))
 		val buttonL = Input(Bool())
 		val buttonR = Input(Bool())

@@ -55,21 +55,18 @@ module top (
 
 	assign ac_mclk = clk12MHz;
 
-	// wire [4:0] buttons_db;
 	wire dbu;
 	wire dbr;
 	wire dbd;
 	wire dbl;
 	wire dbc;
 
-	// debounce dbuttonsv (
-	// 	.clock(clk),
-	// 	.reset(cpu_resetn),
-	// 	.button({btnu, btnr, btnd, btnl, btnc}),
-	// 	.out({dbu, dbr, dbd, dbl, dbc})
-	// );
-
-
+	audio_init initialize_audio (
+		.clk(clk30MHz),
+		.rst(!cpu_resetn),
+		.sda(sda),
+		.scl(scl)
+	);
 
 	Debouncer dbuttons (
 		.clock(clk),
@@ -85,7 +82,6 @@ module top (
 		.io_out_3(dbd),
 		.io_out_4(dbc)
 	);
-
 
 	wire [17:0] rom_addr;
 	wire [23:0] rom_out;
@@ -115,6 +111,24 @@ module top (
 		.io_rom(rom_out)
 	);
 
+	i2s_ctl audio_inout (
+		.CLK_I(clk),    // Sys clk
+		.RST_I(!cpu_resetn),    // Sys rst
+		.EN_TX_I(1),  // Transmit Enable (push sound data into chip)
+		.EN_RX_I(0), // Receive enable (pull sound data out of chip)
+		// .FS_I(4'b0101), // Sampling rate selector
+		.FS_I(4'b0000), // Sampling rate selector
+		.MM_I(0),     // Audio controller Master mode select
+		.D_L_I(out_audioL),    // Left channel data input from mix (mixed audio output)
+		.D_R_I(out_audioR),   // Right channel data input from mix
+		.D_L_O(in_audioL),    // Left channel data (input from mic input)
+		.D_R_O(in_audioR),    // Right channel data (input from mic input)
+		.BCLK_O(ac_bclk),   // serial CLK
+		.LRCLK_O(ac_lrclk),  // channel CLK
+		.SDATA_O(ac_dac_sdata),  // Output serial data
+		.SDATA_I(ac_adc_sdata)   // Input serial data
+	);
+
 	reg [23:0] storedL;
 	reg [23:0] storedR;
 
@@ -127,6 +141,7 @@ module top (
 		.clk(clk),
 		.clk_pix1(clk_pix1),
 		.clk_pix5(clk_pix5),
+		.sw(sw),
 		.buttonL(dbl),
 		.buttonR(dbr),
 		.clk30(clk30MHz),

@@ -36,7 +36,7 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	font.io.x := (io.x >> scaleUp.U)(2, 0) - 1.U // Why is the - 1 necessary?
 	font.io.y := (y >> scaleUp.U)(2, 0)
 
-	val color = Mux(yOffset <= io.y && font.io.out, 0.U(8.W), 255.U(8.W))
+	val color = Mux(yOffset <= io.y && font.io.out, 255.U(8.W), 0.U(8.W))
 	io.red   := color
 	io.green := color
 	io.blue  := color
