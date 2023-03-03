@@ -19,7 +19,6 @@ class ImageOutput extends Module {
 		val blue    = Output(UInt(8.W))
 	})
 
-
 	val slideshow = Module(new wavegen.presentation.Slideshow)
 	val slide = RegInit(0.U(8.W))
 
@@ -30,9 +29,11 @@ class ImageOutput extends Module {
 	val leftOn  = RegInit(false.B)
 	val rightOn = RegInit(false.B)
 
+	val maxSlides = 10
+
 	when (io.buttonL) {
 		when (!leftOn) {
-			slide := slide - 1.U
+			slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
 			leftOn := true.B
 		}
 	} .otherwise {
@@ -41,7 +42,7 @@ class ImageOutput extends Module {
 
 	when (io.buttonR) {
 		when (!rightOn) {
-			slide := slide + 1.U
+			slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
 			rightOn := true.B
 		}
 	} .otherwise {

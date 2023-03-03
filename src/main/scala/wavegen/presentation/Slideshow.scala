@@ -21,8 +21,9 @@ class Slideshow(slideCount: Int = 16) extends Module {
 
 	val scaleUp = 2
 
+	val yOffset = (11 << scaleUp).U
 	val x = io.x
-	val y = io.y + (11 << scaleUp).U
+	val y = io.y - yOffset
 
 	// 3 bits because of characters being 8x8 pixels, 2 bits to scale up the text 4x in each dimension
 	val cx = io.x >> (3 + scaleUp).U
@@ -35,7 +36,7 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	font.io.x := (io.x >> scaleUp.U)(2, 0) - 1.U // Why is the - 1 necessary?
 	font.io.y := (y >> scaleUp.U)(2, 0)
 
-	val color = Mux(font.io.out, 0.U(8.W), 255.U(8.W))
+	val color = Mux(yOffset <= io.y && font.io.out, 0.U(8.W), 255.U(8.W))
 	io.red   := color
 	io.green := color
 	io.blue  := color

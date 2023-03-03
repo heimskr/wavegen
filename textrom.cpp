@@ -37,9 +37,8 @@ int main(int argc, char **argv) {
 
 	auto pad = [&] {
 		const size_t to_add = (HEIGHT - (lines.size() % HEIGHT)) % HEIGHT;
-		for (size_t i = 0; i < to_add; ++i) {
+		for (size_t i = 0; i < to_add; ++i)
 			lines.push_back(empty);
-		}
 	};
 
 	auto push = [&] {
@@ -48,12 +47,17 @@ int main(int argc, char **argv) {
 		pos = 0;
 	};
 
+	size_t timeout = 0;
+
 	for (const char ch: input) {
-		if (ch == '\n') {
-			push();
-		} else if (ch == '`') {
+		if (ch == '#') {
 			push();
 			pad();
+			timeout = 2;
+		} else if (0 < timeout) {
+			--timeout;
+		} else if (ch == '\n') {
+			push();
 		} else if (pos == WIDTH) {
 			throw std::runtime_error("Line too long");
 		} else {
