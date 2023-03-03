@@ -119,13 +119,36 @@ class MainGameBoy extends Module {
 	def increase7to24(value: UInt): UInt = value << 16.U
 	def increase8to24(value: UInt): UInt = value << 15.U
 	// def increase9to24(value: UInt): UInt = value << (8.U +& io.sw(5, 3))
-	def increase9to24(value: UInt): UInt = value << 11.U
+	// def increase9to24(value: UInt): UInt = value << 11.U
 	// def increase9to16(value: UInt): UInt = value << (1.U + io.sw(0) - io.sw(1))
+	def increase9to24(value: UInt): UInt = value << 9.U
+
+	val multiplier = RegInit(4.U(4.W))
+	val lastU = RegInit(false.B)
+	val lastD = RegInit(false.B)
+
+	when (io.buttonU) {
+		when (!lastU) {
+			multiplier := multiplier + 1.U
+			lastU := true.B
+		}
+	} .otherwise {
+		lastU := false.B
+	}
+
+	when (io.buttonD) {
+		when (!lastD) {
+			multiplier := multiplier - 1.U
+			lastD := true.B
+		}
+	} .otherwise {
+		lastD := false.B
+	}
 
 	// io.outL := increase9to16(gameboy.io.outL)
 	// io.outR := increase9to16(gameboy.io.outR)
-	io.outL := increase9to24(gameboy.io.outL) * io.sw(3, 0)
-	io.outR := increase9to24(gameboy.io.outR) * io.sw(3, 0)
+	io.outL := increase9to24(gameboy.io.outL) * multiplier
+	io.outR := increase9to24(gameboy.io.outR) * multiplier
 	io.led  := gameboy.io.leds
 	// io.led  := Cat(0.U(3.W), io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC)
 	io.addr := gameboy.io.addr
