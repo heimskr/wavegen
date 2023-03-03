@@ -9,6 +9,9 @@
 int main(int argc, char **argv) {
 	constexpr size_t BUFFER_SIZE = 1024;
 
+	constexpr size_t WIDTH  = 40;
+	constexpr size_t HEIGHT = 22;
+
 	std::freopen(nullptr, "rb", stdin);
 
 	if (std::ferror(stdin))
@@ -24,16 +27,16 @@ int main(int argc, char **argv) {
 		input.insert(input.end(), buf.data(), buf.data() + len);
 	}
 
-	std::array<char, 80> arr;
+	std::array<char, WIDTH> arr;
 	std::vector<decltype(arr)> lines;
 
 	arr.fill(' ');
 	size_t pos = 0;
 
-	std::array<char, 80> empty = arr;
+	std::array<char, WIDTH> empty = arr;
 
 	auto pad = [&] {
-		const size_t to_add = (45 - (lines.size() % 45)) % 45;
+		const size_t to_add = (HEIGHT - (lines.size() % HEIGHT)) % HEIGHT;
 		for (size_t i = 0; i < to_add; ++i) {
 			lines.push_back(empty);
 		}
@@ -51,7 +54,7 @@ int main(int argc, char **argv) {
 		} else if (ch == '`') {
 			push();
 			pad();
-		} else if (pos == 80) {
+		} else if (pos == WIDTH) {
 			throw std::runtime_error("Line too long");
 		} else {
 			arr[pos++] = ch;

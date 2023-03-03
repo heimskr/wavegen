@@ -16,19 +16,24 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	val rom  = Module(new TextROM)
 	val font = Module(new Font)
 
-	val width  = 80
-	val height = 45
+	val width  = 40
+	val height = 22
 
-	// 3 bits because of characters being 8x8 pixels, 1 bit to scale up the text 2x in each dimension
-	val cx = io.x >> 4.U
-	val cy = io.y >> 4.U
+	val scaleUp = 2
+
+	val x = io.x
+	val y = io.y + (11 << scaleUp).U
+
+	// 3 bits because of characters being 8x8 pixels, 2 bits to scale up the text 4x in each dimension
+	val cx = io.x >> (3 + scaleUp).U
+	val cy = y >> (3 + scaleUp).U
 	val char = rom.io.douta
 
 	rom.io.clka := clock
 	rom.io.addra := io.slide * (width * height).U + cy * width.U + cx
 	font.io.char := char
-	font.io.x := (io.x >> 1.U)(2, 0)
-	font.io.y := (io.y >> 1.U)(2, 0)
+	font.io.x := (io.x >> scaleUp.U)(2, 0) - 1.U // Why is the - 1 necessary?
+	font.io.y := (y >> scaleUp.U)(2, 0)
 
 	val color = Mux(font.io.out, 0.U(8.W), 255.U(8.W))
 	io.red   := color
