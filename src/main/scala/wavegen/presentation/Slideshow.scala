@@ -30,7 +30,7 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	font.io.x := (io.x >> 1.U)(2, 0)
 	font.io.y := (io.y >> 1.U)(2, 0)
 
-	val color = Mux(font.io.out, 255.U(8.W), 0.U(8.W))
+	val color = Mux(font.io.out, 0.U(8.W), 255.U(8.W))
 	io.red   := color
 	io.green := color
 	io.blue  := color

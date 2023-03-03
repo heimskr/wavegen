@@ -73,7 +73,7 @@ module top (
 
 	Debouncer dbuttons (
 		.clock(clk),
-		.reset(cpu_resetn),
+		.reset(!cpu_resetn),
 		.io_in_0(btnu),
 		.io_in_1(btnr),
 		.io_in_2(btnl),

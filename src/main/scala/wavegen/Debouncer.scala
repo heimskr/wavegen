@@ -9,6 +9,7 @@ class PBDebouncer extends BlackBox {
 	val io = IO(new Bundle {
 		val clk   = Input(Clock())
 		val btn   = Input(Bool())
+		val rst   = Input(Reset())
 		val state = Output(Bool())
 		val down  = Output(Bool())
 		val up    = Output(Bool())
@@ -24,6 +25,7 @@ class Debouncer(buttonCount: Int = 1) extends Module {
 	io.in.zipWithIndex.foreach { case (btn, i) =>
 		val pb = Module(new PBDebouncer)
 		pb.io.clk := clock
+		pb.io.rst := reset
 		pb.io.btn := !btn
 		io.out(i) := pb.io.state
 	}

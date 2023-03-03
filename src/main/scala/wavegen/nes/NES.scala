@@ -4,13 +4,13 @@ import wavegen._
 import chisel3._
 import chisel3.util._
 
-object GameBoy {
+object NES {
 	val cpuFreq = 1_789_772
 	val simulationFreq = 25_000_000
 }
 
 class NES(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
-	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
+	val slowFreq = if (inSimulator) NES.simulationFreq else NES.cpuFreq
 
 	val io = IO(new Bundle {
 		val start   = Input(Bool())
