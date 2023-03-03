@@ -20,7 +20,7 @@ class Channel1TestModule(implicit clockFreq: Int) extends Module {
 		val NR14 = Input(UInt(8.W))
 	})
 
-	val registers = RegInit(0.U.asTypeOf(Registers()))
+	val registers = RegInit(0.U.asTypeOf(GBRegisters()))
 	registers.NR10 := io.NR10
 	registers.NR11 := io.NR11
 	registers.NR12 := io.NR12

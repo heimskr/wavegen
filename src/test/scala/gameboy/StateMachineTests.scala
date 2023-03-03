@@ -24,7 +24,7 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 		val error      = Output(UInt(4.W))
 		val errorInfo  = Output(UInt(8.W))
 		val errorInfo2 = Output(UInt(16.W))
-		val registers  = Output(Registers())
+		val registers  = Output(GBRegisters())
 		val addr       = Output(UInt(18.W))
 	})
 
@@ -32,7 +32,7 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 
 	val addr = RegInit(0.U(18.W))
 
-	val stateMachine = Module(new StateMachine(addressWidth, romWidth))
+	val stateMachine = Module(new GBStateMachine(addressWidth, romWidth))
 	stateMachine.io.start := io.start
 	stateMachine.io.rom   := io.data
 	addr := stateMachine.io.addr

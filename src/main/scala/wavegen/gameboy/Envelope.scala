@@ -18,26 +18,6 @@ class Envelope extends Module {
 	val currentVolume = RegInit(0.U(4.W))
 	val changeEnable  = RegInit(false.B)
 
-	// when (io.tick) {
-	// 	when (io.trigger && io.period =/= 0.U) {
-	// 		currentVolume := io.initialVolume
-
-	// 		when (0.U < periodTimer) {
-	// 			periodTimer := periodTimer - 1.U
-	// 		}
-
-	// 		when (periodTimer === 0.U) {
-	// 			periodTimer := io.period
-
-	// 			when (currentVolume < 15.U && io.rising) {
-	// 				currentVolume := currentVolume + 1.U
-	// 			} .elsewhen (0.U < currentVolume && !io.rising) {
-	// 				currentVolume := currentVolume - 1.U
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	when (io.tick && !io.trigger) {
 		when (periodCounter < io.period - 1.U) {
 			periodCounter := periodCounter + 1.U

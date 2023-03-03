@@ -55,6 +55,38 @@ module top (
 
 	assign ac_mclk = clk12MHz;
 
+	// wire [4:0] buttons_db;
+	wire dbu;
+	wire dbr;
+	wire dbd;
+	wire dbl;
+	wire dbc;
+
+	// debounce dbuttonsv (
+	// 	.clock(clk),
+	// 	.reset(cpu_resetn),
+	// 	.button({btnu, btnr, btnd, btnl, btnc}),
+	// 	.out({dbu, dbr, dbd, dbl, dbc})
+	// );
+
+
+
+	Debouncer dbuttons (
+		.clock(clk),
+		.reset(cpu_resetn),
+		.io_in_0(btnu),
+		.io_in_1(btnr),
+		.io_in_2(btnl),
+		.io_in_3(btnd),
+		.io_in_4(btnc),
+		.io_out_0(dbu),
+		.io_out_1(dbr),
+		.io_out_2(dbl),
+		.io_out_3(dbd),
+		.io_out_4(dbc)
+	);
+
+
 	wire [17:0] rom_addr;
 	wire [23:0] rom_out;
 
@@ -70,11 +102,11 @@ module top (
 	MainGameBoy main_module (
 		.clock(clk),
 		.reset(!cpu_resetn),
-		.io_buttonU(btnu),
-		.io_buttonR(btnr),
-		.io_buttonL(btnl),
-		.io_buttonD(btnd),
-		.io_buttonC(btnc),
+		.io_buttonU(dbu),
+		.io_buttonR(dbr),
+		.io_buttonL(dbl),
+		.io_buttonD(dbd),
+		.io_buttonC(dbc),
 		.io_sw(sw),
 		.io_outL(out_audioL),
 		.io_outR(out_audioR),
@@ -95,6 +127,8 @@ module top (
 		.clk(clk),
 		.clk_pix1(clk_pix1),
 		.clk_pix5(clk_pix5),
+		.buttonL(dbl),
+		.buttonR(dbr),
 		.clk30(clk30MHz),
 		.rst_n(cpu_resetn),
 		.hdmi_tx_cec(hdmi_tx_cec),

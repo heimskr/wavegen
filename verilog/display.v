@@ -5,6 +5,8 @@ module Display (
 	input  wire clk_pix1,
 	input  wire clk_pix5,
 	input  wire clk30,
+	input  wire buttonL,
+	input  wire buttonR,
 	input  wire rst_n,
 	inout  wire hdmi_tx_cec,     // CE control bidirectional
 	input  wire hdmi_tx_hpd,     // hot-plug detect
@@ -45,6 +47,8 @@ module Display (
 		.reset(~rst_n),
 		.io_x(cx),
 		.io_y(cy),
+		.io_buttonL(buttonL),
+		.io_buttonR(buttonR),
 		.io_addr(rom_addr),
 		.io_rom(rom_out),
 		.io_red(red),

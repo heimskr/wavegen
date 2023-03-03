@@ -11,7 +11,7 @@ object GameBoy {
 
 class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
 	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
-	val fsFreq = if (inSimulator) 2048 else GameBoy.cpuFreq
+	val fsFreq   = if (inSimulator) 2048 else GameBoy.cpuFreq
 
 	val io = IO(new Bundle {
 		val start   = Input(Bool())

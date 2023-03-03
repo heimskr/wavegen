@@ -9,6 +9,7 @@ test:
 
 copy:
 	sbt run \
-		&& cp MainGameBoy.v $(ELSEWHERE)/Main.v \
+		&& cp MainGameBoy.v $(ELSEWHERE)/Main.v        \
+		&& cp Debouncer.v   $(ELSEWHERE)/Debouncer.v   \
 		&& cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v \
 		&& sed -i '1s/^/`default_nettype wire\n/' $(ELSEWHERE)/ImageOutput.v
