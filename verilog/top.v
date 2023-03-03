@@ -15,18 +15,18 @@ module top (
 	output ac_dac_sdata,
 	output ac_bclk,
 	output ac_lrclk,
-	inout scl,
-	inout sda,
+	inout  scl,
+	inout  sda,
 	output oled_sclk,
 	output oled_sdin,
 	output oled_vbat,
 	output oled_vdd,
 	output oled_res,
 	output oled_dc,
-    output  hdmi_tx_cec,     // CE control bidirectional
-    input   hdmi_tx_hpd,     // hot-plug detect
-    output  hdmi_tx_rscl,    // DDC bidirectional
-    output  hdmi_tx_rsda,    // DDC bidirectional
+    output hdmi_tx_cec,     // CE control bidirectional
+    input  hdmi_tx_hpd,     // hot-plug detect
+    output hdmi_tx_rscl,    // DDC bidirectional
+    output hdmi_tx_rsda,    // DDC bidirectional
     output hdmi_tx_clk_n,   // HDMI clock differential negative
     output hdmi_tx_clk_p,   // HDMI clock differential positive
     output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
