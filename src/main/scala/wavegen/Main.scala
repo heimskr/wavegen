@@ -124,8 +124,8 @@ class MainGameBoy extends Module {
 
 	// io.outL := increase9to16(gameboy.io.outL)
 	// io.outR := increase9to16(gameboy.io.outR)
-	io.outL := increase9to24(gameboy.io.outL)
-	io.outR := increase9to24(gameboy.io.outR)
+	io.outL := increase9to24(gameboy.io.outL) * io.sw(3, 0)
+	io.outR := increase9to24(gameboy.io.outR) * io.sw(3, 0)
 	io.led  := gameboy.io.leds
 	// io.led  := Cat(0.U(3.W), io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC)
 	io.addr := gameboy.io.addr
