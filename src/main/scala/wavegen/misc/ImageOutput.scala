@@ -12,8 +12,8 @@ class ImageOutput extends Module {
 		val y       = Input(UInt(10.W))
 		val sw      = Input(UInt(8.W))
 		val rom     = Input(UInt(4.W))
-		val buttonL = Input(Bool())
-		val buttonR = Input(Bool())
+		val pulseL = Input(Bool())
+		val pulseR = Input(Bool())
 		val addr    = Output(UInt(15.W))
 		val red     = Output(UInt(8.W))
 		val green   = Output(UInt(8.W))
@@ -30,24 +30,14 @@ class ImageOutput extends Module {
 	val leftOn  = RegInit(false.B)
 	val rightOn = RegInit(false.B)
 
-	val maxSlides = 10
+	val maxSlides = 16
 
-	when (io.buttonL) {
-		when (!leftOn) {
-			slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
-			leftOn := true.B
-		}
-	} .otherwise {
-		leftOn := false.B
+	when (io.pulseL) {
+		slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
 	}
 
-	when (io.buttonR) {
-		when (!rightOn) {
-			slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
-			rightOn := true.B
-		}
-	} .otherwise {
-		rightOn := false.B
+	when (io.pulseR) {
+		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
 	}
 
 	io.addr := 0.U

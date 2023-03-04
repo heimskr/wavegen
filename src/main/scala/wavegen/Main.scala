@@ -86,11 +86,11 @@ class MainGameBoy extends Module {
 	val romWidth = 24
 
 	val io = IO(new Bundle {
-		val buttonU = Input(Bool())
-		val buttonR = Input(Bool())
-		val buttonD = Input(Bool())
-		val buttonL = Input(Bool())
-		val buttonC = Input(Bool())
+		val pulseU = Input(Bool())
+		val pulseR = Input(Bool())
+		val pulseD = Input(Bool())
+		val pulseL = Input(Bool())
+		val pulseC = Input(Bool())
 		val sw      = Input(UInt(8.W))
 		val rom     = Input(UInt(romWidth.W))
 		val outL    = Output(UInt(24.W))
@@ -101,18 +101,8 @@ class MainGameBoy extends Module {
 
 	var centerReg = RegInit(false.B)
 
-	val start = WireDefault(false.B)
-
-	when (io.buttonC && !centerReg) {
-		centerReg := true.B
-		start     := true.B
-	} .otherwise {
-		centerReg := io.buttonC
-		start     := io.buttonC
-	}
-
 	val gameboy = Module(new wavegen.gameboy.GameBoy(addressWidth, romWidth))
-	gameboy.io.start := io.buttonC
+	gameboy.io.start := io.pulseC
 	gameboy.io.sw    := io.sw
 
 	// def increase7to24(value: UInt, boost: Int = 2): UInt = (value << (14 + boost).U) | (value << (7 + boost).U) | (value << boost.U)
@@ -128,26 +118,12 @@ class MainGameBoy extends Module {
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
-	when (io.buttonU) {
-		when (!lastU) {
-			when (multiplier =/= ((1 << multiplierWidth) - 1).U) {
-				multiplier := multiplier + 1.U
-			}
-			lastU := true.B
-		}
-	} .otherwise {
-		lastU := false.B
+	when (io.pulseC && multiplier =/= ((1 << multiplierWidth) - 1).U) {
+		multiplier := multiplier + 1.U
 	}
 
-	when (io.buttonD) {
-		when (!lastD) {
-			when (multiplier =/= 0.U) {
-				multiplier := multiplier - 1.U
-			}
-			lastD := true.B
-		}
-	} .otherwise {
-		lastD := false.B
+	when (io.pulseD && multiplier =/= 0.U) {
+		multiplier := multiplier - 1.U
 	}
 
 	// io.outL := increase9to16(gameboy.io.outL)
@@ -158,11 +134,11 @@ class MainGameBoy extends Module {
 	// io.led  := Cat(0.U(3.W), io.buttonU, io.buttonR, io.buttonD, io.buttonL, io.buttonC)
 	io.addr := gameboy.io.addr
 	gameboy.io.rom := io.rom
-	gameboy.io.buttonD := io.buttonD
-	gameboy.io.buttonU := io.buttonU
-	gameboy.io.buttonL := io.buttonL
-	gameboy.io.buttonR := io.buttonR
-	gameboy.io.buttonC := io.buttonC
+	gameboy.io.pulseD := io.pulseD
+	gameboy.io.pulseU := io.pulseU
+	gameboy.io.pulseL := io.pulseL
+	gameboy.io.pulseR := io.pulseR
+	gameboy.io.pulseC := io.pulseC
 }
 
 object MainRun extends scala.App {

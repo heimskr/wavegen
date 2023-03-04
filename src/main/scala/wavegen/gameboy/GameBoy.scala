@@ -17,11 +17,11 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 		val start   = Input(Bool())
 		val rom     = Input(UInt(romWidth.W))
 		val sw      = Input(UInt(8.W))
-		val buttonU = Input(Bool())
-		val buttonR = Input(Bool())
-		val buttonD = Input(Bool())
-		val buttonL = Input(Bool())
-		val buttonC = Input(Bool())
+		val pulseU  = Input(Bool())
+		val pulseR  = Input(Bool())
+		val pulseD  = Input(Bool())
+		val pulseL  = Input(Bool())
+		val pulseC  = Input(Bool())
 		val outL    = Output(UInt(9.W))
 		val outR    = Output(UInt(9.W))
 		val addr    = Output(UInt(addressWidth.W))
@@ -37,7 +37,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel4     = Module(new Channel4)
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
-	// cpuClocker.io.enable := !io.sw(0) ^ io.buttonD
+	// cpuClocker.io.enable := !io.sw(0) ^ io.pulseD
 	cpuClocker.io.enable := true.B
 	val cpuTick = cpuClocker.io.tick
 

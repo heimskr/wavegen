@@ -1,10 +1,8 @@
                FPGABOY :)
-
-     Because GameBoy music is neat.
-
              _____________
             | _"_________ |
             ||.---------.||
+            |||         |||
             |||         |||
             |||         |||
             |||         |||
@@ -13,6 +11,8 @@
             | ||  ^^^  () |
             |[  ]    ()   |
             | ||          |
+            |             |
+            |             |
             |     _ _     |
             |          :::|
             |         .::`/
@@ -67,7 +67,7 @@
 
                 Testing
 
- - Testing? Never heard of it #yolo
+ - Testing? Never heard of it, yolo
 
  - test:main ratio: ~25%
 
@@ -102,8 +102,16 @@
 
               Game Boy APU
 
- - Same sound chip in Game Boy and Game
-   Boy Color
+ - Game Boy and Game Boy Color use the
+   same sound chip
 
- - Four channels: two squarewaves, one
-   wavetable and one noise channel
+ - Channel 1: square wave with frequency
+   sweeper, envelope, length counter and
+   duty cycler
+
+ - Channel 2: channel 1 without sweeper
+
+ - Channel 3: output arbitrary waveforms
+   from registers
+
+ - Channel 4: LFSR-based noise generator

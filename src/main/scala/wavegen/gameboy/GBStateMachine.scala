@@ -131,10 +131,11 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		}
 	}
 
-	val sIdle :: sGetOpcode :: sOperate :: sWaiting :: sDone :: Nil = Enum(5)
+	val sIdle :: sGetOpcode :: sOperate :: sWaiting :: sDone :: sPaused :: Nil = Enum(6)
 	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
 	val state       = RegInit(sIdle)
+	val pausedState = RegInit(sIdle)
 	val error       = RegInit(eNone)
 	val pointer     = RegInit(0.U(addressWidth.W))
 	val registers   = RegInit(0.U.asTypeOf(GBRegisters()))
@@ -148,6 +149,8 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 	val tempByte    = RegInit(0.U(8.W))
 	val subpointer  = RegInit(0.U(3.W))
 
+	val pausedRegisters = Reg(GBRegisters())
+
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
 	def advance(): Unit = { pointer := pointer + 1.U }
 
@@ -157,7 +160,22 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 
 	io.info := 1.U
 
-	when (!io.tick) {
+	when (io.start) {
+		when (state === sIdle) {
+			pointer     := 0.U
+			state       := sGetOpcode
+			waitCounter := 0.U
+			io.info     := 3.U
+		} .elsewhen (state === sPaused) {
+			state     := pausedState
+			registers := pausedRegisters
+		} .otherwise {
+			pausedState     := state
+			pausedRegisters := registers
+			registers       := 0.U.asTypeOf(GBRegisters())
+			state           := sPaused
+		}
+	} .elsewhen (!io.tick) {
 		io.info := 24.U
 	} .otherwise {
 
@@ -169,14 +187,7 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 
 		when (error === eNone) {
 			when (state === sIdle) {
-				when (io.start) {
-					pointer := 0.U
-					state   := sGetOpcode
-					waitCounter := 0.U
-					io.info := 3.U
-				} .otherwise {
-					io.info := 4.U
-				}
+				io.info := 4.U
 			} .elsewhen (state === sGetOpcode) {
 				when (waitCounter === 0.U) {
 					io.info    := 9.U
@@ -238,9 +249,9 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 				io.info := 19.U
 				when (waitCounter === 0.U) {
 					io.info := 21.U
-					state := sGetOpcode
+					state   := sGetOpcode
 				} .otherwise {
-					io.info := 22.U
+					io.info     := 22.U
 					waitCounter := waitCounter - 1.U
 				}
 			} .elsewhen (state === sDone && io.start) {

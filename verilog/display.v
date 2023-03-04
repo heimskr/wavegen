@@ -6,8 +6,8 @@ module Display (
 	input  wire clk_pix5,
 	input  wire clk30,
 	input  wire [7:0] sw,
-	input  wire buttonL,
-	input  wire buttonR,
+	input  wire pulseL,
+	input  wire pulseR,
 	input  wire rst_n,
 	inout  wire hdmi_tx_cec,     // CE control bidirectional
 	input  wire hdmi_tx_hpd,     // hot-plug detect
@@ -43,14 +43,27 @@ module Display (
 		.douta(rom_out)
 	);
 
+	reg pulseLReg;
+	reg pulseRReg;
+
+	always @(posedge clk) begin
+		if (pulseL) begin pulseLReg <= 1'b1; end
+		if (pulseR) begin pulseRReg <= 1'b1; end
+	end
+
+	always @(negedge pix_clk) begin
+		pulseLReg <= 1'b0;
+		pulseRReg <= 1'b0;
+	end
+
 	ImageOutput image_output (
 		.clock(pix_clk),
 		.reset(~rst_n),
 		.io_x(cx),
 		.io_y(cy),
 		.io_sw(sw),
-		.io_buttonL(buttonL),
-		.io_buttonR(buttonR),
+		.io_pulseL(pulseLReg),
+		.io_pulseR(pulseRReg),
 		.io_addr(rom_addr),
 		.io_rom(rom_out),
 		.io_red(red),
@@ -61,6 +74,7 @@ module Display (
 	// TMDS Encoding and Serialization
 	wire tmds_ch0_serial, tmds_ch1_serial, tmds_ch2_serial, tmds_chc_serial;
 	wire clk_audio;
+	wire clk_audio_buf;
 
 	reg [9:0] counter = 1'd0;
 	always @(posedge clk30) begin
@@ -68,6 +82,8 @@ module Display (
 	end
 
 	assign clk_audio = clk30 && counter == 10'd625;
+
+	BUFG audio_bufg (.I(clk_audio), .O(clk_audio_buf));
 
 	hdmi #(
 		.VIDEO_ID_CODE(4),
@@ -77,7 +93,7 @@ module Display (
 	) magic (
 		.clk_pixel_x5(pix_clk_5x),
 		.clk_pixel(pix_clk),
-		.clk_audio(clk_audio),
+		.clk_audio(clk_audio_buf),
 		.reset(!rst_n),
 		.rgb({red, green, blue}),
 		.audio_sample_word_in({audioL, audioR}),

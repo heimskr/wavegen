@@ -22,12 +22,23 @@ class Debouncer(buttonCount: Int = 1) extends Module {
 		val out = Output(Vec(buttonCount, Bool()))
 	})
 
+	val pulse = Reg(Vec(buttonCount, Bool()))
+
 	io.in.zipWithIndex.foreach { case (btn, i) =>
 		val pb = Module(new PBDebouncer)
 		pb.io.clk := clock
 		pb.io.rst := reset
 		pb.io.btn := !btn
-		io.out(i) := pb.io.state
+		io.out(i) := false.B
+
+		when (pb.io.state) {
+			when (!pulse(i)) {
+				io.out(i) := true.B
+				pulse(i) := true.B
+			}
+		} .otherwise {
+			pulse(i) := false.B
+		}
 	}
 }
 
