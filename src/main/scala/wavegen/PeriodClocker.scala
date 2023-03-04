@@ -1,4 +1,4 @@
-package wavegen.gameboy
+package wavegen
 
 import chisel3._
 import chisel3.util._
