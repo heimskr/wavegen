@@ -10,7 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class DividerTests extends AnyFlatSpec with ChiselScalatestTester {
 	behavior of "Divider"
 	it should "divide properly" in {
-		val width = 3
+		val width = 8
 
 		test(new Divider(width)) { dut =>
 			var maxSteps = 0
@@ -19,8 +19,8 @@ class DividerTests extends AnyFlatSpec with ChiselScalatestTester {
 
 			dut.clock.setTimeout(0)
 
-			for (den <- 1 to ((1 << width) - 1)) {
-				for (num <- 0 to ((1 << width) - 1)) {
+			for (den <- 1 until (1 << width)) {
+				for (num <- 0 until (1 << width)) {
 					trials += 1
 					dut.io.in.bits.numerator.poke(num)
 					dut.io.in.bits.denominator.poke(den)
