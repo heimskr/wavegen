@@ -172,7 +172,9 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		} .elsewhen (state === sDone) {
 			registers := 0.U.asTypeOf(GBRegisters())
 			errorInfo := 0.U
-			state     := sIdle
+			pointer     := 0.U
+			state       := sGetOpcode
+			waitCounter := 0.U
 		} .otherwise {
 			pausedState     := state
 			pausedRegisters := registers
