@@ -1,4 +1,4 @@
-~              FPGABOY :)              ~
+               FPGABOY :)
 
      Because GameBoy music is neat.
 
@@ -17,12 +17,93 @@
             |          :::|
             |         .::`/
             '"""""""""""""
-       Image Credit: Joan Stark#
+       Image Credit: Joan Stark
+#
+
+                Project
+
+ - Make a Game Boy sound chip
+
+ - Stretch goal: NES sound chip
+
+ - Accuracy nice but not a requirement
+
+ - More than 90 hours of work, whoops
+#
+
+               Generators
+
+ - Not used much in this project tbh
+
+ - Created some nice unused generators:
+   TableGen, TriangleGen, NoiseGen,
+   FPSummer, DynamicClocker, Divider
+
+ - Used SquareGenExternal, StaticClocker
+   and PeriodClocker
+#
+
+               Interfaces
+
+ - Standard buttons, switches and LEDs
+
+ - Code produces 9-bit audio
+
+ - Audio is output over HDMI and aux
+#
+
+        Incremental Development
+
+ 1. Implemented square and sine waves
+ 2. Multi-cycle channel mixer
+ 3. Top-level Verilog
+ 4. Basic audio over aux
+ 5. VGM tools
+ 6. State machine
+ 7. Game Boy channels: 1, 2, 4, 3
+ 8. HDMI output: video, audio
+ 9. Presentation slides
+#
+
+                Testing
+
+ - Testing? Never heard of it #yolo
+
+ - test:main ratio: ~25%
+
+ - Mostly just VCD generation for manual
+   inspection in GTKWave
+
+ - Divider was exhaustively tested for
+   8-bit inputs
+#
+
+             Inner Workings
+
+ - State machine writes to registers,
+   channel modules read and interpret
+
+ - State machine input stored in BRAM
+
+ - Image on first slide is indexed
+   (2 pixels/byte, 16 colors)
+#
+
+              Presentation
+
+ - I forgot there were two projectors 
+
+ - Slides stored as ASCII(-ish) in BRAM
+
+ - Rendered by FPGA
+
+ - Typeface might look familiar
+#
+
+              Game Boy APU
 
  - Same sound chip in Game Boy and Game
    Boy Color
 
  - Four channels: two squarewaves, one
    wavetable and one noise channel
-
- -
