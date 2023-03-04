@@ -13,7 +13,7 @@ class Font extends Module {
 
 	val data0 = VecInit(
 		VecInit(0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W)),
-		VecInit(24.U(8.W), 0.U(8.W), 14.U(8.W), 17.U(8.W), 31.U(8.W), 17.U(8.W), 17.U(8.W), 0.U(8.W)),
+		VecInit(126.U(8.W), 255.U(8.W), 255.U(8.W), 153.U(8.W), 189.U(8.W), 231.U(8.W), 60.U(8.W), 60.U(8.W)),
 		VecInit(14.U(8.W), 17.U(8.W), 14.U(8.W), 17.U(8.W), 31.U(8.W), 17.U(8.W), 17.U(8.W), 0.U(8.W)),
 		VecInit(3.U(8.W), 0.U(8.W), 31.U(8.W), 1.U(8.W), 7.U(8.W), 1.U(8.W), 31.U(8.W), 0.U(8.W)),
 		VecInit(14.U(8.W), 17.U(8.W), 31.U(8.W), 1.U(8.W), 7.U(8.W), 1.U(8.W), 31.U(8.W), 0.U(8.W)),
@@ -272,7 +272,6 @@ class Font extends Module {
 		VecInit(0.U(8.W), 0.U(8.W), 62.U(8.W), 62.U(8.W), 62.U(8.W), 62.U(8.W), 62.U(8.W), 0.U(8.W)),
 		VecInit(0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W), 0.U(8.W)),
 	)
-
 
 	when (io.char(7)) {
 		io.out := data1(io.char(6, 0))(io.y)(io.x)
