@@ -23,24 +23,26 @@ module top (
 	output oled_vdd,
 	output oled_res,
 	output oled_dc,
-    output hdmi_tx_cec,     // CE control bidirectional
-    input  hdmi_tx_hpd,     // hot-plug detect
-    output hdmi_tx_rscl,    // DDC bidirectional
-    output hdmi_tx_rsda,    // DDC bidirectional
-    output hdmi_tx_clk_n,   // HDMI clock differential negative
-    output hdmi_tx_clk_p,   // HDMI clock differential positive
-    output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-    output [2:0] hdmi_tx_p  // Three HDMI channels differential positive
+	output hdmi_tx_cec,     // CE control bidirectional
+	input  hdmi_tx_hpd,     // hot-plug detect
+	output hdmi_tx_rscl,    // DDC bidirectional
+	output hdmi_tx_rsda,    // DDC bidirectional
+	output hdmi_tx_clk_n,   // HDMI clock differential negative
+	output hdmi_tx_clk_p,   // HDMI clock differential positive
+	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
+	output [2:0] hdmi_tx_p  // Three HDMI channels differential positive
 );
 
 	wire clk12MHz;
 	wire clk30MHz;
+	wire clk50MHz;
 
 	clk_wiz_0 clk_0 (
 		.clk(clk),
 		.reset(!cpu_resetn),
 		.clk12(clk12MHz),
-		.clk30(clk30MHz)
+		.clk30(clk30MHz),
+		.clk50(clk50MHz)
 	);
 
 	wire clk_pix1;
@@ -62,7 +64,7 @@ module top (
 	wire dbc;
 
 	audio_init initialize_audio (
-		.clk(clk30MHz),
+		.clk(clk50MHz),
 		.rst(!cpu_resetn),
 		.sda(sda),
 		.scl(scl)
