@@ -37,7 +37,7 @@ class Main extends Module {
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
-	when (io.pulseC && multiplier =/= ((1 << multiplierWidth) - 1).U) {
+	when (io.pulseU && multiplier =/= ((1 << multiplierWidth) - 1).U) {
 		multiplier := multiplier + 1.U
 	}
 

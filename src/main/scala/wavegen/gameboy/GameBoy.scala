@@ -86,7 +86,6 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 
 	// io.leds := io.sw
 	io.leds := stateMachine.io.state
-	io.leds := Cat(io.pulseU, io.pulseR, io.pulseD, io.pulseL, io.pulseC)
 
 	val channels    = VecInit(channel1Stored, channel2Stored, channel3Stored, channel4Stored)
 	val oldChannels = RegInit(VecInit(0.U(4.W), 0.U(4.W), 0.U(4.W), 0.U(4.W)))
