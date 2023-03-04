@@ -97,7 +97,7 @@ module top (
 	wire [23:0] out_audioL;
 	wire [23:0] out_audioR;
 
-	MainGameBoy main_module (
+	Main main_module (
 		.clock(clk),
 		.reset(!cpu_resetn),
 		.io_pulseU(dbu),
