@@ -6,8 +6,8 @@ module Display (
 	input  wire clk_pix5,
 	input  wire clk30,
 	input  wire [7:0] sw,
-	input  wire pulseL,
-	input  wire pulseR,
+	input  wire buttonL,
+	input  wire buttonR,
 	input  wire rst_n,
 	inout  wire hdmi_tx_cec,     // CE control bidirectional
 	input  wire hdmi_tx_hpd,     // hot-plug detect
@@ -43,18 +43,17 @@ module Display (
 		.douta(rom_out)
 	);
 
-	reg pulseLReg;
-	reg pulseRReg;
+	wire pulseL;
+	wire pulseR;
 
-	always @(posedge clk) begin
-		if (pulseL) begin pulseLReg <= 1'b1; end
-		if (pulseR) begin pulseRReg <= 1'b1; end
-	end
-
-	always @(negedge pix_clk) begin
-		pulseLReg <= 1'b0;
-		pulseRReg <= 1'b0;
-	end
+	Debouncer2 dbuttons (
+		.clock(pix_clk),
+		.reset(~rst_n),
+		.io_in_0(buttonL),
+		.io_in_1(buttonR),
+		.io_out_0(pulseL),
+		.io_out_1(pulseR)
+	);
 
 	ImageOutput image_output (
 		.clock(pix_clk),
@@ -62,8 +61,8 @@ module Display (
 		.io_x(cx),
 		.io_y(cy),
 		.io_sw(sw),
-		.io_pulseL(pulseLReg),
-		.io_pulseR(pulseRReg),
+		.io_pulseL(pulseL),
+		.io_pulseR(pulseR),
 		.io_addr(rom_addr),
 		.io_rom(rom_out),
 		.io_red(red),

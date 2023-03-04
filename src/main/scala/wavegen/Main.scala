@@ -147,4 +147,5 @@ object MainRun extends scala.App {
 	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
 	// (new ChiselStage).emitVerilog(new MainROMReader, args)
 	(new ChiselStage).emitVerilog(new Debouncer(5), args)
+	(new ChiselStage).emitVerilog(new Debouncer(2), args)
 }

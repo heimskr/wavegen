@@ -70,7 +70,7 @@ module top (
 		.scl(scl)
 	);
 
-	Debouncer dbuttons (
+	Debouncer5 dbuttons (
 		.clock(clk),
 		.reset(!cpu_resetn),
 		.io_in_0(btnu),
@@ -144,8 +144,8 @@ module top (
 		.clk_pix1(clk_pix1),
 		.clk_pix5(clk_pix5),
 		.sw(sw),
-		.pulseL(dbl),
-		.pulseR(dbr),
+		.buttonL(btnl),
+		.buttonR(btnr),
 		.clk30(clk30MHz),
 		.rst_n(cpu_resetn),
 		.hdmi_tx_cec(hdmi_tx_cec),
