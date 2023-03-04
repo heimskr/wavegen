@@ -33,7 +33,7 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	rom.io.clka := clock
 	rom.io.addra := io.slide * (width * height).U + cy * width.U + cx
 	font.io.char := char
-	font.io.x := (io.x >> scaleUp.U)(2, 0) - 1.U // Why is the - 1 necessary?
+	font.io.x := ((io.x - 1.U) >> scaleUp.U)(2, 0) // Why is the - 1 necessary?
 	font.io.y := (y >> scaleUp.U)(2, 0)
 
 	val color = Mux(yOffset <= io.y && font.io.out, 255.U(8.W), 0.U(8.W))
