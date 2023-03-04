@@ -123,13 +123,16 @@ class MainGameBoy extends Module {
 	// def increase9to16(value: UInt): UInt = value << (1.U + io.sw(0) - io.sw(1))
 	def increase9to24(value: UInt): UInt = value << 9.U
 
-	val multiplier = RegInit(4.U(4.W))
+	val multiplierWidth = 4
+	val multiplier = RegInit(4.U(multiplierWidth.W))
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
 	when (io.buttonU) {
 		when (!lastU) {
-			multiplier := multiplier + 1.U
+			when (multiplier =/= ((1 << multiplierWidth) - 1).U) {
+				multiplier := multiplier + 1.U
+			}
 			lastU := true.B
 		}
 	} .otherwise {
@@ -138,7 +141,9 @@ class MainGameBoy extends Module {
 
 	when (io.buttonD) {
 		when (!lastD) {
-			multiplier := multiplier - 1.U
+			when (multiplier =/= 0.U) {
+				multiplier := multiplier - 1.U
+			}
 			lastD := true.B
 		}
 	} .otherwise {
