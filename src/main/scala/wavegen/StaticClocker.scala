@@ -2,12 +2,13 @@ package wavegen
 
 import chisel3._
 import chisel3.util._
+import scala.math.round
 
 class StaticClocker(wantedFrequency: Int, baseClockFreq: Int, moduleName: String = "StaticClocker") extends Module {
 	override val desiredName = moduleName
 
-	val period  = baseClockFreq / wantedFrequency
-	val width = log2Ceil(period + 1)
+	val period = round(baseClockFreq / wantedFrequency.doubleValue()).toInt
+	val width  = log2Ceil(period + 1)
 
 	val io = IO(new Bundle {
 		val enable  = Input(Bool())
