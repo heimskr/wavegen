@@ -11,22 +11,25 @@ class Main extends Module {
 	val romWidth = 24
 
 	val io = IO(new Bundle {
-		val pulseU = Input(Bool())
-		val pulseR = Input(Bool())
-		val pulseD = Input(Bool())
-		val pulseL = Input(Bool())
-		val pulseC = Input(Bool())
-		val sw      = Input(UInt(8.W))
-		val rom     = Input(UInt(romWidth.W))
-		val outL    = Output(UInt(24.W))
-		val outR    = Output(UInt(24.W))
-		val led     = Output(UInt(8.W))
-		val addr    = Output(UInt(addressWidth.W))
+		val clockGB  = Input(Bool())
+		val clockNES = Input(Bool())
+		val pulseU   = Input(Bool())
+		val pulseR   = Input(Bool())
+		val pulseD   = Input(Bool())
+		val pulseL   = Input(Bool())
+		val pulseC   = Input(Bool())
+		val sw       = Input(UInt(8.W))
+		val rom      = Input(UInt(romWidth.W))
+		val outL     = Output(UInt(24.W))
+		val outR     = Output(UInt(24.W))
+		val led      = Output(UInt(8.W))
+		val addr     = Output(UInt(addressWidth.W))
 	})
 
 	var centerReg = RegInit(false.B)
 
 	val gameboy = Module(new wavegen.gameboy.GameBoy(addressWidth, romWidth))
+	gameboy.io.tick  := io.clockGB
 	gameboy.io.start := io.pulseC
 	gameboy.io.sw    := io.sw
 

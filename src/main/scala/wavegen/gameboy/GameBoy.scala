@@ -10,26 +10,25 @@ object GameBoy {
 }
 
 class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
-	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
-	val fsFreq   = if (inSimulator) 2048 else GameBoy.cpuFreq
+	val fsFreq = if (inSimulator) 2048 else GameBoy.cpuFreq
 
 	val io = IO(new Bundle {
-		val start   = Input(Bool())
-		val rom     = Input(UInt(romWidth.W))
-		val sw      = Input(UInt(8.W))
-		val pulseU  = Input(Bool())
-		val pulseR  = Input(Bool())
-		val pulseD  = Input(Bool())
-		val pulseL  = Input(Bool())
-		val pulseC  = Input(Bool())
-		val outL    = Output(UInt(9.W))
-		val outR    = Output(UInt(9.W))
-		val addr    = Output(UInt(addressWidth.W))
-		val leds    = Output(UInt(8.W))
-		val error   = Output(UInt(4.W))
+		val tick   = Input(Bool())
+		val start  = Input(Bool())
+		val rom    = Input(UInt(romWidth.W))
+		val sw     = Input(UInt(8.W))
+		val pulseU = Input(Bool())
+		val pulseR = Input(Bool())
+		val pulseD = Input(Bool())
+		val pulseL = Input(Bool())
+		val pulseC = Input(Bool())
+		val outL   = Output(UInt(9.W))
+		val outR   = Output(UInt(9.W))
+		val addr   = Output(UInt(addressWidth.W))
+		val leds   = Output(UInt(8.W))
+		val error  = Output(UInt(4.W))
 	})
 
-	val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
 	val stateMachine = Module(new GBStateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1)
 	val channel2     = Module(new Channel2)
@@ -37,9 +36,7 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel4     = Module(new Channel4)
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
-	// cpuClocker.io.enable := !io.sw(0) ^ io.pulseD
-	cpuClocker.io.enable := true.B
-	val cpuTick = cpuClocker.io.tick
+	val cpuTick = io.tick
 
 	sequencer.io.tick := cpuTick
 
