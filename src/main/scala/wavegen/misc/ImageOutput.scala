@@ -44,7 +44,7 @@ class ImageOutput extends Module {
 	io.addr := 0.U
 
 	when (slide === 0.U) {
-		val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, "HueClocker"))
+		val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, true, "HueClocker"))
 		hueClocker.io.enable := true.B
 
 		val waves = 2

@@ -68,16 +68,15 @@ module top (
 	// reg [1:0] counter_gb;
 	// reg clk_gb_slow;
 	// reg [1:0] clk_gb_state; // (0 or 2) -> armed, 1 -> firing, 3 -> disarmed
-	// // wire clk_gb_fast;
-	// // wire clk_gb_buf;
+	// wire clk_gb_fast;
 	// wire clk_gb_buf;
 
 	// always @(posedge clk_gbx4) begin
 	// 	if (counter_gb == 2'd3) begin
-	// 		counter_gb <= 2'd0;
+	// 		counter_gb  <= 2'd0;
 	// 		clk_gb_slow <= 1'b1;
 	// 	end else begin
-	// 		counter_gb <= counter_gb + 2'd1;
+	// 		counter_gb  <= counter_gb + 2'd1;
 	// 		clk_gb_slow <= 1'b0;
 	// 	end
 	// end
@@ -105,6 +104,7 @@ module top (
 	// reg clk_nes_slow;
 	// reg [1:0] clk_nes_state; // See above
 	// wire clk_nes_fast;
+	// wire clk_nes_buf;
 
 	// always @(posedge clk_nesx16) begin
 	// 	if (counter_nes == 4'd15) begin
