@@ -29,6 +29,7 @@ class NES(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator
 	})
 
 	val cpuClocker   = Module(new StaticClocker(slowFreq, clockFreq))
+	val frameCounter = Module(new FrameCounter)
 	val stateMachine = Module(new NESStateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1)
 	// val channel2     = Module(new Channel2)
@@ -36,6 +37,8 @@ class NES(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator
 	// val channel4     = Module(new Channel4)
 	// val channel5     = Module(new Channel5)
 
+	val ticks = frameCounter.io.ticks
 
-
+	channel1.io.ticks     := ticks
+	channel1.io.registers := stateMachine.io.registers
 }

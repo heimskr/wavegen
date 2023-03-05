@@ -131,11 +131,10 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		}
 	}
 
-	val sIdle :: sGetOpcode :: sOperate :: sWaiting :: sDone :: sPaused :: Nil = Enum(6)
-	val eNone :: eBadReg :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
+	val sIdle :: sGetOpcode :: sOperate       :: sWaiting       :: sDone          :: sPaused :: Nil = Enum(6)
+	val eNone :: eBadReg    :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
 	val state       = RegInit(sIdle)
-	val pausedState = RegInit(sIdle)
 	val error       = RegInit(eNone)
 	val pointer     = RegInit(0.U(addressWidth.W))
 	val registers   = RegInit(0.U.asTypeOf(GBRegisters()))
@@ -149,6 +148,7 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 	val tempByte    = RegInit(0.U(8.W))
 	val subpointer  = RegInit(0.U(3.W))
 
+	val pausedState     = RegInit(sIdle)
 	val pausedRegisters = Reg(GBRegisters())
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }

@@ -22,6 +22,8 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		val operand2        = Output(UInt(8.W))
 		val pointer         = Output(UInt(addressWidth.W))
 		val waitCounter     = Output(UInt(32.W))
+		val pulse1Writes    = Output(PulseWrites())
+		val pulse2Writes    = Output(PulseWrites())
 		// val nr13In          = Flipped(Valid(UInt(8.W)))
 	})
 
@@ -43,26 +45,28 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		def write(to: Data): Unit = { failed := false.B; to := value }
 
 		switch (index) {
-			is ("h00".U) { write(registers.$4000) }
-			is ("h01".U) { write(registers.$4001) }
-	 		is ("h02".U) { write(registers.$4002) }
-	 		is ("h03".U) { write(registers.$4003) }
-	 		is ("h04".U) { write(registers.$4004) }
-	 		is ("h05".U) { write(registers.$4005) }
-	 		is ("h06".U) { write(registers.$4006) }
-	 		is ("h07".U) { write(registers.$4007) }
-	 		is ("h08".U) { write(registers.$4008) }
-	 		is ("h0A".U) { write(registers.$400A) }
-	 		is ("h0B".U) { write(registers.$400B) }
-	 		is ("h0C".U) { write(registers.$400C) }
-	 		is ("h0E".U) { write(registers.$400E) }
-	 		is ("h0F".U) { write(registers.$400F) }
-	 		is ("h10".U) { write(registers.$4010) }
-	 		is ("h11".U) { write(registers.$4011) }
-	 		is ("h12".U) { write(registers.$4012) }
-	 		is ("h13".U) { write(registers.$4013) }
-	 		is ("h15".U) { write(registers.$4015) }
-	 		is ("h17".U) { write(registers.$4017) }
+			is ("h00".U) { write(registers.$4000); io.pulse1Writes.dutyCycle := true.B }
+			is ("h01".U) { write(registers.$4001); io.pulse1Writes.sweeper   := true.B }
+			is ("h02".U) { write(registers.$4002) }
+			is ("h03".U) { write(registers.$4003); io.pulse1Writes.length    := true.B }
+
+			is ("h04".U) { write(registers.$4004); io.pulse2Writes.dutyCycle := true.B }
+			is ("h05".U) { write(registers.$4005); io.pulse2Writes.sweeper   := true.B }
+			is ("h06".U) { write(registers.$4006) }
+			is ("h07".U) { write(registers.$4007); io.pulse2Writes.length    := true.B }
+
+			is ("h08".U) { write(registers.$4008) }
+			is ("h0a".U) { write(registers.$400A) }
+			is ("h0b".U) { write(registers.$400B) }
+			is ("h0c".U) { write(registers.$400C) }
+			is ("h0e".U) { write(registers.$400E) }
+			is ("h0f".U) { write(registers.$400F) }
+			is ("h10".U) { write(registers.$4010) }
+			is ("h11".U) { write(registers.$4011) }
+			is ("h12".U) { write(registers.$4012) }
+			is ("h13".U) { write(registers.$4013) }
+			is ("h15".U) { write(registers.$4015) }
+			is ("h17".U) { write(registers.$4017) }
 		}
 
 		when (failed) {
@@ -73,7 +77,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		}
 	}
 
-	val sIdle :: sGetOpcode :: sOperate       :: sWaiting       :: sDone          :: Nil = Enum(5)
+	val sIdle :: sGetOpcode :: sOperate       :: sWaiting       :: sDone          :: sPaused :: Nil = Enum(6)
 	val eNone :: eBadReg    :: eInvalidOpcode :: eUnimplemented :: eBadSubpointer :: Nil = Enum(5)
 
 	val state       = RegInit(sIdle)
@@ -90,25 +94,44 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	val tempByte    = RegInit(0.U(8.W))
 	val subpointer  = RegInit(0.U(3.W))
 
+	val pausedState     = RegInit(sIdle)
+	val pausedRegisters = Reg(NESRegisters())
+
 	def badSubpointer(): Unit   = { error := eBadSubpointer; errorInfo := opcode }
 	def advance():       Unit   = { pointer := pointer + 1.U }
 	def toCycles(samples: UInt) = (samples << 5.U) + (samples << 2.U) + samples
 
-	io.info := 1.U
+	io.info         := 1.U
+	io.pulse1Writes := 0.U.asTypeOf(PulseWrites())
+	io.pulse2Writes := 0.U.asTypeOf(PulseWrites())
 
-	when (!io.tick) {
+	when (io.start) {
+		when (state === sIdle) {
+			pointer     := 0.U
+			state       := sGetOpcode
+			waitCounter := 0.U
+			io.info     := 3.U
+		} .elsewhen (state === sPaused) {
+			state     := pausedState
+			registers := pausedRegisters
+		} .elsewhen (state === sDone) {
+			registers := 0.U.asTypeOf(NESRegisters())
+			errorInfo := 0.U
+			pointer     := 0.U
+			state       := sGetOpcode
+			waitCounter := 0.U
+		} .otherwise {
+			pausedState     := state
+			pausedRegisters := registers
+			registers       := 0.U.asTypeOf(NESRegisters())
+			state           := sPaused
+		}
+	} .elsewhen (!io.tick) {
 		io.info := 24.U
 	} .otherwise {
 		when (error === eNone) {
 			when (state === sIdle) {
-				when (io.start) {
-					pointer := 0.U
-					state   := sGetOpcode
-					waitCounter := 0.U
-					io.info := 3.U
-				} .otherwise {
-					io.info := 4.U
-				}
+				io.info := 4.U
 			} .elsewhen (state === sGetOpcode) {
 				when (waitCounter === 0.U) {
 					io.info    := 9.U
@@ -130,21 +153,21 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 
 				switch (opcode) {
 					is("h90".U) {
-						io.info := 13.U
-						failed  := false.B
 						setReg(operand1, operand2)
 						advance()
-						state := sGetOpcode
+						io.info := 13.U
+						failed  := false.B
+						state   := sGetOpcode
 					}
 
 					is ("h91".U) {
 						io.info := 14.U
-						failed  := false.B
+						failed := false.B
 						val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
 						printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
-						waitCounter := toWait
 						advance()
-						state := sWaiting
+						waitCounter := toWait
+						state       := sWaiting
 					}
 
 					is ("h92".U) {
@@ -170,9 +193,9 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 				io.info := 19.U
 				when (waitCounter === 0.U) {
 					io.info := 21.U
-					state := sGetOpcode
+					state   := sGetOpcode
 				} .otherwise {
-					io.info := 22.U
+					io.info     := 22.U
 					waitCounter := waitCounter - 1.U
 				}
 			}
@@ -181,7 +204,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		}
 	}
 
-	// TODO: handle writes
+	// TODO: handle writes...?
 	// when (io.nr13In.valid) {
 	// 	registers.NR13 := io.nr13In.bits
 	// }
