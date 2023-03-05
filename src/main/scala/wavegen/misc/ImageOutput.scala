@@ -13,8 +13,8 @@ class ImageOutput extends Module {
 		val y       = Input(UInt(10.W))
 		val sw      = Input(UInt(8.W))
 		val rom     = Input(UInt(4.W))
-		val pulseL = Input(Bool())
-		val pulseR = Input(Bool())
+		val pulseL  = Input(Bool())
+		val pulseR  = Input(Bool())
 		val addr    = Output(UInt(15.W))
 		val red     = Output(UInt(8.W))
 		val green   = Output(UInt(8.W))
@@ -48,7 +48,7 @@ class ImageOutput extends Module {
 		hueClocker.io.enable := true.B
 
 		val waves = 2
-		val amplitude = 200
+		val amplitude = 100
 		val table = VecInit.tabulate(1280)(x => floor((1 + sin(2 * x * Pi / 1280 * waves)) / 2 * amplitude).intValue().U(10.W))
 		val shift = table(io.x)
 
