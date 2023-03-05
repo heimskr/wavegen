@@ -9,8 +9,9 @@ object GameBoy {
 	val simulationFreq = 25_000_000
 }
 
-class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
-	val fsFreq = if (inSimulator) 2048 else GameBoy.cpuFreq
+class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(implicit clockFreq: Int, inSimulator: Boolean) extends Module {
+	val slowFreq = if (inSimulator) GameBoy.simulationFreq else GameBoy.cpuFreq
+	val fsFreq   = if (inSimulator) 2048 else GameBoy.cpuFreq
 
 	val io = IO(new Bundle {
 		val tick   = Input(Bool())
@@ -36,7 +37,11 @@ class GameBoy(addressWidth: Int, romWidth: Int)(implicit clockFreq: Int, inSimul
 	val channel4     = Module(new Channel4)
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
-	val cpuTick = io.tick
+	val cpuTick = if (useInternalClock) {
+		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq))
+		cpuClocker.io.enable := true.B
+		cpuClocker.io.tick
+	} else io.tick
 
 	sequencer.io.tick := cpuTick
 

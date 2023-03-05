@@ -55,84 +55,85 @@ module top (
 		.clk_pix5(clk_pix5)
 	);
 
-	wire clk_gbx4;
-	wire clk_nesx16;
+	// wire clk_gbx4;
+	// wire clk_nesx16;
 
-	clk_wiz_cpu clk_cpu (
-		.clk(clk),
-		.reset(!cpu_resetn),
-		.clk_gbx4(clk_gbx4),
-		.clk_nesx16(clk_nesx16)
-	);
+	// clk_wiz_cpu clk_cpu (
+	// 	.clk(clk),
+	// 	.reset(!cpu_resetn),
+	// 	.clk_gbx4(clk_gbx4),
+	// 	.clk_nesx16(clk_nesx16)
+	// );
 
-	reg [1:0] counter_gb;
-	reg clk_gb_slow;
-	reg [1:0] clk_gb_state; // (0 or 2) -> armed, 1 -> firing, 3 -> disarmed
-	wire clk_gb_fast;
-	wire clk_gb_buf;
+	// reg [1:0] counter_gb;
+	// reg clk_gb_slow;
+	// reg [1:0] clk_gb_state; // (0 or 2) -> armed, 1 -> firing, 3 -> disarmed
+	// // wire clk_gb_fast;
+	// // wire clk_gb_buf;
+	// wire clk_gb_buf;
 
-	always @(posedge clk_gbx4) begin
-		if (counter_gb == 2'd3) begin
-			counter_gb <= 2'd0;
-			clk_gb_slow <= 1'b1;
-		end else begin
-			counter_gb <= counter_gb + 2'd1;
-			clk_gb_slow <= 1'b0;
-		end
-	end
+	// always @(posedge clk_gbx4) begin
+	// 	if (counter_gb == 2'd3) begin
+	// 		counter_gb <= 2'd0;
+	// 		clk_gb_slow <= 1'b1;
+	// 	end else begin
+	// 		counter_gb <= counter_gb + 2'd1;
+	// 		clk_gb_slow <= 1'b0;
+	// 	end
+	// end
 
-	always @(posedge clk) begin
-		if (!cpu_resetn) begin
-			clk_gb_state <= 2'd0;
-		end else if (!clk_gb_state[0]) begin
-			if (clk_gb_slow) begin
-				clk_gb_state <= 2'd1;
-			end
-		end else if (clk_gb_state == 2'd1) begin
-			clk_gb_state <= 2'd3;
-		end else begin
-			if (!clk_gb_slow) begin
-				clk_gb_state <= 2'd0;
-			end
-		end
-	end
+	// always @(posedge clk) begin
+	// 	if (!cpu_resetn) begin
+	// 		clk_gb_state <= 2'd0;
+	// 	end else if (!clk_gb_state[0]) begin
+	// 		if (clk_gb_slow) begin
+	// 			clk_gb_state <= 2'd1;
+	// 		end
+	// 	end else if (clk_gb_state == 2'd1) begin
+	// 		clk_gb_state <= 2'd3;
+	// 	end else begin
+	// 		if (!clk_gb_slow) begin
+	// 			clk_gb_state <= 2'd0;
+	// 		end
+	// 	end
+	// end
 
-	assign clk_gb_fast = clk_gb_state == 2'd1;
-	BUFG gb_bufg (.I(clk_gb_fast), .O(clk_gb_buf));
+	// assign clk_gb_fast = clk_gb_state == 2'd1;
+	// BUFG gb_bufg (.I(clk_gb_fast), .O(clk_gb_buf));
 
-	reg [3:0] counter_nes;
-	reg clk_nes_slow;
-	reg [1:0] clk_nes_state; // See above
-	wire clk_nes_fast;
+	// reg [3:0] counter_nes;
+	// reg clk_nes_slow;
+	// reg [1:0] clk_nes_state; // See above
+	// wire clk_nes_fast;
 
-	always @(posedge clk_nesx16) begin
-		if (counter_nes == 4'd15) begin
-			counter_nes  <= 4'd0;
-			clk_nes_slow <= 1'b1;
-		end else begin
-			counter_nes  <= counter_nes + 4'd1;
-			clk_nes_slow <= 1'b0;
-		end
-	end
+	// always @(posedge clk_nesx16) begin
+	// 	if (counter_nes == 4'd15) begin
+	// 		counter_nes  <= 4'd0;
+	// 		clk_nes_slow <= 1'b1;
+	// 	end else begin
+	// 		counter_nes  <= counter_nes + 4'd1;
+	// 		clk_nes_slow <= 1'b0;
+	// 	end
+	// end
 
-	always @(posedge clk) begin
-		if (!cpu_resetn) begin
-			clk_nes_state <= 2'd0;
-		end else if (!clk_nes_state[0]) begin
-			if (clk_nes_slow) begin
-				clk_nes_state <= 2'd1;
-			end
-		end else if (clk_nes_state == 2'd1) begin
-			clk_nes_state <= 2'd3;
-		end else begin
-			if (!clk_nes_slow) begin
-				clk_nes_state <= 2'd0;
-			end
-		end
-	end
+	// always @(posedge clk) begin
+	// 	if (!cpu_resetn) begin
+	// 		clk_nes_state <= 2'd0;
+	// 	end else if (!clk_nes_state[0]) begin
+	// 		if (clk_nes_slow) begin
+	// 			clk_nes_state <= 2'd1;
+	// 		end
+	// 	end else if (clk_nes_state == 2'd1) begin
+	// 		clk_nes_state <= 2'd3;
+	// 	end else begin
+	// 		if (!clk_nes_slow) begin
+	// 			clk_nes_state <= 2'd0;
+	// 		end
+	// 	end
+	// end
 
-	assign clk_nes_fast = clk_nes_state == 2'd1;
-	BUFG nes_bufg (.I(clk_nes_fast), .O(clk_nes_buf));
+	// assign clk_nes_fast = clk_nes_state == 2'd1;
+	// BUFG nes_bufg (.I(clk_nes_fast), .O(clk_nes_buf));
 
 	assign ac_mclk = clk12MHz;
 
@@ -179,8 +180,10 @@ module top (
 	Main main_module (
 		.clock(clk),
 		.reset(!cpu_resetn),
-		.io_clockGB(clk_gb_buf),
-		.io_clockNES(clk_nes_buf),
+		// .io_clockGB(clk_gb_buf),
+		// .io_clockNES(clk_nes_buf),
+		.io_clockGB(1'b0),
+		.io_clockNES(1'b0),
 		.io_pulseU(dbu),
 		.io_pulseR(dbr),
 		.io_pulseL(dbl),
