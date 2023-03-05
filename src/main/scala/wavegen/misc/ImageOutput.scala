@@ -52,7 +52,7 @@ class ImageOutput extends Module {
 		val shift = table(io.x)
 
 		val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
-		val adjustedHue = (hue + (io.x >> 2.U) - shift)(7, 0)
+		val adjustedHue = (hue + (io.x >> 2.U) + (io.y >> 3.U) - shift)(7, 0)
 
 		val colors = Module(new Colors)
 		colors.io.hue := adjustedHue
