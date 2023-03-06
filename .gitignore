@@ -13,3 +13,4 @@ test_run_dir
 *.raw
 *.coe
 *.jou
+/.build
