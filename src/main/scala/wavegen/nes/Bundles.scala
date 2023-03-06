@@ -6,7 +6,6 @@ import chisel3.util._
 class ChannelIO extends Bundle {
 	val ticks     = Input(Ticks())
 	val registers = Input(NESRegisters())
-	val writes    = Input(PulseWrites())
 	val out       = Output(UInt(4.W))
 }
 

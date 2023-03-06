@@ -9,6 +9,7 @@ class PulseChannel(channelID: Int) extends Module {
 		val reg1   = Input(UInt(8.W))
 		val reg2   = Input(UInt(8.W))
 		val reg3   = Input(UInt(8.W))
+		val writes = Input(PulseWrites())
 	})
 
 	val dutyCycle      = io.reg0(7, 6)
@@ -17,10 +18,13 @@ class PulseChannel(channelID: Int) extends Module {
 	val volumeParam    = io.reg0(3, 0)
 	val timerValue     = Cat(io.reg3(2, 0), io.reg2)
 
-	val lengthLoad     = io.reg3(7, 3)
-	val enableLength   = io.registers.$4015(channelID - 1)
-	val lengthTable    = VecInit(10.U(8.W), 254.U(8.W), 20.U(8.W), 2.U(8.W), 40.U(8.W), 4.U(8.W), 80.U(8.W), 6.U(8.W), 160.U(8.W), 8.U(8.W), 60.U(8.W), 10.U(8.W), 14.U(8.W), 12.U(8.W), 26.U(8.W), 14.U(8.W), 12.U(8.W), 16.U(8.W), 24.U(8.W), 18.U(8.W), 48.U(8.W), 20.U(8.W), 96.U(8.W), 22.U(8.W), 192.U(8.W), 24.U(8.W), 72.U(8.W), 26.U(8.W), 16.U(8.W), 28.U(8.W), 32.U(8.W), 30.U(8.W))
-	val lengthCounter  = RegInit(0.U(8.W))
+	val lengthCounter = Module(new LengthCounter(channelID))
+	lengthCounter.io.ticks     := io.ticks
+	lengthCounter.io.registers := io.registers
+	lengthCounter.io.loadValue := io.reg3(7, 3)
+	lengthCounter.io.tick      := io.ticks.half
+	lengthCounter.io.write     := io.writes.length
+	lengthCounter.io.halt      := lengthHalt
 
 	val sweeper = Module(new FrequencySweeper(channelID == 2))
 	// val period  = RegInit(0.U(11.W))
@@ -53,19 +57,7 @@ class PulseChannel(channelID: Int) extends Module {
 		startFlag := true.B
 	}
 
-	val lengthNonzero = lengthCounter =/= 0.U
-
-	when (io.ticks.half) {
-		when (io.writes.length) {
-			lengthCounter := lengthTable(lengthLoad)
-		} .elsewhen (!lengthHalt && lengthNonzero) {
-			lengthCounter := lengthCounter - 1.U
-		}
-	}
-
-	when (!enableLength) {
-		lengthCounter := 0.U
-	}
+	val lengthNonzero = lengthCounter.io.out =/= 0.U
 
 	when (io.ticks.apu) {
 		when (startNow || startFlag) {
