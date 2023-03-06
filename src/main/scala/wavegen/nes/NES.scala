@@ -30,8 +30,8 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 
 	val frameCounter = Module(new FrameCounter)
 	val stateMachine = Module(new NESStateMachine(addressWidth, romWidth))
-	val channel1     = Module(new Channel1)
-	val channel2     = Module(new Channel2)
+	val channel1     = Module(new PulseChannel(1))
+	val channel2     = Module(new PulseChannel(2))
 	// val channel3     = Module(new Channel3)
 	// val channel4     = Module(new Channel4)
 	// val channel5     = Module(new Channel5)

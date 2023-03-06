@@ -64,18 +64,26 @@ class PulseChannel(channelID: Int) extends Module {
 		}
 	}
 
+	when (!enableLength) {
+		lengthCounter := 0.U
+	}
+
 	when (io.ticks.apu) {
 		when (startNow || startFlag) {
 			counter   := period
 			startFlag := false.B
 		}
 
-		when (counter === 0.U && lengthNonzero) {
+		when (counter === 0.U) {
 			counter          := period
 			waveformSelector := waveformSelector - 1.U
-		} .elsewhen (lengthNonzero) {
+		} .otherwise {
 			counter := counter - 1.U
 		}
+	}
+
+	when (io.writes.length) {
+		waveformSelector := 0.U
 	}
 
 	when (io.ticks.quarter) {
@@ -104,7 +112,10 @@ class PulseChannel(channelID: Int) extends Module {
 
 	val periodHighEnough = 8.U <= timerValue
 
-	printf(cf"${waveBit} && ${!sweeper.io.mute} && ${counter =/= 0.U} && ${periodHighEnough}? ${volume} : 0, startFlag = ${startFlag}<-${startNow}\n")
+	// val disableFromLength = lengthCounter === 0.U && enableLength
+	val disableFromLength = false.B
 
-	io.out := Mux(waveBit && !sweeper.io.mute && counter =/= 0.U && periodHighEnough, volume, 0.U(4.W))
+	printf(cf"${waveBit} && ${!sweeper.io.mute} && ${counter =/= 0.U} && ${periodHighEnough} && ${!disableFromLength}? ${volume} : 0, startFlag = ${startFlag}<-${startNow}, lengthHalt = ${lengthHalt}\n")
+
+	io.out := Mux(waveBit && !sweeper.io.mute && counter =/= 0.U && periodHighEnough && !disableFromLength, volume, 0.U(4.W))
 }

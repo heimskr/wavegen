@@ -3,7 +3,7 @@ package wavegen.nes
 import chisel3._
 import chisel3.util._
 
-class FrameCounter extends Module {
+class FrameCounter(implicit inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
 		val cpuTick  = Input(Bool())
 		val register = Input(UInt(8.W)) // $4017
@@ -12,7 +12,7 @@ class FrameCounter extends Module {
 	})
 
 	val toggle = RegInit(false.B)
-	io.ticks.apu     := toggle
+	io.ticks.apu     := false.B
 	io.ticks.quarter := false.B
 	io.ticks.half    := false.B
 
@@ -24,6 +24,7 @@ class FrameCounter extends Module {
 
 	when (io.cpuTick) {
 		toggle := !toggle
+		io.ticks.apu := toggle
 
 		when (io.reload) {
 			reloadCounter := 1.U
@@ -36,52 +37,74 @@ class FrameCounter extends Module {
 		}
 
 		when (fiveStep) {
-			switch (counter) {
-				is (7457.U) {
-					io.ticks.quarter := true.B
+			if (inSimulator) {
+				switch (counter) {
+					is (15.U) { io.ticks.quarter := true.B }
+					is (30.U) { io.ticks.quarter := true.B; io.ticks.half := true.B }
+					is (45.U) { io.ticks.quarter := true.B }
+					is (75.U) { io.ticks.quarter := true.B; io.ticks.half := true.B }
 				}
 
-				is (14913.U) {
-					io.ticks.quarter := true.B
-					io.ticks.half    := true.B
+				when (75.U <= counter) { counter := 0.U }
+			} else {
+				switch (counter) {
+					is (7457.U) {
+						io.ticks.quarter := true.B
+					}
+
+					is (14913.U) {
+						io.ticks.quarter := true.B
+						io.ticks.half    := true.B
+					}
+
+					is (22371.U) {
+						io.ticks.quarter := true.B
+					}
+
+					is (37281.U) {
+						io.ticks.quarter := true.B
+						io.ticks.half    := true.B
+					}
 				}
 
-				is (22371.U) {
-					io.ticks.quarter := true.B
+				when (37281.U <= counter) {
+					counter := 0.U
 				}
-
-				is (37281.U) {
-					io.ticks.quarter := true.B
-					io.ticks.half    := true.B
-				}
-			}
-
-			when (37281.U <= counter) {
-				counter := 0.U
 			}
 		} .otherwise {
-			switch (counter) {
-				is (7457.U) {
-					io.ticks.quarter := true.B
+			if (inSimulator) {
+				switch (counter) {
+					is (15.U) { io.ticks.quarter := true.B }
+					is (30.U) { io.ticks.quarter := true.B; io.ticks.half := true.B }
+					is (45.U) { io.ticks.quarter := true.B }
+					is (60.U) { io.ticks.quarter := true.B; io.ticks.half := true.B }
 				}
 
-				is (14913.U) {
-					io.ticks.quarter := true.B
-					io.ticks.half    := true.B
+				when (60.U <= counter) { counter := 0.U }
+			} else {
+				switch (counter) {
+					is (7457.U) {
+						io.ticks.quarter := true.B
+					}
+
+					is (14913.U) {
+						io.ticks.quarter := true.B
+						io.ticks.half    := true.B
+					}
+
+					is (22371.U) {
+						io.ticks.quarter := true.B
+					}
+
+					is (29829.U) {
+						io.ticks.quarter := true.B
+						io.ticks.half    := true.B
+					}
 				}
 
-				is (22371.U) {
-					io.ticks.quarter := true.B
+				when (29829.U <= counter) {
+					counter := 0.U
 				}
-
-				is (29829.U) {
-					io.ticks.quarter := true.B
-					io.ticks.half    := true.B
-				}
-			}
-
-			when (29829.U <= counter) {
-				counter := 0.U
 			}
 		}
 	}
