@@ -12,6 +12,7 @@ class FrameCounter(implicit inSimulator: Boolean) extends Module {
 	})
 
 	val toggle = RegInit(false.B)
+	io.ticks.cpu     := io.cpuTick
 	io.ticks.apu     := false.B
 	io.ticks.quarter := false.B
 	io.ticks.half    := false.B

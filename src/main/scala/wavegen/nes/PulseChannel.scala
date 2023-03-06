@@ -9,7 +9,6 @@ class PulseChannel(channelID: Int) extends Module {
 		val reg1   = Input(UInt(8.W))
 		val reg2   = Input(UInt(8.W))
 		val reg3   = Input(UInt(8.W))
-		val writes = Input(PulseWrites())
 	})
 
 	val dutyCycle      = io.reg0(7, 6)

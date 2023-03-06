@@ -25,6 +25,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		val reloadFC        = Output(Bool())
 		val pulse1Writes    = Output(PulseWrites())
 		val pulse2Writes    = Output(PulseWrites())
+		val triangleWrites  = Output(TriangleWrites())
 		// val nr13In          = Flipped(Valid(UInt(8.W)))
 	})
 
@@ -58,7 +59,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 
 			is ("h08".U) { write(registers.$4008) }
 			is ("h0a".U) { write(registers.$400A) }
-			is ("h0b".U) { write(registers.$400B) }
+			is ("h0b".U) { write(registers.$400B); io.triangleWrites.counterReload := true.B }
 			is ("h0c".U) { write(registers.$400C) }
 			is ("h0e".U) { write(registers.$400E) }
 			is ("h0f".U) { write(registers.$400F) }
@@ -102,10 +103,11 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	def advance():       Unit   = { pointer := pointer + 1.U }
 	def toCycles(samples: UInt) = (samples << 5.U) + (samples << 2.U) + samples
 
-	io.info         := 1.U
-	io.reloadFC     := false.B
-	io.pulse1Writes := 0.U.asTypeOf(PulseWrites())
-	io.pulse2Writes := 0.U.asTypeOf(PulseWrites())
+	io.info           := 1.U
+	io.reloadFC       := false.B
+	io.pulse1Writes   := 0.U.asTypeOf(PulseWrites())
+	io.pulse2Writes   := 0.U.asTypeOf(PulseWrites())
+	io.triangleWrites := 0.U.asTypeOf(TriangleWrites())
 
 	when (io.start) {
 		when (state === sIdle) {
