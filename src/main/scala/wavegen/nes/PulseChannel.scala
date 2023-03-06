@@ -22,7 +22,6 @@ class PulseChannel(channelID: Int) extends Module {
 	lengthCounter.io.ticks     := io.ticks
 	lengthCounter.io.registers := io.registers
 	lengthCounter.io.loadValue := io.reg3(7, 3)
-	lengthCounter.io.tick      := io.ticks.half
 	lengthCounter.io.write     := io.writes.length
 	lengthCounter.io.halt      := lengthHalt
 

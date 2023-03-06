@@ -25,7 +25,6 @@ class TriangleChannel extends Module {
 	lengthCounter.io.ticks     := io.ticks
 	lengthCounter.io.registers := io.registers
 	lengthCounter.io.loadValue := io.registers.$400B(7, 3)
-	lengthCounter.io.tick      := io.ticks.half
 	lengthCounter.io.write     := io.writes.counterReload // TODO: verify
 	lengthCounter.io.halt      := control
 
