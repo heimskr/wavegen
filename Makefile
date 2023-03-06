@@ -1,14 +1,17 @@
 ELSEWHERE ?= /home/kai/Downloads/hw/hw.srcs/sources_1/new
 
-.PHONY: copy
+.PHONY: copy testDivider testGB testNES
 
 all: .build
 
-test:
-	# sbt "testOnly *GameBoyTests"
+testDivider:
+	sbt "testOnly *DividerTests"
+
+testGB:
+	sbt "testOnly *GameBoyTests"
+
+testNES:
 	sbt "testOnly *NESTests"
-	# sbt "testOnly *Channel1Tests"
-	# sbt "testOnly *DividerTests"
 
 .build: $(shell find src/main -name '*.scala')
 	sbt run && touch .build
