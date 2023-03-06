@@ -3,7 +3,7 @@ package wavegen.nes
 import chisel3._
 import chisel3.util._
 
-class PulseChannel(twosComplement: Boolean) extends Module {
+class PulseChannel(channelID: Int) extends Module {
 	val io = IO(new ChannelIO {
 		val reg0   = Input(UInt(8.W))
 		val reg1   = Input(UInt(8.W))
@@ -18,9 +18,14 @@ class PulseChannel(twosComplement: Boolean) extends Module {
 	val volumeParam    = io.reg0(3, 0)
 	val timerValue     = Cat(io.reg3(2, 0), io.reg2)
 
-	val sweeper = Module(new FrequencySweeper(twosComplement))
+	val lengthLoad     = io.reg3(7, 3)
+	val enableLength   = io.registers.$4015(channelID - 1)
+	val lengthTable    = VecInit(10.U(8.W), 254.U(8.W), 20.U(8.W), 2.U(8.W), 40.U(8.W), 4.U(8.W), 80.U(8.W), 6.U(8.W), 160.U(8.W), 8.U(8.W), 60.U(8.W), 10.U(8.W), 14.U(8.W), 12.U(8.W), 26.U(8.W), 14.U(8.W), 12.U(8.W), 16.U(8.W), 24.U(8.W), 18.U(8.W), 48.U(8.W), 20.U(8.W), 96.U(8.W), 22.U(8.W), 192.U(8.W), 24.U(8.W), 72.U(8.W), 26.U(8.W), 16.U(8.W), 28.U(8.W), 32.U(8.W), 30.U(8.W))
+	val lengthCounter  = RegInit(0.U(8.W))
+
+	val sweeper = Module(new FrequencySweeper(channelID == 2))
 	// val period  = RegInit(0.U(11.W))
-	val period = timerValue
+	val period  = timerValue
 	val counter = RegInit(0.U(11.W))
 
 	sweeper.io.ticks    := io.ticks
@@ -49,16 +54,26 @@ class PulseChannel(twosComplement: Boolean) extends Module {
 		startFlag := true.B
 	}
 
+	val lengthNonzero = lengthCounter =/= 0.U
+
+	when (io.ticks.half) {
+		when (io.writes.length) {
+			lengthCounter := lengthTable(lengthLoad)
+		} .elsewhen (!lengthHalt && lengthNonzero) {
+			lengthCounter := lengthCounter - 1.U
+		}
+	}
+
 	when (io.ticks.apu) {
 		when (startNow || startFlag) {
-			counter := period
+			counter   := period
 			startFlag := false.B
 		}
 
-		when (counter === 0.U) {
+		when (counter === 0.U && lengthNonzero) {
 			counter          := period
 			waveformSelector := waveformSelector - 1.U
-		} .otherwise {
+		} .elsewhen (lengthNonzero) {
 			counter := counter - 1.U
 		}
 	}

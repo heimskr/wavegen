@@ -11,7 +11,7 @@ class FrameCounter extends Module {
 		val ticks    = Output(Ticks())
 	})
 
-	val toggle = RegInit(true.B)
+	val toggle = RegInit(false.B)
 	io.ticks.apu     := toggle
 	io.ticks.quarter := false.B
 	io.ticks.half    := false.B
@@ -53,8 +53,11 @@ class FrameCounter extends Module {
 				is (37281.U) {
 					io.ticks.quarter := true.B
 					io.ticks.half    := true.B
-					counter          := 0.U
 				}
+			}
+
+			when (37281.U <= counter) {
+				counter := 0.U
 			}
 		} .otherwise {
 			switch (counter) {
@@ -74,8 +77,11 @@ class FrameCounter extends Module {
 				is (29829.U) {
 					io.ticks.quarter := true.B
 					io.ticks.half    := true.B
-					counter          := 0.U
 				}
+			}
+
+			when (29829.U <= counter) {
+				counter := 0.U
 			}
 		}
 	}
