@@ -165,25 +165,54 @@ module top (
 		.io_out_4(dbc)
 	);
 
-	wire [17:0] rom_addr;
-	wire [23:0] rom_out;
-
-	blk_mem_gen_0 rom (
-		.clka(clk),
-		.addra(rom_addr),
-		.douta(rom_out)
-	);
-
 	wire [23:0] out_audioL;
 	wire [23:0] out_audioR;
 
-	Main main_module (
+
+
+	// wire [17:0] rom_addr_gb;
+	// wire [23:0] rom_out_gb;
+
+	// blk_mem_gen_0 gb_rom (
+	// 	.clka(clk),
+	// 	.addra(rom_addr_gb),
+	// 	.douta(rom_out_gb)
+	// );
+
+	// MainGB main_module_gb (
+	// 	.clock(clk),
+	// 	.reset(!cpu_resetn),
+	// 	// .io_cpuClock(clk_gb_buf),
+	// 	.io_cpuClock(1'b0),
+	// 	.io_pulseU(dbu),
+	// 	.io_pulseR(dbr),
+	// 	.io_pulseL(dbl),
+	// 	.io_pulseD(dbd),
+	// 	.io_pulseC(dbc),
+	// 	.io_sw(sw),
+	// 	.io_outL(out_audioL),
+	// 	.io_outR(out_audioR),
+	// 	.io_led(led),
+	// 	.io_addr(rom_addr_gb),
+	// 	.io_rom(rom_out_gb)
+	// );
+
+
+
+	wire [16:0] rom_addr_nes;
+	wire [23:0] rom_out_nes;
+
+	NesROM nes_rom (
+		.clka(clk),
+		.addra(rom_addr_nes),
+		.douta(rom_out_nes)
+	);
+
+	MainNES main_module_nes (
 		.clock(clk),
 		.reset(!cpu_resetn),
-		// .io_clockGB(clk_gb_buf),
-		// .io_clockNES(clk_nes_buf),
-		.io_clockGB(1'b0),
-		.io_clockNES(1'b0),
+		// .io_cpuClock(clk_nes_buf),
+		.io_cpuClock(1'b0),
 		.io_pulseU(dbu),
 		.io_pulseR(dbr),
 		.io_pulseL(dbl),
@@ -193,9 +222,11 @@ module top (
 		.io_outL(out_audioL),
 		.io_outR(out_audioR),
 		.io_led(led),
-		.io_addr(rom_addr),
-		.io_rom(rom_out)
+		.io_addr(rom_addr_nes),
+		.io_rom(rom_out_nes)
 	);
+
+
 
 	i2s_ctl audio_inout (
 		.CLK_I(clk),    // Sys clk

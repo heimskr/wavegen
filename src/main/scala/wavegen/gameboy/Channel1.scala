@@ -5,6 +5,8 @@ import chisel3._
 import chisel3.util._
 
 class Channel1 extends Module {
+	override val desiredName = "GBChannel1"
+
 	val io = IO(new ChannelIO {
 		val sweeperTick  = Input(Bool())
 		val envelopeTick = Input(Bool())

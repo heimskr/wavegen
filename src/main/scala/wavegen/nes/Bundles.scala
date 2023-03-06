@@ -16,9 +16,8 @@ class Ticks extends Bundle {
 }
 
 class PulseWrites extends Bundle {
-	val dutyCycle = Bool()
-	val sweeper   = Bool()
-	val length    = Bool()
+	val sweeper = Bool()
+	val length  = Bool()
 }
 
 object ChannelIO   { def apply() = new ChannelIO   }

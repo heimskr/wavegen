@@ -5,6 +5,8 @@ import chisel3._
 import chisel3.util._
 
 class Channel3(val instant: Boolean) extends Module {
+	override val desiredName = "GBChannel3"
+
 	val io = IO(new ChannelIO {
 		val lengthTick = Input(Bool())
 		val channelOn  = Output(Bool())

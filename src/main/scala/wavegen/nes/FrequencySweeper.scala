@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 
 class FrequencySweeper(twosComplement: Boolean) extends Module {
+	override val desiredName = "NESFrequencySweeper"
+
 	val io = IO(new Bundle {
 		val ticks     = Input(Ticks())
 		val register  = Input(UInt(8.W))

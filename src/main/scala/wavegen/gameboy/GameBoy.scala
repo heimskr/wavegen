@@ -38,7 +38,7 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 	val sequencer    = Module(new FrameSequencer(fsFreq))
 
 	val cpuTick = if (useInternalClock) {
-		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq))
+		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq, false, "GBCPUClocker"))
 		cpuClocker.io.enable := true.B
 		cpuClocker.io.tick
 	} else io.tick

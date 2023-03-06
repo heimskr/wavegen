@@ -22,6 +22,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		val operand2        = Output(UInt(8.W))
 		val pointer         = Output(UInt(addressWidth.W))
 		val waitCounter     = Output(UInt(32.W))
+		val reloadFC        = Output(Bool())
 		val pulse1Writes    = Output(PulseWrites())
 		val pulse2Writes    = Output(PulseWrites())
 		// val nr13In          = Flipped(Valid(UInt(8.W)))
@@ -39,18 +40,18 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	}
 
 	def setReg(index: UInt, value: UInt): Unit = {
-		printf(cf"setReg (pointer = 0x$pointer%x): *0x$index%x = 0x$value%x\n")
+		// printf(cf"setReg (pointer = 0x$pointer%x): *0x$index%x = 0x$value%x\n")
 		val failed = WireDefault(true.B)
 
 		def write(to: Data): Unit = { failed := false.B; to := value }
 
 		switch (index) {
-			is ("h00".U) { write(registers.$4000); io.pulse1Writes.dutyCycle := true.B }
+			is ("h00".U) { write(registers.$4000) }
 			is ("h01".U) { write(registers.$4001); io.pulse1Writes.sweeper   := true.B }
 			is ("h02".U) { write(registers.$4002) }
 			is ("h03".U) { write(registers.$4003); io.pulse1Writes.length    := true.B }
 
-			is ("h04".U) { write(registers.$4004); io.pulse2Writes.dutyCycle := true.B }
+			is ("h04".U) { write(registers.$4004) }
 			is ("h05".U) { write(registers.$4005); io.pulse2Writes.sweeper   := true.B }
 			is ("h06".U) { write(registers.$4006) }
 			is ("h07".U) { write(registers.$4007); io.pulse2Writes.length    := true.B }
@@ -66,7 +67,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 			is ("h12".U) { write(registers.$4012) }
 			is ("h13".U) { write(registers.$4013) }
 			is ("h15".U) { write(registers.$4015) }
-			is ("h17".U) { write(registers.$4017) }
+			is ("h17".U) { write(registers.$4017); io.reloadFC := true.B }
 		}
 
 		when (failed) {
@@ -102,6 +103,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	def toCycles(samples: UInt) = (samples << 5.U) + (samples << 2.U) + samples
 
 	io.info         := 1.U
+	io.reloadFC     := false.B
 	io.pulse1Writes := 0.U.asTypeOf(PulseWrites())
 	io.pulse2Writes := 0.U.asTypeOf(PulseWrites())
 
@@ -164,7 +166,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 						io.info := 14.U
 						failed := false.B
 						val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
-						printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
+						// printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
 						advance()
 						waitCounter := toWait
 						state       := sWaiting
@@ -187,7 +189,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 					error      := eInvalidOpcode
 					errorInfo  := opcode
 					errorInfo2 := pointer(15, 0)
-					errorInfo3 := Cat(0.U(6.W), pointer(17, 16))
+					errorInfo3 := Cat(0.U(6.W), pointer(16))
 				}
 			} .elsewhen (state === sWaiting) {
 				io.info := 19.U
