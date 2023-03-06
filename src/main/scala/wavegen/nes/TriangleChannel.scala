@@ -8,10 +8,11 @@ class TriangleChannel extends Module {
 		val writes = Input(TriangleWrites())
 	})
 
-	val control     = io.registers.$4008(7) // Also the length counter halt flag
-	val reloadValue = io.registers.$4008(6, 0)
-	val lengthLoad  = io.registers.$400B(7, 3)
-	val timerValue  = Cat(io.registers.$400B(2, 0), io.registers.$400A)
+	val control      = io.registers.$4008(7) // Also the length counter halt flag
+	val reloadValue  = io.registers.$4008(6, 0)
+	val lengthLoad   = io.registers.$400B(7, 3)
+	val enableLength = io.registers.$4015(3)
+	val timerValue   = Cat(io.registers.$400B(2, 0), io.registers.$400A)
 
 	val counter = RegInit(0.U(11.W))
 
@@ -56,5 +57,5 @@ class TriangleChannel extends Module {
 		}
 	}
 
-	io.out := steps(step)
+	io.out := Mux(lengthCounter.io.out =/= 0.U || !enableLength, steps(step), 0.U) // TODO: verify
 }
