@@ -31,7 +31,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	val frameCounter = Module(new FrameCounter)
 	val stateMachine = Module(new NESStateMachine(addressWidth, romWidth))
 	val channel1     = Module(new Channel1)
-	// val channel2     = Module(new Channel2)
+	val channel2     = Module(new Channel2)
 	// val channel3     = Module(new Channel3)
 	// val channel4     = Module(new Channel4)
 	// val channel5     = Module(new Channel5)
@@ -54,10 +54,24 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 
 	channel1.io.ticks     := ticks
 	channel1.io.registers := stateMachine.io.registers
+	channel1.io.reg0      := stateMachine.io.registers.$4000
+	channel1.io.reg1      := stateMachine.io.registers.$4001
+	channel1.io.reg2      := stateMachine.io.registers.$4002
+	channel1.io.reg3      := stateMachine.io.registers.$4003
 	channel1.io.writes    := stateMachine.io.pulse1Writes
 
+	channel2.io.ticks     := ticks
+	channel2.io.registers := stateMachine.io.registers
+	channel2.io.reg0      := stateMachine.io.registers.$4004
+	channel2.io.reg1      := stateMachine.io.registers.$4005
+	channel2.io.reg2      := stateMachine.io.registers.$4006
+	channel2.io.reg3      := stateMachine.io.registers.$4007
+	channel2.io.writes    := stateMachine.io.pulse2Writes
+
+	val sum = channel1.io.out + channel2.io.out
+
 	io.leds := stateMachine.io.state
-	io.outL := channel1.io.out
-	io.outR := channel1.io.out
+	io.outL := sum
+	io.outR := sum
 	io.addr := stateMachine.io.addr
 }
