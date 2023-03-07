@@ -32,14 +32,14 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 
 	val undulate = Module(new wavegen.StaticClocker(opts.speed, 74_250_000, true))
 	undulate.io.enable := true.B
-	val font      = Module(new wavegen.presentation.Font)
-	val shift     = opts.shift
-	val text      = VecInit(opts.text.toList.map(_.U(8.W)))
-	val width     = text.length * 8
-	val height    = 8
-	val left      = opts.xOffset
-	val top       = opts.yOffset
-	val x         = (
+	val font   = Module(new wavegen.presentation.Font)
+	val shift  = opts.shift
+	val text   = VecInit(opts.text.toList.map(_.U(8.W)))
+	val width  = text.length * 8
+	val height = 8
+	val left   = opts.xOffset
+	val top    = opts.yOffset
+	val x      = (
 		if (opts.centerX)
 			io.x - (left - (width << (shift - 1))).U
 		else
@@ -49,7 +49,9 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 	val char      = text(charIndex)
 
 	val resolution = 128
-	val sines = VecInit.tabulate(resolution)(x => floor((sin(x * 8 * Pi / resolution) + 1) * (opts.waveFactor << shift)).toInt.U)
+	val sines      = Seq.tabulate(resolution)(x => floor((sin(x * 8 * Pi / resolution) + 1) * (opts.waveFactor << shift)).toInt)
+	val sinesVec   = VecInit(sines.map(_.U))
+	val average    = sines.sum / resolution
 
 	val counter = RegInit(0.U(log2Ceil(resolution - text.length).W))
 	when (undulate.io.tick) {
@@ -62,9 +64,9 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 
 	val y = (
 		if (opts.centerY)
-			(io.y - (top - (height << (shift - 1))).U - sines((counter + charIndex)(6, 0)))
+			(io.y - (top - average - (height << (shift - 1))).U - sinesVec((counter + charIndex)(6, 0)))
 		else
-			(io.y - top.U - sines((counter + charIndex)(6, 0)))
+			(io.y - top.U - sinesVec((counter + charIndex)(6, 0)))
 	) >> shift.U
 
 	// The RegNexts here are a WNS hack that appears to have no impact on the visuals.
