@@ -6,6 +6,7 @@ import chisel3.util._
 class TriangleChannel extends Module {
 	val io = IO(new ChannelIO {
 		val writes = Input(TriangleWrites())
+		val debug  = Output(UInt(8.W))
 	})
 
 	val control      = io.registers.$4008(7) // Also the length counter halt flag
@@ -56,5 +57,7 @@ class TriangleChannel extends Module {
 		}
 	}
 
-	io.out := Mux(lengthCounter.io.out =/= 0.U || !enableLength, steps(step), 0.U) // TODO: verify
+	// io.out := Mux(lengthCounter.io.out =/= 0.U || !enableLength, steps(step), 0.U) // TODO: verify
+	io.out := steps(step)
+	io.debug := Cat(lengthCounter.io.out =/= 0.U, reloadValue)
 }
