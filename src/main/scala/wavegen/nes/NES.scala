@@ -34,7 +34,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	val channel2     = Module(new PulseChannel(2))
 	val channel3     = Module(new TriangleChannel)
 	val channel4     = Module(new NoiseChannel)
-	// val channel5     = Module(new Channel5)
+	// val channel5     = Module(new Channel5) // Probably not going to happen.
 
 	val cpuTick = if (useInternalClock) {
 		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq, false, "NESCPUClocker"))
