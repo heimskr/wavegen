@@ -4,8 +4,12 @@ import chisel3._
 import chisel3.util._
 import scala.math.round
 
-class StaticClocker(wantedFrequency: Int, baseClockFreq: Int, moreAccurate: Boolean = false, moduleName: String = "StaticClocker") extends Module {
-	override val desiredName = moduleName
+class StaticClocker(wantedFrequency: Int, baseClockFreq: Int, moreAccurate: Boolean = false, moduleName: String = "") extends Module {
+	override val desiredName =
+		if (moduleName.isEmpty())
+			"StaticClocker" + wantedFrequency + "W" + baseClockFreq + (if (moreAccurate) "BA" else "B")
+		else
+			moduleName
 
 	val period =
 		if (moreAccurate)

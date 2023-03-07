@@ -37,7 +37,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	// val channel5     = Module(new Channel5) // Probably not going to happen.
 
 	val cpuTick = if (useInternalClock) {
-		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq, false, "NESCPUClocker"))
+		val cpuClocker = Module(new StaticClocker(slowFreq, clockFreq, false))
 		cpuClocker.io.enable := true.B
 		cpuClocker.io.tick
 	} else io.tick
