@@ -72,7 +72,8 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	channel3.io.registers := stateMachine.io.registers
 	channel3.io.writes    := stateMachine.io.triangleWrites
 
-	val sum = channel1.io.out +& channel2.io.out +& channel3.io.out
+	// val sum = channel1.io.out +& channel2.io.out +& channel3.io.out
+	val sum = channel1.io.out +& channel2.io.out +& Mux(io.sw(0), channel3.io.out, 0.U)
 
 	io.leds := stateMachine.io.state
 	io.outL := sum

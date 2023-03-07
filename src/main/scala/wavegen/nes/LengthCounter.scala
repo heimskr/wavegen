@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 
 class LengthCounter(channelID: Int) extends Module {
+	override val desiredName = "NESLengthCounter"
+
 	val io = IO(new Bundle {
 		val ticks     = Input(Ticks())
 		val write     = Input(Bool())

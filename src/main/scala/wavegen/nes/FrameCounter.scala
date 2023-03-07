@@ -27,6 +27,8 @@ class FrameCounter(implicit inSimulator: Boolean) extends Module {
 		toggle := !toggle
 		io.ticks.apu := toggle
 
+		counter := counter + 1.U
+
 		when (io.reload) {
 			reloadCounter := 1.U
 			midAPU        := counter(0)

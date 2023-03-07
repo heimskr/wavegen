@@ -105,7 +105,7 @@ class PulseChannel(channelID: Int) extends Module {
 	// val disableFromLength = lengthCounter === 0.U && enableLength
 	val disableFromLength = false.B
 
-	printf(cf"${waveBit} && ${!sweeper.io.mute} && ${counter =/= 0.U} && ${periodHighEnough} && ${!disableFromLength}? ${volume} : 0, startFlag = ${startFlag}<-${startNow}, lengthHalt = ${lengthHalt}\n")
+	// printf(cf"${waveBit} && ${!sweeper.io.mute} && ${counter =/= 0.U} && ${periodHighEnough} && ${!disableFromLength}? ${volume} : 0, startFlag = ${startFlag}<-${startNow}, lengthHalt = ${lengthHalt}\n")
 
 	io.out := Mux(waveBit && !sweeper.io.mute && counter =/= 0.U && periodHighEnough && !disableFromLength, volume, 0.U(4.W))
 }

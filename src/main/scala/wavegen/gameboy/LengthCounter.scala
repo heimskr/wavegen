@@ -7,6 +7,8 @@ import chisel3._
 import chisel3.util._
 
 class LengthCounter(minuend: Int = 64) extends Module {
+	override val desiredName = "GBLengthCounter"
+
 	val width = log2Ceil(minuend)
 
 	val io = IO(new Bundle {
