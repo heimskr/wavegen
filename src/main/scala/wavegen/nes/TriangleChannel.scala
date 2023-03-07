@@ -15,7 +15,7 @@ class TriangleChannel extends Module {
 	val timerValue   = Cat(io.registers.$400B(2, 0), io.registers.$400A)
 
 	val counter = RegInit(0.U(11.W))
-	val steps   = VecInit(15.U(4.W), 14.U(4.W), 13.U(4.W), 12.U(4.W), 11.U(4.W), 10.U(4.W), 9.U(4.W), 8.U(4.W), 7.U(4.W), 6.U(4.W), 5.U(4.W), 4.U(4.W), 3.U(4.W), 2.U(4.W), 1.U(4.W), 0.U(4.W), 0.U(4.W), 1.U(4.W), 2.U(4.W), 3.U(4.W), 4.U(4.W), 5.U(4.W), 6.U(4.W), 7.U(4.W), 8.U(4.W), 9.U(4.W), 10.U(4.W), 11.U(4.W), 12.U(4.W), 13.U(4.W), 14.U(4.W), 15.U(4.W))
+	val steps   = VecInit(Seq(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).map(_.U(4.W)))
 	val step    = RegInit(0.U(5.W))
 
 	val linearCounter = RegInit(0.U(7.W))

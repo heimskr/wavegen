@@ -16,7 +16,7 @@ class LengthCounter(channelID: Int) extends Module {
 	})
 
 	val enableLength  = io.registers.$4015(channelID - 1)
-	val lengthTable   = VecInit(10.U(8.W), 254.U(8.W), 20.U(8.W), 2.U(8.W), 40.U(8.W), 4.U(8.W), 80.U(8.W), 6.U(8.W), 160.U(8.W), 8.U(8.W), 60.U(8.W), 10.U(8.W), 14.U(8.W), 12.U(8.W), 26.U(8.W), 14.U(8.W), 12.U(8.W), 16.U(8.W), 24.U(8.W), 18.U(8.W), 48.U(8.W), 20.U(8.W), 96.U(8.W), 22.U(8.W), 192.U(8.W), 24.U(8.W), 72.U(8.W), 26.U(8.W), 16.U(8.W), 28.U(8.W), 32.U(8.W), 30.U(8.W))
+	val lengthTable   = VecInit(Seq(10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30).map(_.U(8.W)))
 	val lengthCounter = RegInit(0.U(8.W))
 
 	val writeReg = RegInit(false.B)

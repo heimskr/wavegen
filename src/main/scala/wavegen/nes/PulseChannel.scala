@@ -50,7 +50,7 @@ class PulseChannel(channelID: Int) extends Module {
 	val decayCounter   = RegInit(0.U(4.W))
 	val startFlag      = RegInit(false.B)
 	val startNow       = io.writes.length
-	val clockDivider   = WireInit(false.B)
+	val tickDivider    = WireInit(false.B)
 
 	when (startNow) {
 		startFlag := true.B
@@ -76,11 +76,14 @@ class PulseChannel(channelID: Int) extends Module {
 		waveformSelector := 0.U
 	}
 
+	// val envelopeLoad = timerValue
+	val envelopeLoad = volumeParam
+
 	when (io.ticks.quarter) {
 		when (startNow || startFlag) {
-			clockDivider := true.B
+			tickDivider := true.B
 			when (envelopeVolume === 0.U) {
-				envelopeVolume := timerValue
+				envelopeVolume := envelopeLoad
 				when (decayCounter === 0.U) {
 					when (lengthHalt) {
 						decayCounter := 15.U
@@ -94,7 +97,7 @@ class PulseChannel(channelID: Int) extends Module {
 		} .otherwise {
 			startFlag      := false.B
 			decayCounter   := 15.U
-			envelopeVolume := timerValue
+			envelopeVolume := envelopeLoad
 		}
 	}
 
@@ -103,7 +106,7 @@ class PulseChannel(channelID: Int) extends Module {
 	val periodHighEnough = 8.U <= timerValue
 
 	// val disableFromLength = lengthCounter === 0.U && enableLength
-	val disableFromLength = false.B
+	val disableFromLength = !lengthNonzero
 
 	// printf(cf"${waveBit} && ${!sweeper.io.mute} && ${counter =/= 0.U} && ${periodHighEnough} && ${!disableFromLength}? ${volume} : 0, startFlag = ${startFlag}<-${startNow}, lengthHalt = ${lengthHalt}\n")
 

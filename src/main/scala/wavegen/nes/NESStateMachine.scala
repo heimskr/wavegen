@@ -26,7 +26,6 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		val pulse1Writes    = Output(PulseWrites())
 		val pulse2Writes    = Output(PulseWrites())
 		val triangleWrites  = Output(TriangleWrites())
-		// val nr13In          = Flipped(Valid(UInt(8.W)))
 	})
 
 	val channelsEnabled = RegInit(0.U(5.W)) // {ch5, ch4, ch3, ch2, ch1}
@@ -207,11 +206,6 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 			io.info := 2.U
 		}
 	}
-
-	// TODO: handle writes...?
-	// when (io.nr13In.valid) {
-	// 	registers.NR13 := io.nr13In.bits
-	// }
 
 	io.addr            := pointer
 	io.state           := state
