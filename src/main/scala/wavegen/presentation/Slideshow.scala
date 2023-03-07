@@ -11,6 +11,7 @@ class Slideshow(slideCount: Int = 16) extends Module {
 		val red   = Output(UInt(8.W))
 		val green = Output(UInt(8.W))
 		val blue  = Output(UInt(8.W))
+		val out   = Output(Bool())
 	})
 
 	val rom  = Module(new TextROM)
@@ -36,7 +37,9 @@ class Slideshow(slideCount: Int = 16) extends Module {
 	font.io.x := ((io.x - 1.U) >> scaleUp.U)(2, 0) // Why is the - 1 necessary?
 	font.io.y := (y >> scaleUp.U)(2, 0)
 
-	val color = Mux(yOffset <= io.y && font.io.out, 255.U(8.W), 0.U(8.W))
+	io.out := yOffset <= io.y && font.io.out
+
+	val color = Mux(io.out, 255.U(8.W), 0.U(8.W))
 	io.red   := color
 	io.green := color
 	io.blue  := color

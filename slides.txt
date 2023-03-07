@@ -1,4 +1,4 @@
-               FPGABOY :)
+  FPGABoy by Kai Tamkun (Heimskr#0001)
              _____________
             | _"_________ |
             ||.---------.||
@@ -15,21 +15,20 @@
             |             |
             |     _ _     |
             |          :::|
-            |         .::`/
+        jgs |         .::`/
             '"""""""""""""
        Image Credit: Joan Stark
-#
+\s
 
                 Project
 
  - Make a Game Boy sound chip
 
- - Stretch goal: NES sound chip
-
  - Accuracy nice but not a requirement
+   - Clocks and CDC are finicky
 
- - More than 117 hours of work, whoops
-#
+ - More than 125 hours of work, whoops
+\s
 
                Generators
 
@@ -41,42 +40,43 @@
 
  - Used SquareGenExternal, StaticClocker
    and PeriodClocker
-#
+\s
 
                Interfaces
 
  - Standard buttons, switches and LEDs
 
- - Code produces 9-bit audio
+ - Code produces 9/10-bit audio
 
  - Audio is output over HDMI and aux
-#
+\s
 
         Incremental Development
 
- 1. Implemented square and sine waves
- 2. Multi-cycle channel mixer
- 3. Top-level Verilog
- 4. Basic audio over aux
- 5. VGM tools
- 6. State machine
- 7. Game Boy channels: 1, 2, 4, 3
- 8. HDMI output: video, audio
- 9. Presentation slides
-#
+  1. Implemented square and sine waves
+  2. Multi-cycle channel mixer
+  3. Top-level Verilog
+  4. Basic audio over aux
+  5. VGM tools
+  6. State machine
+  7. Game Boy channels: 1, 2, 4, 3
+  8. HDMI output: video, audio
+  9. Presentation slides
+ 10. NES channels: 1, 2, 3, 4
+\s
 
                 Testing
 
  - Testing? Never heard of it, yolo
 
- - test:main ratio: ~25%
+ - test:main ratio: ~20%
 
- - Mostly just VCD generation for manual
-   inspection in GTKWave
+ - Tests mostly just generate VCD output
+   for manual inspection in GTKWave
 
  - Divider was exhaustively tested for
    8-bit inputs
-#
+\s
 
              Inner Workings
 
@@ -84,10 +84,7 @@
    channel modules read and interpret
 
  - State machine input stored in BRAM
-
- - Image on first slide is indexed
-   (2 pixels/byte, 16 colors)
-#
+\s
 
               Presentation
 
@@ -98,7 +95,7 @@
  - Rendered by FPGA
 
  - Typeface might look familiar
-#
+\s
 
               Game Boy APU
 
@@ -115,3 +112,30 @@
    from registers
 
  - Channel 4: LFSR-based noise generator
+\s
+
+    Pokmon Card GB2 (GR duel music)
+\s
+
+                NES APU
+
+ - Similar to Game Boy APU
+
+ - Channels: 2 square waves, triangle
+   wave, noise, delta modulation channel
+
+ - DMC unimplemented due to format
+   constraints
+   - Not very commonly used anyway
+
+ - Triggering based on register writes,
+   not designated bits
+
+\s
+
+   The Legend of Zelda (title screen)
+\s
+
+
+
+      Thanks for a great quarter!

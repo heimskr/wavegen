@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -49,19 +50,34 @@ int main(int argc, char **argv) {
 
 	size_t timeout = 0;
 
-	for (const char ch: input) {
-		if (ch == '#') {
-			push();
-			pad();
-			timeout = 2;
+	for (size_t i = 0; i < input.size(); ++i) {
+		const char ch = input[i];
+		std::optional<char> to_add;
+		if (ch == '\\') {
+			if (i != input.size() - 1) {
+				const char next = input[i + 1];
+				if (next == 's') {
+					push();
+					pad();
+					timeout = 2;
+				} else if (next == '\\') {
+					to_add = '\\';
+				} else
+					throw std::runtime_error("Invalid escape: " + std::string{ch, next});
+			} else
+				to_add = '\\';
 		} else if (0 < timeout) {
 			--timeout;
 		} else if (ch == '\n') {
 			push();
-		} else if (pos == WIDTH) {
-			throw std::runtime_error("Line too long");
 		} else {
-			arr[pos++] = ch;
+			to_add = ch;
+		}
+
+		if (to_add) {
+			if (pos == WIDTH)
+				throw std::runtime_error("Line too long");
+			arr[pos++] = *to_add;
 		}
 	}
 
