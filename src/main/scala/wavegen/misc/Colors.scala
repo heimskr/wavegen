@@ -275,3 +275,13 @@ class Colors extends Module {
 	io.green := rgb(1)
 	io.blue  := rgb(2)
 }
+
+class ColorBundle extends Bundle {
+	val red   = UInt(8.W)
+	val green = UInt(8.W)
+	val blue  = UInt(8.W)
+}
+
+object ColorBundle {
+	def apply() = new ColorBundle
+}

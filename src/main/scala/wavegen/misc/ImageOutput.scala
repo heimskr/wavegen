@@ -77,44 +77,22 @@ class ImageOutput extends Module {
 			io.blue  := color( 7,  0)
 		}
 
-		{
-			val undulate = Module(new wavegen.StaticClocker(32, 74_250_000, true, "UndulationClocker"))
-			undulate.io.enable := true.B
-			val font      = Module(new wavegen.presentation.Font)
-			val shift     = 3
-			val text      = VecInit("Game Boy".toList.map(_.U(8.W)))
-			val width     = text.length * 8
-			val height    = 8
-			val top       = 16
-			val bottom    = top + height
-			val x         = (io.x - ((1280 - (width << shift)) / 2).U) >> shift.U
-			val charIndex = x >> 3.U
-			val char      = text(charIndex)
+		val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, xOffset=1280/2 + 4, yOffset=16 + 4, shift=3)))
+		wavyBg.io.x := io.x
+		wavyBg.io.y := io.y
+		when (wavyBg.io.out) {
+			io.red   := 0.U
+			io.green := 0.U
+			io.blue  := 0.U
+		}
 
-			val resolution = 128
-			val sines = VecInit.tabulate(resolution)(x => floor((sin(x * 8 * Pi / resolution) + 1) * (4 << shift)).toInt.U)
-
-			val counter = RegInit(0.U(log2Ceil(resolution - text.length).W))
-			when (undulate.io.tick) {
-				when (counter >= (resolution - 1).U) {
-					counter := 0.U
-				} .otherwise {
-					counter := counter + 1.U
-				}
-			}
-
-			val y = (io.y - top.U - sines((counter + charIndex)(6, 0))) >> shift.U
-
-			// The RegNexts here are a WNS hack that appears to have no impact on the visuals.
-			font.io.char := RegNext(char)
-			font.io.x    := RegNext(x(2, 0))
-			font.io.y    := RegNext(y(2, 0))
-
-			when (0.U <= x && x < width.U && 0.U <= y && y < height.U && font.io.out) {
-				io.green := 255.U - colors.io.green
-				io.red   := 255.U - colors.io.red
-				io.blue  := 255.U - colors.io.blue
-			}
+		val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, xOffset=1280/2, yOffset=16, shift=3)))
+		wavy.io.x := io.x
+		wavy.io.y := io.y
+		when (wavy.io.out) {
+			io.red   := 255.U - colors.io.red
+			io.green := 255.U - colors.io.green
+			io.blue  := 255.U - colors.io.blue
 		}
 	} .otherwise {
 		slideshow.io.slide := slide - 1.U
