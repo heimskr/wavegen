@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.{sin, floor, Pi}
 
-class ImageOutput extends Module {
+class ImageOutput(implicit clockFreq: Int) extends Module {
 	val imageWidth  = 160
 	val imageHeight = 144
 
@@ -75,6 +75,45 @@ class ImageOutput extends Module {
 			io.red   := color(23, 16)
 			io.green := color(15,  8)
 			io.blue  := color( 7,  0)
+		}
+
+		{
+			val undulate = Module(new wavegen.StaticClocker(32, 74_250_000, true, "UndulationClocker"))
+			undulate.io.enable := true.B
+			val font      = Module(new wavegen.presentation.Font)
+			val shift     = 3
+			val text      = VecInit("Game Boy".toList.map(_.U(8.W)))
+			val width     = text.length * 8
+			val height    = 8
+			val top       = 16
+			val bottom    = top + height
+			val x         = (io.x - ((1280 - (width << shift)) / 2).U) >> shift.U
+			val charIndex = x >> 3.U
+			val char      = text(charIndex)
+
+			val resolution = 128
+			val sines = VecInit.tabulate(resolution)(x => floor((sin(x * 8 * Pi / resolution) + 1) * (4 << shift)).toInt.U)
+
+			val counter = RegInit(0.U(log2Ceil(resolution - text.length).W))
+			when (undulate.io.tick) {
+				when (counter >= (resolution - 1).U) {
+					counter := 0.U
+				} .otherwise {
+					counter := counter + 1.U
+				}
+			}
+
+			val y = (io.y - top.U - sines((counter + charIndex)(6, 0))) >> shift.U
+
+			font.io.char := char
+			font.io.x    := x(2, 0)
+			font.io.y    := y(2, 0)
+
+			when (0.U <= x && x < width.U && 0.U <= y && y < height.U && font.io.out) {
+				io.green := 255.U - colors.io.green
+				io.red   := 255.U - colors.io.red
+				io.blue  := 255.U - colors.io.blue
+			}
 		}
 	} .otherwise {
 		slideshow.io.slide := slide - 1.U

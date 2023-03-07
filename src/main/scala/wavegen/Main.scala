@@ -115,6 +115,7 @@ class MainNES extends Module {
 }
 
 object MainRun extends scala.App {
+	implicit val clockFreq = 100_000_000
 	(new ChiselStage).emitVerilog(new MainGB, args)
 	(new ChiselStage).emitVerilog(new MainNES, args)
 	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
