@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.{sin, floor, Pi}
 
-case class WavyTextOpts(text: String, centerX: Boolean, centerY: Boolean, xOffset: Int, yOffset: Int, shift: Int, speed: Int = 32, waveFactor: Int = 4)
+case class WavyTextOpts(text: String, centerX: Boolean, centerY: Boolean, xOffset: Int, yOffset: Int, shift: Int, speed: Int = 8, waveFactor: Int = 4, scrunch: Int = 32)
 
 class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleName: String = "") extends Module {
 	override val desiredName =
@@ -19,6 +19,7 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 				+ opts.shift + "sh"
 				+ opts.speed + "sp"
 				+ opts.waveFactor + "wf"
+				+ opts.scrunch + "sc"
 				+ xWidth + "xw"
 				+ yWidth + "yw")
 		else
@@ -49,7 +50,7 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 	val char      = text(charIndex)
 
 	val resolution = 128
-	val sines      = Seq.tabulate(resolution)(x => floor((sin(x * 8 * Pi / resolution) + 1) * (opts.waveFactor << shift)).toInt)
+	val sines      = Seq.tabulate(resolution)(x => floor((sin(x * opts.scrunch * Pi / resolution) + 1) * (opts.waveFactor << shift)).toInt)
 	val sinesVec   = VecInit(sines.map(_.U))
 	val average    = sines.sum / resolution
 
