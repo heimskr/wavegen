@@ -90,9 +90,9 @@ class ImageOutput extends Module {
 		wavy.io.x := io.x
 		wavy.io.y := io.y
 		when (wavy.io.out) {
-			io.red   := 255.U - colors.io.red
-			io.green := 255.U - colors.io.green
-			io.blue  := 255.U - colors.io.blue
+			io.red   := colors.io.red
+			io.green := colors.io.green
+			io.blue  := colors.io.blue
 		}
 	} .otherwise {
 		slideshow.io.slide := slide - 1.U

@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.{sin, floor, Pi}
 
-case class WavyTextOpts(text: String, centerX: Boolean, centerY: Boolean, xOffset: Int, yOffset: Int, shift: Int, speed: Int = 8, waveFactor: Int = 4, scrunch: Int = 32)
+case class WavyTextOpts(text: String, centerX: Boolean, centerY: Boolean, xOffset: Int, yOffset: Int, shift: Int, speed: Int = 32, waveFactor: Int = 4, scrunch: Int = 5, antiscrunch: Int = 6)
 
 class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleName: String = "") extends Module {
 	override val desiredName =
@@ -49,10 +49,12 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 	val charIndex = x >> 3.U
 	val char      = text(charIndex)
 
-	val resolution = 128
-	val sines      = Seq.tabulate(resolution)(x => floor((sin(x * opts.scrunch * Pi / resolution) + 1) * (opts.waveFactor << shift)).toInt)
-	val sinesVec   = VecInit(sines.map(_.U))
-	val average    = sines.sum / resolution
+	val scrunch     = 1 << opts.scrunch
+	val resolution  = 8 * scrunch
+	val sines       = Seq.tabulate(resolution)(x => floor((sin(x * (scrunch >> opts.antiscrunch) * Pi) + 1) * (opts.waveFactor << shift)).toInt)
+	val sinesVec    = VecInit(sines.map(_.U))
+	val average     = sines.sum / resolution
+	val sineMaxBit  = log2Ceil(resolution) - 1
 
 	val counter = RegInit(0.U(log2Ceil(resolution - text.length).W))
 	when (undulate.io.tick) {
@@ -65,9 +67,9 @@ class WavyText(opts: WavyTextOpts, xWidth: Int = 11, yWidth: Int = 10, moduleNam
 
 	val y = (
 		if (opts.centerY)
-			(io.y - (top - average - (height << (shift - 1))).U - sinesVec((counter + charIndex)(6, 0)))
+			(io.y - (top - average - (height << (shift - 1))).U - sinesVec((counter + charIndex)(sineMaxBit, 0)))
 		else
-			(io.y - top.U - sinesVec((counter + charIndex)(6, 0)))
+			(io.y - top.U - sinesVec((counter + charIndex)(sineMaxBit, 0)))
 	) >> shift.U
 
 	// The RegNexts here are a WNS hack that appears to have no impact on the visuals.
