@@ -83,31 +83,60 @@ class ImageOutput extends Module {
 		val distance = 8
 		val wC = 6
 
-		val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
-		wavyBg.io.x := io.x
-		wavyBg.io.y := io.y
-		when (wavyBg.io.out) {
-			io.red   := colors.io.red
-			io.green := colors.io.green
-			io.blue  := colors.io.blue
-		}
+		when (io.sw(0)) {
+			val wavyBg = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
+			wavyBg.io.x := io.x
+			wavyBg.io.y := io.y
+			when (wavyBg.io.out) {
+				io.red   := colors.io.red
+				io.green := colors.io.green
+				io.blue  := colors.io.blue
+			}
 
-		val wavyMid = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance/2, yOffset=yBase + distance/2, shift=wShift, waveCoefficient=wC)))
-		wavyMid.io.x := io.x
-		wavyMid.io.y := io.y
-		when (wavyMid.io.out) {
-			io.red   := 0.U
-			io.green := 0.U
-			io.blue  := 0.U
-		}
+			val wavyMid = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance/2, yOffset=yBase + distance/2, shift=wShift, waveCoefficient=wC)))
+			wavyMid.io.x := io.x
+			wavyMid.io.y := io.y
+			when (wavyMid.io.out) {
+				io.red   := 0.U
+				io.green := 0.U
+				io.blue  := 0.U
+			}
 
-		val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
-		wavy.io.x := io.x
-		wavy.io.y := io.y
-		when (wavy.io.out) {
-			io.red   := 255.U
-			io.green := 255.U
-			io.blue  := 255.U
+			val wavy = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
+			wavy.io.x := io.x
+			wavy.io.y := io.y
+			when (wavy.io.out) {
+				io.red   := 255.U
+				io.green := 255.U
+				io.blue  := 255.U
+			}
+		} .otherwise {
+			val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
+			wavyBg.io.x := io.x
+			wavyBg.io.y := io.y
+			when (wavyBg.io.out) {
+				io.red   := colors.io.red
+				io.green := colors.io.green
+				io.blue  := colors.io.blue
+			}
+
+			val wavyMid = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance/2, yOffset=yBase + distance/2, shift=wShift, waveCoefficient=wC)))
+			wavyMid.io.x := io.x
+			wavyMid.io.y := io.y
+			when (wavyMid.io.out) {
+				io.red   := 0.U
+				io.green := 0.U
+				io.blue  := 0.U
+			}
+
+			val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
+			wavy.io.x := io.x
+			wavy.io.y := io.y
+			when (wavy.io.out) {
+				io.red   := 255.U
+				io.green := 255.U
+				io.blue  := 255.U
+			}
 		}
 	} .otherwise {
 		slideshow.io.slide := slide - 1.U

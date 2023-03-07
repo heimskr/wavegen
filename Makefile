@@ -22,6 +22,7 @@ ifeq ($(shell test -d "$(ELSEWHERE)" || echo fail),fail)
 endif
 	cp MainGB.v      $(ELSEWHERE)/MainGB.v      && \
 	cp MainNES.v     $(ELSEWHERE)/MainNES.v     && \
+	cp MainBoth.v    $(ELSEWHERE)/MainBoth.v    && \
 	cp Debouncer2.v  $(ELSEWHERE)/Debouncer2.v  && \
 	cp Debouncer5.v  $(ELSEWHERE)/Debouncer5.v  && \
 	cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v && \
