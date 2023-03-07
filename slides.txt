@@ -28,7 +28,7 @@
 
  - Accuracy nice but not a requirement
 
- - More than 111 hours of work, whoops
+ - More than 117 hours of work, whoops
 #
 
                Generators

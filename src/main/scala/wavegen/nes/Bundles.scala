@@ -25,7 +25,12 @@ class TriangleWrites extends Bundle {
 	val counterReload = Bool()
 }
 
+class NoiseWrites extends Bundle {
+	val length = Bool()
+}
+
 object ChannelIO      { def apply() = new ChannelIO      }
 object Ticks          { def apply() = new Ticks          }
 object PulseWrites    { def apply() = new PulseWrites    }
 object TriangleWrites { def apply() = new TriangleWrites }
+object NoiseWrites    { def apply() = new NoiseWrites    }

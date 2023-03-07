@@ -26,6 +26,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		val pulse1Writes    = Output(PulseWrites())
 		val pulse2Writes    = Output(PulseWrites())
 		val triangleWrites  = Output(TriangleWrites())
+		val noiseWrites     = Output(NoiseWrites())
 	})
 
 	val channelsEnabled = RegInit(0.U(5.W)) // {ch5, ch4, ch3, ch2, ch1}
@@ -47,21 +48,21 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 
 		switch (index) {
 			is ("h00".U) { write(registers.$4000) }
-			is ("h01".U) { write(registers.$4001); io.pulse1Writes.sweeper   := true.B }
+			is ("h01".U) { write(registers.$4001); io.pulse1Writes.sweeper := true.B }
 			is ("h02".U) { write(registers.$4002) }
-			is ("h03".U) { write(registers.$4003); io.pulse1Writes.length    := true.B }
+			is ("h03".U) { write(registers.$4003); io.pulse1Writes.length  := true.B }
 
 			is ("h04".U) { write(registers.$4004) }
-			is ("h05".U) { write(registers.$4005); io.pulse2Writes.sweeper   := true.B }
+			is ("h05".U) { write(registers.$4005); io.pulse2Writes.sweeper := true.B }
 			is ("h06".U) { write(registers.$4006) }
-			is ("h07".U) { write(registers.$4007); io.pulse2Writes.length    := true.B }
+			is ("h07".U) { write(registers.$4007); io.pulse2Writes.length  := true.B }
 
 			is ("h08".U) { write(registers.$4008) }
 			is ("h0a".U) { write(registers.$400A) }
 			is ("h0b".U) { write(registers.$400B); io.triangleWrites.counterReload := true.B }
 			is ("h0c".U) { write(registers.$400C) }
 			is ("h0e".U) { write(registers.$400E) }
-			is ("h0f".U) { write(registers.$400F) }
+			is ("h0f".U) { write(registers.$400F); io.noiseWrites.length := true.B }
 			is ("h10".U) { write(registers.$4010) }
 			is ("h11".U) { write(registers.$4011) }
 			is ("h12".U) { write(registers.$4012) }
@@ -107,6 +108,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	io.pulse1Writes   := 0.U.asTypeOf(PulseWrites())
 	io.pulse2Writes   := 0.U.asTypeOf(PulseWrites())
 	io.triangleWrites := 0.U.asTypeOf(TriangleWrites())
+	io.noiseWrites    := 0.U.asTypeOf(NoiseWrites())
 
 	when (io.start) {
 		when (state === sIdle) {
