@@ -6,7 +6,6 @@ import chisel3.util._
 class TriangleChannel extends Module {
 	val io = IO(new ChannelIO {
 		val writes = Input(TriangleWrites())
-		val debug  = Output(UInt(8.W))
 	})
 
 	val control      = io.registers.$4008(7) // Also the length counter halt flag
@@ -16,9 +15,8 @@ class TriangleChannel extends Module {
 	val timerValue   = Cat(io.registers.$400B(2, 0), io.registers.$400A)
 
 	val counter = RegInit(0.U(11.W))
-
-	val steps = VecInit(15.U(4.W), 14.U(4.W), 13.U(4.W), 12.U(4.W), 11.U(4.W), 10.U(4.W), 9.U(4.W), 8.U(4.W), 7.U(4.W), 6.U(4.W), 5.U(4.W), 4.U(4.W), 3.U(4.W), 2.U(4.W), 1.U(4.W), 0.U(4.W), 0.U(4.W), 1.U(4.W), 2.U(4.W), 3.U(4.W), 4.U(4.W), 5.U(4.W), 6.U(4.W), 7.U(4.W), 8.U(4.W), 9.U(4.W), 10.U(4.W), 11.U(4.W), 12.U(4.W), 13.U(4.W), 14.U(4.W), 15.U(4.W))
-	val step  = RegInit(0.U(5.W))
+	val steps   = VecInit(15.U(4.W), 14.U(4.W), 13.U(4.W), 12.U(4.W), 11.U(4.W), 10.U(4.W), 9.U(4.W), 8.U(4.W), 7.U(4.W), 6.U(4.W), 5.U(4.W), 4.U(4.W), 3.U(4.W), 2.U(4.W), 1.U(4.W), 0.U(4.W), 0.U(4.W), 1.U(4.W), 2.U(4.W), 3.U(4.W), 4.U(4.W), 5.U(4.W), 6.U(4.W), 7.U(4.W), 8.U(4.W), 9.U(4.W), 10.U(4.W), 11.U(4.W), 12.U(4.W), 13.U(4.W), 14.U(4.W), 15.U(4.W))
+	val step    = RegInit(0.U(5.W))
 
 	val linearCounter = RegInit(0.U(7.W))
 
@@ -39,7 +37,7 @@ class TriangleChannel extends Module {
 	when (io.ticks.quarter) {
 		when (counterReloadNow || counterReloadFlag) {
 			linearCounter := reloadValue
-		} .elsewhen (0.U < linearCounter) {
+		} .elsewhen (linearCounter =/= 0.U) {
 			linearCounter := linearCounter - 1.U
 		}
 
@@ -48,7 +46,7 @@ class TriangleChannel extends Module {
 		}
 	}
 
-	when (io.ticks.cpu && 0.U < linearCounter) {
+	when (io.ticks.cpu && linearCounter =/= 0.U && lengthCounter.io.out =/= 0.U) {
 		when (counter === 0.U) {
 			counter := timerValue
 			step    := step + 1.U
@@ -57,7 +55,5 @@ class TriangleChannel extends Module {
 		}
 	}
 
-	// io.out := Mux(lengthCounter.io.out =/= 0.U || !enableLength, steps(step), 0.U) // TODO: verify
 	io.out := steps(step)
-	io.debug := Cat(lengthCounter.io.out =/= 0.U, reloadValue)
 }
