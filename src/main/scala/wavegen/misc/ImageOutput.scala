@@ -77,7 +77,13 @@ class ImageOutput extends Module {
 			io.blue  := color( 7,  0)
 		}
 
-		val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=1280/2 + 4, yOffset=360 + 4, shift=3)))
+		val xBase = 1280 / 2
+		val yBase = 720 / 2
+		val wShift = 3
+		val distance = 4
+		val wC = 6
+
+		val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
 		wavyBg.io.x := io.x
 		wavyBg.io.y := io.y
 		when (wavyBg.io.out) {
@@ -86,7 +92,7 @@ class ImageOutput extends Module {
 			io.blue  := 0.U
 		}
 
-		val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=1280/2, yOffset=360, shift=3)))
+		val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
 		wavy.io.x := io.x
 		wavy.io.y := io.y
 		when (wavy.io.out) {
