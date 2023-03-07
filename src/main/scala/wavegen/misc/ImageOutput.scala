@@ -87,18 +87,18 @@ class ImageOutput extends Module {
 		wavyBg.io.x := io.x
 		wavyBg.io.y := io.y
 		when (wavyBg.io.out) {
-			io.red   := 255.U - colors.io.red
-			io.green := 255.U - colors.io.green
-			io.blue  := 255.U - colors.io.blue
+			io.red   := colors.io.red
+			io.green := colors.io.green
+			io.blue  := colors.io.blue
 		}
 
 		val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
 		wavy.io.x := io.x
 		wavy.io.y := io.y
 		when (wavy.io.out) {
-			io.red   := colors.io.red
-			io.green := colors.io.green
-			io.blue  := colors.io.blue
+			io.red   := 255.U
+			io.green := 255.U
+			io.blue  := 255.U
 		}
 	} .otherwise {
 		slideshow.io.slide := slide - 1.U
