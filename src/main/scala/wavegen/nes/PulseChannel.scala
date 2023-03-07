@@ -76,8 +76,12 @@ class PulseChannel(channelID: Int) extends Module {
 		waveformSelector := 0.U
 	}
 
-	// val envelopeLoad = timerValue
-	val envelopeLoad = volumeParam
+	// For some reason, setting envelopeLoad to volumeParam (which I'm fairly sure is what's supposed to happen) breaks
+	// the audio for seemingly no reason. Using DontCare doesn't cause the audio to break but is not quite correct and
+	// might cause glitches in the pulse channels in some songs. Hopefully someone will get back to me about why this
+	// utter nonsense is a thing.
+	// val envelopeLoad = volumeParam
+	val envelopeLoad = DontCare
 
 	when (io.ticks.quarter) {
 		when (startNow || startFlag) {
