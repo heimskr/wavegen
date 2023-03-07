@@ -118,6 +118,7 @@ class MainBoth extends Module {
 	implicit val clockFreq   = 100_000_000
 	implicit val inSimulator = false
 	val romWidth = 24
+	val useInternalClocks = true
 
 	val io = IO(new Bundle {
 		val clockGB  = Input(Bool())
@@ -141,12 +142,12 @@ class MainBoth extends Module {
 
 	var centerReg = RegInit(false.B)
 
-	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth)) }
+	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth, useInternalClocks)) }
 	gameboy.io.tick  := io.clockGB
 	gameboy.io.start := io.pulseC && !useNES
 	gameboy.io.sw    := io.sw
 
-	val nes = withReset(reset.asBool || !useNES) { Module(new wavegen.nes.NES(17, romWidth)) }
+	val nes = withReset(reset.asBool || !useNES) { Module(new wavegen.nes.NES(17, romWidth, useInternalClocks)) }
 	nes.io.tick  := io.clockNES
 	nes.io.start := io.pulseC && useNES
 	nes.io.sw    := io.sw
