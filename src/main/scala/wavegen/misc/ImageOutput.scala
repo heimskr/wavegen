@@ -79,8 +79,8 @@ class ImageOutput extends Module {
 
 		val xBase = 1280 / 2
 		val yBase = 720 / 2
-		val wShift = 3
-		val distance = 6
+		val wShift = 4
+		val distance = 8
 		val wC = 6
 
 		val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
