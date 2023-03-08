@@ -17,20 +17,20 @@ module top (
 	output ac_lrclk,
 	inout  scl,
 	inout  sda,
-	output oled_sclk,
-	output oled_sdin,
-	output oled_vbat,
-	output oled_vdd,
-	output oled_res,
-	output oled_dc,
-	output hdmi_tx_cec,     // CE control bidirectional
-	input  hdmi_tx_hpd,     // hot-plug detect
-	output hdmi_tx_rscl,    // DDC bidirectional
-	output hdmi_tx_rsda,    // DDC bidirectional
-	output hdmi_tx_clk_n,   // HDMI clock differential negative
-	output hdmi_tx_clk_p,   // HDMI clock differential positive
-	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
+	// output oled_sclk,
+	// output oled_sdin,
+	// output oled_vbat,
+	// output oled_vdd,
+	// output oled_res,
+	// output oled_dc,
+	// output hdmi_tx_cec,     // CE control bidirectional
+	// input  hdmi_tx_hpd,     // hot-plug detect
+	// output hdmi_tx_rscl,    // DDC bidirectional
+	// output hdmi_tx_rsda,    // DDC bidirectional
+	// output hdmi_tx_clk_n,   // HDMI clock differential negative
+	// output hdmi_tx_clk_p,   // HDMI clock differential positive
+	// output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
+	// output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
 	inout  [7:0] ja // Pmod JA connector
 );
 
@@ -190,7 +190,7 @@ module top (
 	// wire [7:0] jaBits;
 	// wire jaValid;
 
-	reg [7:0] jaValue;
+	// reg [7:0] jaValue;
 
 	// always @(posedge clk) begin
 	// 	if (jaValid) begin
@@ -200,7 +200,7 @@ module top (
 	// 	end
 	// end
 
-	assign ja = jaValue;
+	// assign ja = jaValue;
 
 	MainBoth main_module_both (
 		.clock(clk),
@@ -257,25 +257,25 @@ module top (
 		storedR <= out_audioR;
 	end
 
-	Display display (
-		.clk(clk),
-		.clk_pix1(clk_pix1),
-		.clk_pix5(clk_pix5),
-		.sw(sw),
-		.buttonL(btnl),
-		.buttonR(btnr),
-		.clk30(clk30MHz),
-		.rst_n(cpu_resetn),
-		.hdmi_tx_cec(hdmi_tx_cec),
-		.hdmi_tx_hpd(hdmi_tx_hpd),
-		.hdmi_tx_rscl(hdmi_tx_rscl),
-		.hdmi_tx_rsda(hdmi_tx_rsda),
-		.hdmi_tx_clk_n(hdmi_tx_clk_n),
-		.hdmi_tx_clk_p(hdmi_tx_clk_p),
-		.hdmi_tx_n(hdmi_tx_n),
-		.hdmi_tx_p(hdmi_tx_p),
-		.audioL(storedL),
-		.audioR(storedR)
-	);
+	// Display display (
+	// 	.clk(clk),
+	// 	.clk_pix1(clk_pix1),
+	// 	.clk_pix5(clk_pix5),
+	// 	.sw(sw),
+	// 	.buttonL(btnl),
+	// 	.buttonR(btnr),
+	// 	.clk30(clk30MHz),
+	// 	.rst_n(cpu_resetn),
+	// 	.hdmi_tx_cec(hdmi_tx_cec),
+	// 	.hdmi_tx_hpd(hdmi_tx_hpd),
+	// 	.hdmi_tx_rscl(hdmi_tx_rscl),
+	// 	.hdmi_tx_rsda(hdmi_tx_rsda),
+	// 	.hdmi_tx_clk_n(hdmi_tx_clk_n),
+	// 	.hdmi_tx_clk_p(hdmi_tx_clk_p),
+	// 	.hdmi_tx_n(hdmi_tx_n),
+	// 	.hdmi_tx_p(hdmi_tx_p),
+	// 	.audioL(storedL),
+	// 	.audioR(storedR)
+	// );
 
 endmodule

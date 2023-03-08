@@ -25,8 +25,6 @@ class MainGB extends Module {
 		val addr     = Output(UInt(addressWidth.W))
 	})
 
-	var centerReg = RegInit(false.B)
-
 	val gameboy = Module(new wavegen.gameboy.GameBoy(addressWidth, romWidth))
 	gameboy.io.tick  := io.cpuClock
 	gameboy.io.start := io.pulseC
@@ -79,8 +77,6 @@ class MainNES extends Module {
 		val led      = Output(UInt(8.W))
 		val addr     = Output(UInt(addressWidth.W))
 	})
-
-	var centerReg = RegInit(false.B)
 
 	val nes = Module(new wavegen.nes.NES(addressWidth, romWidth))
 	nes.io.tick  := io.cpuClock
@@ -142,9 +138,13 @@ class MainBoth extends Module {
 		val latchOut = Output(Bool())
 	})
 
-	val useNES = io.sw(0)
+	io.addrGB := DontCare
+	io.addrNES := DontCare
+	io.outL := 0.U
+	io.outR := 0.U
 
-	var centerReg = RegInit(false.B)
+	/*
+	val useNES = io.sw(0)
 
 	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth, useInternalClocks)) }
 	gameboy.io.tick  := io.clockGB
@@ -208,19 +208,29 @@ class MainBoth extends Module {
 		gameboy.io.pulseC := io.pulseC
 	}
 
+	// */
+
 	io.led := io.jaIn
 
 	val reset12us = RegInit(true.B)
 	val reset6us  = RegInit(true.B)
 
-	val clock60 = Module(new StaticClocker(60, clockFreq))
+	val clock60 = Module(new StaticClocker(60, clockFreq, true))
 	clock60.io.enable := true.B
 
-	val clock12us = withReset(reset.asBool|| reset12us) { Module(new StaticClocker(83_333, clockFreq)) }
-	clock12us.io.enable := !reset12us
+	// val clock12us = withReset(reset.asBool || reset12us) { Module(new StaticClocker(83_333, clockFreq, true)) }
+	// clock12us.io.enable := !reset12us
 
-	val clock6us = withReset(reset.asBool|| reset6us) { Module(new StaticClocker(83_333 * 2, clockFreq)) }
-	clock6us.io.enable := !reset6us
+	// val clock6us = withReset(reset.asBool || reset6us) { Module(new StaticClocker(83_333 * 2, clockFreq, true)) }
+	// clock6us.io.enable := !reset6us
+
+	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(11)) }
+	clock12us.io.tickIn := true.B
+	clock12us.io.period := Mux(io.sw(7), 120.U, 1200.U)
+
+	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(16)) }
+	clock6us.io.tickIn := true.B
+	clock6us.io.period := Mux(io.sw(2), 60.U, 600.U)
 
 	val jaPulseOut = RegInit(false.B)
 	val jaLatchOut = RegInit(false.B)
@@ -242,31 +252,32 @@ class MainBoth extends Module {
 	val nesRight  = RegInit(false.B)
 
 	when (state === sWait60) {
-		reset6us := true.B
+		reset6us  := true.B
 		reset12us := true.B // ?
 		when (clock60.io.tick) {
 			state := sInitial12
-			reset12us := false.B
+			reset6us   := false.B
+			reset12us  := false.B
 			jaLatchOut := true.B
 		}
 	} .elsewhen (state === sInitial12) {
-		when (clock12us.io.tick) {
+		when (clock12us.io.tickOut) {
 			jaLatchOut := false.B
-			reset6us   := false.B
+			// reset6us   := false.B
 			state      := sWait6
 			nesA       := jaDataIn
 		}
 	} .elsewhen (state === sWait6) {
-		when (clock6us.io.tick) {
-			reset6us  := false.B
+		when (clock6us.io.tickOut) {
+			// reset6us  := false.B
 			counter8  := 0.U
 			state     := s8PulsesOn
-			reset12us := true.B
+			// reset12us := true.B
 		}
 	} .elsewhen (state === s8PulsesOn) {
 		jaPulseOut := true.B
 
-		when (clock6us.io.tick) {
+		when (clock6us.io.tickOut) {
 			jaPulseOut := false.B
 			state      := s8PulsesOff
 
@@ -290,14 +301,17 @@ class MainBoth extends Module {
 	} .elsewhen (state === s8PulsesOff) {
 		jaPulseOut := false.B
 
-		when (clock6us.io.tick) {
+		when (clock6us.io.tickOut) {
 			state := s8PulsesOn
 		}
 	}
 
 	io.latchOut := jaLatchOut
 	io.pulseOut := jaPulseOut
-	io.led := Cat(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
+
+	when (!io.sw(1)) {
+		io.led := Cat(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
+	}
 }
 
 object MainRun extends scala.App {
