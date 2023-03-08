@@ -76,25 +76,30 @@ class MainBoth extends Module {
 		useNES := !useNES
 	}
 
+	val storedL = Reg(UInt(24.W))
+	val storedR = Reg(UInt(24.W))
+	storedL := io.outL
+	storedR := io.outR
+
 	val display = Module(new presentation.Display)
 	display.io.clk      := clock
 	display.io.clk_pix1 := io.clk_pix1
 	display.io.clk_pix5 := io.clk_pix5
 	display.io.clk30    := io.clk30
 	display.io.rst_n    := !reset.asBool
-	display.io.audioL   := io.outL
-	display.io.audioR   := io.outR
+	display.io.audioL   := storedL
+	display.io.audioR   := storedR
 	io.hdmi_tx_clk_n    := display.io.hdmi_tx_clk_n
 	io.hdmi_tx_clk_p    := display.io.hdmi_tx_clk_p
 	io.hdmi_tx_n        := display.io.hdmi_tx_n
 	io.hdmi_tx_p        := display.io.hdmi_tx_p
 
-	val xReg = Reg(chiselTypeOf(io.x))
-	val yReg = Reg(chiselTypeOf(io.y))
+	val xReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.x)) }
+	val yReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.y)) }
 	xReg := display.io.x
 	yReg := display.io.y
 
-	val imageOutput = Module(new misc.ImageOutput)
+	val imageOutput = withClock(io.clk_pix1) { Module(new misc.ImageOutput) }
 	imageOutput.io.x       := xReg
 	imageOutput.io.y       := yReg
 	imageOutput.io.sw      := io.sw
@@ -102,9 +107,9 @@ class MainBoth extends Module {
 	imageOutput.io.right   := io.pulseR || nesButtons.right || nesButtons.a
 	imageOutput.io.buttons := nesButtons
 
-	val redReg   = Reg(chiselTypeOf(display.io.red))
-	val greenReg = Reg(chiselTypeOf(display.io.green))
-	val blueReg  = Reg(chiselTypeOf(display.io.blue))
+	val redReg   = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.red))   }
+	val greenReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.green)) }
+	val blueReg  = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.blue))  }
 	redReg   := imageOutput.io.red
 	greenReg := imageOutput.io.green
 	blueReg  := imageOutput.io.blue
