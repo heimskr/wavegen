@@ -31,7 +31,11 @@ module top (
 	// output hdmi_tx_clk_p,   // HDMI clock differential positive
 	// output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	// output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
-	inout  [7:0] ja // Pmod JA connector
+	inout  [7:0] ja, // Pmod JA connector
+	// input ps2_clk,
+	// input ps2_data
+	output uart_rx_out,
+	input  uart_tx_in
 );
 
 	wire clk12MHz;
@@ -187,6 +191,31 @@ module top (
 		.douta(rom_out_nes)
 	);
 
+	wire [7:0] rx_byte;
+	wire rx_ready;
+	wire rx_error;
+	reg rx_ack;
+	wire [7:0] tx_byte;
+	wire tx_ready;
+
+	always @(posedge clk) begin
+		rx_ack <= cpu_resetn & rx_ready;
+	end
+
+	UART #(.FREQ(100_000_000)) uart_thing (
+		.reset(cpu_resetn),
+		.clk(clk),
+		.rx_i(uart_tx_in ^ sw[0]),
+		.rx_data_o(rx_byte),
+		.rx_ready_o(rx_ready),
+		.rx_ack_i(rx_ack),
+		.rx_error_o(rx_error),
+		.tx_o(uart_rx_out),
+		.tx_data_i(tx_byte),
+		.tx_ready_i(tx_ready),
+		.tx_ack_o()
+	);
+
 	// wire [7:0] jaBits;
 	// wire jaValid;
 
@@ -226,10 +255,16 @@ module top (
 		// .io_jaOut_bits(jaBits),
 		// .io_jaOut_valid(jaValid)
 		.io_pulseOut(ja[3]),
-		.io_latchOut(ja[2])
+		.io_latchOut(ja[2]),
+		.io_rxByte_valid(rx_ready),
+		.io_rxByte_bits(rx_byte),
+		.io_txByte_valid(tx_ready),
+		.io_txByte_bits(tx_byte)
 	);
 
 
+	// assign ja[1] = ps2_data;
+	// assign ja[0] = ps2_clk;
 
 	i2s_ctl audio_inout (
 		.CLK_I(clk),    // Sys clk

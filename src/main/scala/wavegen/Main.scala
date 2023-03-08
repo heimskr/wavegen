@@ -136,12 +136,18 @@ class MainBoth extends Module {
 		// val jaOut    = Valid(UInt(8.W))
 		val pulseOut = Output(Bool())
 		val latchOut = Output(Bool())
+		val rxByte   = Flipped(Valid(UInt(8.W)))
+		val txByte   = Valid(UInt(8.W))
 	})
 
 	io.addrGB := DontCare
 	io.addrNES := DontCare
 	io.outL := 0.U
 	io.outR := 0.U
+	io.txByte.bits  := 0.U
+	io.txByte.valid := false.B
+
+	def send(value: UInt) = { io.txByte.bits := value; io.txByte.valid := true.B }
 
 	/*
 	val useNES = io.sw(0)
@@ -224,13 +230,53 @@ class MainBoth extends Module {
 	// val clock6us = withReset(reset.asBool || reset6us) { Module(new StaticClocker(83_333 * 2, clockFreq, true)) }
 	// clock6us.io.enable := !reset6us
 
+	val sReadIdle :: sRead12 :: sRead6 :: Nil = Enum(3)
+	val readState = RegInit(sReadIdle)
+	val readIdle  = readState === sReadIdle
+
+	val period12 = RegInit(1200.U(20.W))
+	val period6  = RegInit(600.U(20.W))
+
+
+	when (io.rxByte.valid) {
+		val byte = io.rxByte.bits
+
+		when (readIdle) {
+			when (byte === 'l'.U) {
+				send(byte)
+				readState := sRead12
+				period12  := 0.U
+			} .elsewhen (byte === 's'.U) {
+				send(byte)
+				readState := sRead6
+				period6   := 0.U
+			}
+		} .elsewhen (readState === sRead12) {
+			when ('0'.U <= byte && byte <= '9'.U) {
+				send(byte)
+				period12 := period12 * 10.U + (byte - '0'.U)
+			} .elsewhen (byte === '.'.U) {
+				send(byte)
+				readState := sReadIdle
+			}
+		} .elsewhen (readState === sRead6) {
+			when ('0'.U <= byte && byte <= '9'.U) {
+				send(byte)
+				period6 := period6 * 10.U + (byte - '0'.U)
+			} .elsewhen (byte === '.'.U) {
+				send(byte)
+				readState := sReadIdle
+			}
+		}
+	}
+
 	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(11)) }
-	clock12us.io.tickIn := true.B
-	clock12us.io.period := Mux(io.sw(7), 120.U, 1200.U)
+	clock12us.io.tickIn := readIdle
+	clock12us.io.period := period12
 
 	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(16)) }
-	clock6us.io.tickIn := true.B
-	clock6us.io.period := Mux(io.sw(2), 60.U, 600.U)
+	clock6us.io.tickIn := readIdle
+	clock6us.io.period := period6
 
 	val jaPulseOut = RegInit(false.B)
 	val jaLatchOut = RegInit(false.B)
@@ -254,7 +300,7 @@ class MainBoth extends Module {
 	when (state === sWait60) {
 		reset6us  := true.B
 		reset12us := true.B // ?
-		when (clock60.io.tick) {
+		when (clock60.io.tick && readIdle) {
 			state := sInitial12
 			reset6us   := false.B
 			reset12us  := false.B
