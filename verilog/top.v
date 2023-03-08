@@ -219,7 +219,23 @@ module top (
 	wire use_nes;
 
 	wire use_nes_in;
+	reg  use_nes_in_stored;
 	wire use_nes_in_valid;
+	reg  use_nes_in_valid_stored;
+
+	always @(posedge clk_pix1) begin
+		if (!cpu_resetn) begin
+			use_nes_in_stored <= 1'b0;
+			use_nes_in_valid_stored <= 1'b0;
+		end else if (use_nes_in_valid) begin
+			use_nes_in_stored <= use_nes_in;
+			use_nes_in_valid_stored <= 1'b1;
+		end else begin
+			use_nes_in_valid_stored <= 1'b0;
+		end
+	end
+
+	wire [4:0] multiplier;
 
 	MainBoth main_module_both (
 		.clock(clk),
@@ -258,8 +274,9 @@ module top (
 		.io_nesButtons_left(nes_left),
 		.io_nesButtons_right(nes_right),
 		.io_useNES(use_nes),
-		.io_useNESIn_valid(use_nes_in_valid),
-		.io_useNESIn_bits(use_nes_in)
+		.io_useNESIn_valid(use_nes_in_valid_stored),
+		.io_useNESIn_bits(use_nes_in_stored),
+		.io_multiplier(multiplier)
 	);
 
 	i2s_ctl audio_inout (
@@ -317,7 +334,8 @@ module top (
 		.nesRight(nes_right),
 		.useNES(use_nes),
 		.useNESOutValid(use_nes_in_valid),
-		.useNESOut(use_nes_in)
+		.useNESOut(use_nes_in),
+		.multiplier(multiplier)
 	);
 
 endmodule

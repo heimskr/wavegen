@@ -35,6 +35,7 @@ class MainBoth extends Module {
 		val nesButtons = Output(NESButtons())
 		val useNES     = Output(Bool())
 		val useNESIn   = Flipped(Valid(Bool()))
+		val multiplier = Output(UInt(5.W))
 	})
 
 	io.addrGB := DontCare
@@ -101,6 +102,8 @@ class MainBoth extends Module {
 	val multiplier = RegInit(4.U(multiplierWidth.W))
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
+
+	io.multiplier := multiplier
 
 	when ((io.pulseU || nesPulseUp) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
 		multiplier := multiplier + 1.U

@@ -4,10 +4,11 @@ import chisel3._
 import chisel3.util._
 import scala.math.{sin, floor, Pi}
 import wavegen.Util
+import wavegen.presentation.Bar
 
 class ImageOutput(val showScreenshot: Boolean = false) extends Module {
-	val imageWidth   = 160
-	val imageHeight  = 144
+	val screenWidth  = 1280
+	val screenHeight = 720
 	val demoSlideGB  = 9
 	val demoSlideNES = 11
 
@@ -25,6 +26,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val nesButtons = Input(wavegen.NESButtons())
 		val useNES     = Input(Bool())
 		val useNESOut  = Valid(Bool())
+		val multiplier = Input(UInt(5.W))
 	})
 
 	val slideshow = Module(new wavegen.presentation.Slideshow)
@@ -52,7 +54,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val waves = 2
 	val amplitude = 100
-	val table = VecInit.tabulate(1280)(x => floor((1 + sin(2 * x * Pi / 1280 * waves)) / 2 * amplitude).intValue().U(10.W))
+	val table = VecInit.tabulate(screenWidth)(x => floor((1 + sin(2 * x * Pi / screenWidth * waves)) / 2 * amplitude).intValue().U(10.W))
 	val shift = table(io.x)
 
 	val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
@@ -70,13 +72,30 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		io.green := colors.io.green
 		io.blue  := colors.io.blue
 
-		val xBase    = 1280 / 2
-		val yBase    = 720 / 2
+		val xBase    = screenWidth / 2
+		val yBase    = screenHeight / 2
 		val wShift   = 4
 		val distance = 3 << (wShift - 2)
 		val wC       = 6
 
 		def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
+
+		val barInnerWidth  = 256
+		val barInnerHeight = 64
+		val barStrokeWidth = 8
+		val barMargin = 32
+		val bar = Module(new Bar(screenWidth  - barInnerWidth  - 2 * barStrokeWidth - barMargin,
+		                         screenHeight - barInnerHeight - 2 * barStrokeWidth - barMargin,
+		                         barInnerWidth + 2 * barStrokeWidth, barInnerHeight + 2 * barStrokeWidth,
+		                         barStrokeWidth, 5, (0, 0, 0), (255, 255, 255)))
+		bar.io.x     := io.x
+		bar.io.y     := io.y
+		bar.io.value := io.multiplier
+		when (bar.io.out.valid) {
+			io.red   := bar.io.out.bits.red
+			io.green := bar.io.out.bits.green
+			io.blue  := bar.io.out.bits.blue
+		}
 
 		when (slide === demoSlideNES.U) {
 			io.useNESOut.bits := true.B
@@ -148,7 +167,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				setAll(255)
 			}
 		}
-	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (720 - 70).U && slideshow.io.red === 255.U) {
+	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (screenHeight - 70).U && slideshow.io.red === 255.U) {
 		io.red   := colors.io.red
 		io.green := colors.io.green
 		io.blue  := colors.io.blue

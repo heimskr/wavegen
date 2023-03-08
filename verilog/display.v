@@ -29,7 +29,8 @@ module Display (
 	input  wire nesRight,
 	input  wire useNES,
 	output wire useNESOut,
-	output wire useNESOutValid
+	output wire useNESOutValid,
+	input  wire [4:0] multiplier
 );
 
 	wire pix_clk;    // pixel clock
@@ -119,7 +120,8 @@ module Display (
 		.io_nesButtons_right(nesRightPulse),
 		.io_useNES(useNES),
 		.io_useNESOut_valid(useNESOutValid),
-		.io_useNESOut_bits(useNESOut)
+		.io_useNESOut_bits(useNESOut),
+		.io_multiplier(multiplier)
 	);
 
 	// TMDS Encoding and Serialization

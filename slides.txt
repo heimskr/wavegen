@@ -29,7 +29,7 @@
 
  - Got bored, implemented NES APU too
 
- - More than 125 hours of work, whoops
+ - More than 137 hours of work, whoops
 \s
 
                Generators
@@ -100,8 +100,12 @@
  - Slides stored as ASCII(-ish) in BRAM
 
  - Rendered by FPGA
+   - okLch to RGB conversion by lookup
+     table
 
  - Typeface might look familiar
+
+ - Why not use an NES controller too?
 \s
 
               Game Boy APU
