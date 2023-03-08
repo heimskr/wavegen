@@ -30,7 +30,8 @@ module top (
 	output hdmi_tx_clk_n,   // HDMI clock differential negative
 	output hdmi_tx_clk_p,   // HDMI clock differential positive
 	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-	output [2:0] hdmi_tx_p  // Three HDMI channels differential positive
+	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
+	inout  [7:0] ja // Pmod JA connector
 );
 
 	wire clk12MHz;
@@ -186,6 +187,21 @@ module top (
 		.douta(rom_out_nes)
 	);
 
+	// wire [7:0] jaBits;
+	// wire jaValid;
+
+	reg [7:0] jaValue;
+
+	// always @(posedge clk) begin
+	// 	if (jaValid) begin
+	// 		jaValue <= jaBits;
+	// 	end else begin
+	// 		jaValue <= 8'bz;
+	// 	end
+	// end
+
+	assign ja = jaValue;
+
 	MainBoth main_module_both (
 		.clock(clk),
 		.reset(!cpu_resetn),
@@ -205,7 +221,12 @@ module top (
 		.io_addrGB(rom_addr_gb),
 		.io_addrNES(rom_addr_nes),
 		.io_romGB(rom_out_gb),
-		.io_romNES(rom_out_nes)
+		.io_romNES(rom_out_nes),
+		.io_jaIn(ja),
+		// .io_jaOut_bits(jaBits),
+		// .io_jaOut_valid(jaValid)
+		.io_pulseOut(ja[3]),
+		.io_latchOut(ja[2])
 	);
 
 

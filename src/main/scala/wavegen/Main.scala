@@ -136,6 +136,10 @@ class MainBoth extends Module {
 		val led      = Output(UInt(8.W))
 		val addrGB   = Output(UInt(18.W))
 		val addrNES  = Output(UInt(17.W))
+		val jaIn     = Input(UInt(8.W))
+		// val jaOut    = Valid(UInt(8.W))
+		val pulseOut = Output(Bool())
+		val latchOut = Output(Bool())
 	})
 
 	val useNES = io.sw(0)
@@ -203,6 +207,97 @@ class MainBoth extends Module {
 		gameboy.io.pulseR := io.pulseR
 		gameboy.io.pulseC := io.pulseC
 	}
+
+	io.led := io.jaIn
+
+	val reset12us = RegInit(true.B)
+	val reset6us  = RegInit(true.B)
+
+	val clock60 = Module(new StaticClocker(60, clockFreq))
+	clock60.io.enable := true.B
+
+	val clock12us = withReset(reset.asBool|| reset12us) { Module(new StaticClocker(83_333, clockFreq)) }
+	clock12us.io.enable := !reset12us
+
+	val clock6us = withReset(reset.asBool|| reset6us) { Module(new StaticClocker(83_333 * 2, clockFreq)) }
+	clock6us.io.enable := !reset6us
+
+	val jaPulseOut = RegInit(false.B)
+	val jaLatchOut = RegInit(false.B)
+	val jaDataIn   = io.jaIn(1)
+
+	val sWait60 :: sInitial12 :: sWait6 :: s8PulsesOn :: s8PulsesOff :: Nil = Enum(5)
+
+	val state = RegInit(sWait60)
+
+	val counter8 = RegInit(0.U(3.W))
+
+	val nesA      = RegInit(false.B)
+	val nesB      = RegInit(false.B)
+	val nesSelect = RegInit(false.B)
+	val nesStart  = RegInit(false.B)
+	val nesUp     = RegInit(false.B)
+	val nesDown   = RegInit(false.B)
+	val nesLeft   = RegInit(false.B)
+	val nesRight  = RegInit(false.B)
+
+	when (state === sWait60) {
+		reset6us := true.B
+		reset12us := true.B // ?
+		when (clock60.io.tick) {
+			state := sInitial12
+			reset12us := false.B
+			jaLatchOut := true.B
+		}
+	} .elsewhen (state === sInitial12) {
+		when (clock12us.io.tick) {
+			jaLatchOut := false.B
+			reset6us   := false.B
+			state      := sWait6
+			nesA       := jaDataIn
+		}
+	} .elsewhen (state === sWait6) {
+		when (clock6us.io.tick) {
+			reset6us  := false.B
+			counter8  := 0.U
+			state     := s8PulsesOn
+			reset12us := true.B
+		}
+	} .elsewhen (state === s8PulsesOn) {
+		jaPulseOut := true.B
+
+		when (clock6us.io.tick) {
+			jaPulseOut := false.B
+			state      := s8PulsesOff
+
+			switch (counter8) {
+				is (1.U) { nesB      := jaDataIn }
+				is (2.U) { nesSelect := jaDataIn }
+				is (3.U) { nesStart  := jaDataIn }
+				is (4.U) { nesUp     := jaDataIn }
+				is (5.U) { nesDown   := jaDataIn }
+				is (6.U) { nesLeft   := jaDataIn }
+				is (7.U) { nesRight  := jaDataIn }
+			}
+
+			when (counter8 === 7.U) {
+				counter8 := 0.U
+				state    := sWait60
+			} .otherwise {
+				counter8 := counter8 + 1.U
+			}
+		}
+	} .elsewhen (state === s8PulsesOff) {
+		jaPulseOut := false.B
+
+		when (clock6us.io.tick) {
+			state := s8PulsesOn
+		}
+	}
+
+	io.latchOut := jaLatchOut
+	io.pulseOut := jaPulseOut
+	io.led := Cat(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
 }
 
 object MainRun extends scala.App {

@@ -31,9 +31,6 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	slideshow.io.x     := io.x
 	slideshow.io.y     := io.y
 
-	val leftOn  = RegInit(false.B)
-	val rightOn = RegInit(false.B)
-
 	val maxSlides = 16
 
 	when (io.pulseL) {
@@ -46,20 +43,21 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	io.addr := DontCare
 
+	val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, true))
+	hueClocker.io.enable := true.B
+
+	val waves = 2
+	val amplitude = 100
+	val table = VecInit.tabulate(1280)(x => floor((1 + sin(2 * x * Pi / 1280 * waves)) / 2 * amplitude).intValue().U(10.W))
+	val shift = table(io.x)
+
+	val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
+	val adjustedHue = (hue + (io.x >> 2.U) + (io.y >> 3.U) - shift)(7, 0)
+
+	val colors = Module(new Colors)
+	colors.io.hue := adjustedHue
+
 	when (slide === demoSlideGB.U || slide === demoSlideNES.U) {
-		val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, true))
-		hueClocker.io.enable := true.B
-
-		val waves = 2
-		val amplitude = 100
-		val table = VecInit.tabulate(1280)(x => floor((1 + sin(2 * x * Pi / 1280 * waves)) / 2 * amplitude).intValue().U(10.W))
-		val shift = table(io.x)
-
-		val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
-		val adjustedHue = (hue + (io.x >> 2.U) + (io.y >> 3.U) - shift)(7, 0)
-
-		val colors = Module(new Colors)
-		colors.io.hue := adjustedHue
 		io.red   := colors.io.red
 		io.green := colors.io.green
 		io.blue  := colors.io.blue
@@ -190,6 +188,10 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				}
 			}
 		}
+	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (720 - 70).U && slideshow.io.red === 255.U) {
+		io.red   := colors.io.red
+		io.green := colors.io.green
+		io.blue  := colors.io.blue
 	} .otherwise {
 		io.red   := slideshow.io.red
 		io.green := slideshow.io.green
