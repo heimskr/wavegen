@@ -11,6 +11,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val screenHeight = 720
 	val demoSlideGB  = 9
 	val demoSlideNES = 11
+	val maxSlides    = 16
 
 	val io = IO(new Bundle {
 		val x          = Input(UInt(11.W))
@@ -36,8 +37,6 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	slideshow.io.slide := slide
 	slideshow.io.x     := io.x
 	slideshow.io.y     := io.y
-
-	val maxSlides = 16
 
 	when (io.pulseL || io.nesButtons.left) {
 		slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)

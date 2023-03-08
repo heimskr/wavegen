@@ -26,7 +26,7 @@ class Bar(xPos: Int, yPos: Int, width: Int, height: Int, stroke: Int, valueWidth
 			io.out.bits.red   := strokeColor._1.U
 			io.out.bits.green := strokeColor._2.U
 			io.out.bits.blue  := strokeColor._3.U
-		} .elsewhen (((adjustedX - stroke.U) << valueWidth.U) < (io.value * (width - 2 * stroke).U)) { // TODO: disastrous for WNS?
+		} .elsewhen (((adjustedX - stroke.U) << valueWidth.U) < ((io.value +& 1.U) * (width - 2 * stroke).U)) { // TODO: disastrous for WNS?
 			io.out.valid := true.B
 			io.out.bits.red   := fillColor._1.U
 			io.out.bits.green := fillColor._2.U

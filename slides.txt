@@ -34,15 +34,13 @@
 
                Generators
 
- - Not used much in this project tbh
-
  - Created some nice generators
    (TableGen, TriangleGen, NoiseGen,
    FPSummer, DynamicClocker, Divider)
    and proceeded to never use them
 
  - Used SquareGenExternal, StaticClocker
-   and PeriodClocker
+   and PeriodClocker in APUs
 
  - Can very conveniently prefill Vecs
    with sine wave values

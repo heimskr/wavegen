@@ -98,9 +98,12 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 	mixer.io.nr50     := registers.NR50
 	mixer.io.nr51     := registers.NR51
 
-	when (mixer.io.out.valid) {
-		io.outL := mixer.io.out.bits.left
-		io.outR := mixer.io.out.bits.right
+	val mixerOut = RegInit(0.U.asTypeOf(mixer.io.out))
+	mixerOut := mixer.io.out
+
+	when (mixerOut.valid) {
+		io.outL := mixerOut.bits.left
+		io.outR := mixerOut.bits.right
 	} .otherwise {
 		io.outL := 0.U
 		io.outR := 0.U
