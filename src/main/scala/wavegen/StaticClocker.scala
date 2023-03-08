@@ -7,7 +7,7 @@ import scala.math.round
 class StaticClocker(wantedFrequency: Int, baseClockFreq: Int, moreAccurate: Boolean = false, moduleName: String = "") extends Module {
 	override val desiredName =
 		if (moduleName.isEmpty())
-			"StaticClocker" + wantedFrequency + "w" + baseClockFreq + (if (moreAccurate) "ba" else "b")
+			"StaticClocker" + wantedFrequency + "W" + baseClockFreq + (if (moreAccurate) "BA" else "B")
 		else
 			moduleName
 

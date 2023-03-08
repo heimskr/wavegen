@@ -15,7 +15,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	val io = IO(new Bundle {
 		val tick   = Input(Bool())
 		val start  = Input(Bool())
-		// val rom    = Input(UInt(romWidth.W))
+		val rom    = Input(UInt(romWidth.W))
 		val sw     = Input(UInt(8.W))
 		val pulseU = Input(Bool())
 		val pulseR = Input(Bool())
@@ -24,7 +24,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 		val pulseC = Input(Bool())
 		val outL   = Output(UInt(10.W))
 		val outR   = Output(UInt(10.W))
-		// val addr   = Output(UInt(addressWidth.W))
+		val addr   = Output(UInt(addressWidth.W))
 		val leds   = Output(UInt(8.W))
 	})
 
@@ -44,7 +44,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 
 	stateMachine.io.start := io.start
 	stateMachine.io.tick  := cpuTick
-	// stateMachine.io.rom   := io.rom
+	stateMachine.io.rom   := io.rom
 
 	frameCounter.io.reload   := stateMachine.io.reloadFC
 	frameCounter.io.cpuTick  := cpuTick
@@ -81,5 +81,5 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	io.leds := stateMachine.io.state
 	io.outL := sum
 	io.outR := io.outL
-	// io.addr := stateMachine.io.addr
+	io.addr := stateMachine.io.addr
 }

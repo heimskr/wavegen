@@ -165,6 +165,24 @@ module top (
 	wire [23:0] out_audioL;
 	wire [23:0] out_audioR;
 
+	wire [17:0] rom_addr_gb;
+	wire [23:0] rom_out_gb;
+
+	blk_mem_gen_0 gb_rom (
+		.clka(clk),
+		.addra(rom_addr_gb),
+		.douta(rom_out_gb)
+	);
+
+	wire [16:0] rom_addr_nes;
+	wire [23:0] rom_out_nes;
+
+	NesROM nes_rom (
+		.clka(clk),
+		.addra(rom_addr_nes),
+		.douta(rom_out_nes)
+	);
+
 	wire [7:0] rx_byte;
 	wire rx_ready;
 	wire rx_error;
@@ -198,6 +216,7 @@ module top (
 	wire nes_down;
 	wire nes_left;
 	wire nes_right;
+	wire use_nes;
 
 	MainBoth main_module_both (
 		.clock(clk),
@@ -215,6 +234,10 @@ module top (
 		.io_outL(out_audioL),
 		.io_outR(out_audioR),
 		.io_led(led),
+		.io_addrGB(rom_addr_gb),
+		.io_addrNES(rom_addr_nes),
+		.io_romGB(rom_out_gb),
+		.io_romNES(rom_out_nes),
 		.io_jaIn(ja),
 		.io_pulseOut(ja[3]),
 		.io_latchOut(ja[2]),
@@ -222,13 +245,15 @@ module top (
 		.io_rxByte_bits(rx_byte),
 		.io_txByte_valid(tx_ready),
 		.io_txByte_bits(tx_byte),
-		.io_hdmi_tx_clk_n(hdmi_tx_clk_n),
-		.io_hdmi_tx_clk_p(hdmi_tx_clk_p),
-		.io_hdmi_tx_n(hdmi_tx_n),
-		.io_hdmi_tx_p(hdmi_tx_p),
-		.io_clk_pix1(clk_pix1),
-		.io_clk_pix5(clk_pix5),
-		.io_clk30(clk30MHz)
+		.io_nesButtons_a(nes_a),
+		.io_nesButtons_b(nes_b),
+		.io_nesButtons_select(nes_select),
+		.io_nesButtons_start(nes_start),
+		.io_nesButtons_up(nes_up),
+		.io_nesButtons_down(nes_down),
+		.io_nesButtons_left(nes_left),
+		.io_nesButtons_right(nes_right),
+		.io_useNES(use_nes)
 	);
 
 	i2s_ctl audio_inout (
@@ -249,8 +274,42 @@ module top (
 		.SDATA_I(ac_adc_sdata)   // Input serial data
 	);
 
-	assign hdmi_tx_cec  = 1'bz;
-	assign hdmi_tx_rsda = 1'bz;
-	assign hdmi_tx_rscl = 1'b1;
+	reg [23:0] storedL;
+	reg [23:0] storedR;
+
+	always @(posedge clk) begin
+		storedL <= out_audioL;
+		storedR <= out_audioR;
+	end
+
+	Display display (
+		.clk(clk),
+		.clk_pix1(clk_pix1),
+		.clk_pix5(clk_pix5),
+		.sw(sw),
+		.buttonL(btnl),
+		.buttonR(btnr),
+		.clk30(clk30MHz),
+		.rst_n(cpu_resetn),
+		.hdmi_tx_cec(hdmi_tx_cec),
+		.hdmi_tx_hpd(hdmi_tx_hpd),
+		.hdmi_tx_rscl(hdmi_tx_rscl),
+		.hdmi_tx_rsda(hdmi_tx_rsda),
+		.hdmi_tx_clk_n(hdmi_tx_clk_n),
+		.hdmi_tx_clk_p(hdmi_tx_clk_p),
+		.hdmi_tx_n(hdmi_tx_n),
+		.hdmi_tx_p(hdmi_tx_p),
+		.audioL(storedL),
+		.audioR(storedR),
+		.nesAPulse(nes_a),
+		.nesBPulse(nes_b),
+		.nesSelectPulse(nes_select),
+		.nesStartPulse(nes_start),
+		.nesUpPulse(nes_up),
+		.nesDownPulse(nes_down),
+		.nesLeftPulse(nes_left),
+		.nesRightPulse(nes_right),
+		.useNES(use_nes)
+	);
 
 endmodule

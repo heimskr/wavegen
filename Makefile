@@ -20,8 +20,13 @@ copy: .build
 ifeq ($(shell test -d "$(ELSEWHERE)" || echo fail),fail)
 	$(error Please set the $$ELSEWHERE environment variable to a valid desired destination directory)
 endif
-	cp MainBoth.v    $(ELSEWHERE)/MainBoth.v && \
-	cp Debouncer5.v  $(ELSEWHERE)/Debouncer5.v
+	cp MainGB.v      $(ELSEWHERE)/MainGB.v      && \
+	cp MainNES.v     $(ELSEWHERE)/MainNES.v     && \
+	cp MainBoth.v    $(ELSEWHERE)/MainBoth.v    && \
+	cp Debouncer2.v  $(ELSEWHERE)/Debouncer2.v  && \
+	cp Debouncer5.v  $(ELSEWHERE)/Debouncer5.v  && \
+	cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v && \
+	sed -i '1s/^/`default_nettype wire\n/' $(ELSEWHERE)/ImageOutput.v
 
 slides:
 	textrom < slides.txt | makecoe > slides.coe
