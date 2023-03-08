@@ -98,10 +98,8 @@ class MainBoth extends Module {
 
 	def boost(value: UInt): UInt = value << 9.U
 
-	val multiplierWidth = 4
+	val multiplierWidth = 5
 	val multiplier = RegInit(4.U(multiplierWidth.W))
-	val lastU = RegInit(false.B)
-	val lastD = RegInit(false.B)
 
 	io.multiplier := multiplier
 

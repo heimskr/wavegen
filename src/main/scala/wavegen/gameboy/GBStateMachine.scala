@@ -22,7 +22,7 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		val opcode          = Output(UInt(8.W))
 		val operand1        = Output(UInt(8.W))
 		val operand2        = Output(UInt(8.W))
-		val pointer         = Output(UInt(addressWidth.W))
+		// val pointer         = Output(UInt(addressWidth.W))
 		val waitCounter     = Output(UInt(32.W))
 		val nr13In          = Flipped(Valid(UInt(8.W)))
 		val nr14In          = Flipped(Valid(UInt(8.W)))
@@ -42,10 +42,14 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 			channelsEnabled := Cat(channelsEnabled(3, channel), bit, channelsEnabled(channel - 2, 0))
 	}
 
+	def setAddr(newAddr: Data) = {
+		io.addr := newAddr
+		pointer := newAddr
+	}
+
 	def setReg(index: UInt, value: UInt): Unit = {
 		val adjusted = index + "h10".U
-		printf(cf"setReg (pointer = 0x$pointer%x): *0xff$adjusted%x (unadjusted: 0x$index%x) = 0x$value%x\n")
-		val failed = WireDefault(true.B)
+		val failed   = WireDefault(true.B)
 
 		adjustedReg := adjusted
 		valueReg    := value
@@ -152,17 +156,15 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 	val pausedRegisters = Reg(GBRegisters())
 
 	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
-	def advance(): Unit = { pointer := pointer + 1.U }
+	def advance(): Unit = { setAddr(pointer + 1.U) }
 
-	// def toCycles(samples: UInt): UInt = samples * (clockFreq / 44100).U
-	// def toCycles(samples: UInt) = (samples << 11.U) + (samples << 7.U) + (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U)
 	def toCycles(samples: UInt) = (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U) + (samples << 1.U) + samples
 
 	io.info := 1.U
 
 	when (io.start) {
 		when (state === sIdle) {
-			pointer     := 0.U
+			setAddr(0.U)
 			state       := sGetOpcode
 			waitCounter := 0.U
 			io.info     := 3.U
@@ -170,11 +172,11 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 			state     := pausedState
 			registers := pausedRegisters
 		} .elsewhen (state === sDone) {
-			registers := 0.U.asTypeOf(GBRegisters())
-			errorInfo := 0.U
-			pointer     := 0.U
+			registers   := 0.U.asTypeOf(GBRegisters())
+			errorInfo   := 0.U
 			state       := sGetOpcode
 			waitCounter := 0.U
+			setAddr(0.U)
 		} .otherwise {
 			pausedState     := state
 			pausedRegisters := registers
@@ -226,7 +228,6 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 						io.info := 14.U
 						failed := false.B
 						val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
-						printf(cf"Waiting 0x$toWait%x cycles around 0x${pointer}%x (samples: ${Cat(operand2, operand1)}).\n")
 						waitCounter := toWait
 						advance()
 						state := sWaiting
@@ -238,7 +239,6 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 						registers := 0.U.asTypeOf(GBRegisters())
 						failed    := false.B
 						errorInfo := "b01010101".U
-						printf(cf"Finishing with 0x92 around $pointer.\n")
 						Seq.tabulate(4)(c => setChannel(c + 1, false))
 					}
 				}
@@ -286,7 +286,6 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 	io.opcode          := opcode
 	io.operand1        := operand1
 	io.operand2        := operand2
-	io.pointer         := pointer
 	io.waitCounter     := waitCounter
 	io.channelsEnabled := channelsEnabled
 }

@@ -82,7 +82,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 		val barInnerWidth  = 256
 		val barInnerHeight = 64
-		val barStrokeWidth = 8
+		val barStrokeWidth = 6
 		val barMargin = 32
 		val bar = Module(new Bar(screenWidth  - barInnerWidth  - 2 * barStrokeWidth - barMargin,
 		                         screenHeight - barInnerHeight - 2 * barStrokeWidth - barMargin,
@@ -92,9 +92,15 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		bar.io.y     := io.y
 		bar.io.value := io.multiplier
 		when (bar.io.out.valid) {
-			io.red   := bar.io.out.bits.red
-			io.green := bar.io.out.bits.green
-			io.blue  := bar.io.out.bits.blue
+			when (bar.io.out.bits.red === 255.U) {
+				io.red   := 255.U - colors.io.red
+				io.green := 255.U - colors.io.green
+				io.blue  := 255.U - colors.io.blue
+			} .otherwise {
+				io.red   := bar.io.out.bits.red
+				io.green := bar.io.out.bits.green
+				io.blue  := bar.io.out.bits.blue
+			}
 		}
 
 		when (slide === demoSlideNES.U) {

@@ -182,7 +182,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 						failed    := false.B
 						errorInfo := "b01010101".U
 						printf(cf"Finishing with 0x92 around $pointer.\n")
-						Seq.tabulate(4)(c => setChannel(c + 1, false))
+						Seq.tabulate(5)(c => setChannel(c + 1, false))
 					}
 				}
 

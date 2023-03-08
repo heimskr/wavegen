@@ -167,10 +167,15 @@ module top (
 
 	wire [17:0] rom_addr_gb;
 	wire [23:0] rom_out_gb;
+	reg  [17:0] rom_addr_gb_reg;
+
+	always @(posedge clk) begin
+		rom_addr_gb_reg <= rom_addr_gb;
+	end
 
 	blk_mem_gen_0 gb_rom (
 		.clka(clk),
-		.addra(rom_addr_gb),
+		.addra(rom_addr_gb_reg),
 		.douta(rom_out_gb)
 	);
 
