@@ -91,6 +91,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 		val demoActive = slide === demoSlideNES.U || slide === demoSlideGB.U
 
+		def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
 
 		when (slide === demoSlideNES.U) {
 			if (showScreenshot) {
@@ -104,22 +105,28 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				}
 			}
 
+			val topFg = Module(new Text(TextOpts(text="The Legend of Zelda (title screen)", centerX=true, centerY=false, xOffset=1280/2-2, yOffset=20-2, shift=2)))
+			topFg.io.x := io.x
+			topFg.io.y := io.y
+			val topBg = Module(new Text(TextOpts(text="The Legend of Zelda (title screen)", centerX=true, centerY=false, xOffset=1280/2+2, yOffset=20+2, shift=2)))
+			topBg.io.x := io.x
+			topBg.io.y := io.y
+
+			when (topBg.io.out) { setAll(0)   }
+			when (topFg.io.out) { setAll(255) }
+
 			val wavyMid = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance/2, yOffset=yBase + distance/2, shift=wShift, waveCoefficient=wC)))
 			wavyMid.io.x := io.x
 			wavyMid.io.y := io.y
 			when (wavyMid.io.out) {
-				io.red   := 0.U
-				io.green := 0.U
-				io.blue  := 0.U
+				setAll(0)
 			}
 
 			val wavy = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
 			wavy.io.x := io.x
 			wavy.io.y := io.y
 			when (wavy.io.out) {
-				io.red   := 255.U
-				io.green := 255.U
-				io.blue  := 255.U
+				setAll(255)
 			}
 
 			when (!useNES) {
@@ -127,9 +134,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				warning.io.x := io.x
 				warning.io.y := io.y
 				when (warning.io.out) {
-					io.red   := 0.U
-					io.green := 0.U
-					io.blue  := 0.U
+					setAll(0)
 				}
 			}
 		} .otherwise {
@@ -144,22 +149,28 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				}
 			}
 
+			val topFg = Module(new Text(TextOpts(text="Pok\u0019mon Card GB2 (GR duel music)", centerX=true, centerY=false, xOffset=1280/2-2, yOffset=20-2, shift=2)))
+			topFg.io.x := io.x
+			topFg.io.y := io.y
+			val topBg = Module(new Text(TextOpts(text="Pok\u0019mon Card GB2 (GR duel music)", centerX=true, centerY=false, xOffset=1280/2+2, yOffset=20+2, shift=2)))
+			topBg.io.x := io.x
+			topBg.io.y := io.y
+
+			when (topBg.io.out) { setAll(0)   }
+			when (topFg.io.out) { setAll(255) }
+
 			val wavyMid = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance/2, yOffset=yBase + distance/2, shift=wShift, waveCoefficient=wC)))
 			wavyMid.io.x := io.x
 			wavyMid.io.y := io.y
 			when (wavyMid.io.out) {
-				io.red   := 0.U
-				io.green := 0.U
-				io.blue  := 0.U
+				setAll(0)
 			}
 
 			val wavy = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase, yOffset=yBase, shift=wShift, waveCoefficient=wC)))
 			wavy.io.x := io.x
 			wavy.io.y := io.y
 			when (wavy.io.out) {
-				io.red   := 255.U
-				io.green := 255.U
-				io.blue  := 255.U
+				setAll(255)
 			}
 
 			when (useNES) {
@@ -167,17 +178,9 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				warning.io.x := io.x
 				warning.io.y := io.y
 				when (warning.io.out) {
-					io.red   := 0.U
-					io.green := 0.U
-					io.blue  := 0.U
+					setAll(0)
 				}
 			}
-		}
-
-		when (slideshow.io.out) {
-			io.red   := 0.U
-			io.green := 0.U
-			io.blue  := 0.U
 		}
 	} .otherwise {
 		io.red   := slideshow.io.red

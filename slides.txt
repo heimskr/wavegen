@@ -1,4 +1,4 @@
-  FPGABoy by Kai Tamkun (Heimskr#0001)
+         FPGABoy by Kai Tamkun
              _____________
             | _"_________ |
             ||.---------.||
@@ -22,10 +22,12 @@
 
                 Project
 
- - Make a Game Boy sound chip
+ - Made a Game Boy sound chip
 
  - Accuracy nice but not a requirement
    - Clocks and CDC are finicky
+
+ - Got bored, implemented NES APU too
 
  - More than 125 hours of work, whoops
 \s
@@ -34,12 +36,16 @@
 
  - Not used much in this project tbh
 
- - Created some nice unused generators:
-   TableGen, TriangleGen, NoiseGen,
-   FPSummer, DynamicClocker, Divider
+ - Created some nice generators
+   (TableGen, TriangleGen, NoiseGen,
+   FPSummer, DynamicClocker, Divider)
+   and proceeded to never use them
 
  - Used SquareGenExternal, StaticClocker
    and PeriodClocker
+
+ - Can very conveniently prefill Vecs
+   with sine wave values
 \s
 
                Interfaces
@@ -63,13 +69,14 @@
   8. HDMI output: video, audio
   9. Presentation slides
  10. NES channels: 1, 2, 3, 4
+ 11. Silly graphics stuff (you'll see)
 \s
 
                 Testing
 
- - Testing? Never heard of it, yolo
+ - Testing? Never heard of it #yolo
 
- - test:main ratio: ~20%
+ - test:main ratio < 20%
 
  - Tests mostly just generate VCD output
    for manual inspection in GTKWave
@@ -138,4 +145,10 @@
 
 
 
-      Thanks for a great quarter!
+     Thanks for a great quarter! =)
+
+
+   https://github.com/heimskr/wavegen
+
+
+         Discord: Heimskr#0001
