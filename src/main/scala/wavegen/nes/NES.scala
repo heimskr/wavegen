@@ -42,7 +42,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 		cpuClocker.io.tick
 	} else io.tick
 
-	stateMachine.io.start := io.pulseC
+	stateMachine.io.start := io.start
 	stateMachine.io.tick  := cpuTick
 	stateMachine.io.rom   := io.rom
 

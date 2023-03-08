@@ -17,23 +17,15 @@ module top (
 	output ac_lrclk,
 	inout  scl,
 	inout  sda,
-	// output oled_sclk,
-	// output oled_sdin,
-	// output oled_vbat,
-	// output oled_vdd,
-	// output oled_res,
-	// output oled_dc,
-	// output hdmi_tx_cec,     // CE control bidirectional
-	// input  hdmi_tx_hpd,     // hot-plug detect
-	// output hdmi_tx_rscl,    // DDC bidirectional
-	// output hdmi_tx_rsda,    // DDC bidirectional
-	// output hdmi_tx_clk_n,   // HDMI clock differential negative
-	// output hdmi_tx_clk_p,   // HDMI clock differential positive
-	// output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-	// output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
+	output hdmi_tx_cec,     // CE control bidirectional
+	input  hdmi_tx_hpd,     // hot-plug detect
+	output hdmi_tx_rscl,    // DDC bidirectional
+	output hdmi_tx_rsda,    // DDC bidirectional
+	output hdmi_tx_clk_n,   // HDMI clock differential negative
+	output hdmi_tx_clk_p,   // HDMI clock differential positive
+	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
+	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
 	inout  [7:0] ja, // Pmod JA connector
-	// input ps2_clk,
-	// input ps2_data
 	output uart_rx_out,
 	input  uart_tx_in
 );
@@ -216,20 +208,15 @@ module top (
 		.tx_ack_o()
 	);
 
-	// wire [7:0] jaBits;
-	// wire jaValid;
-
-	// reg [7:0] jaValue;
-
-	// always @(posedge clk) begin
-	// 	if (jaValid) begin
-	// 		jaValue <= jaBits;
-	// 	end else begin
-	// 		jaValue <= 8'bz;
-	// 	end
-	// end
-
-	// assign ja = jaValue;
+	wire nes_a;
+	wire nes_b;
+	wire nes_select;
+	wire nes_start;
+	wire nes_up;
+	wire nes_down;
+	wire nes_left;
+	wire nes_right;
+	wire use_nes;
 
 	MainBoth main_module_both (
 		.clock(clk),
@@ -252,19 +239,22 @@ module top (
 		.io_romGB(rom_out_gb),
 		.io_romNES(rom_out_nes),
 		.io_jaIn(ja),
-		// .io_jaOut_bits(jaBits),
-		// .io_jaOut_valid(jaValid)
 		.io_pulseOut(ja[3]),
 		.io_latchOut(ja[2]),
 		.io_rxByte_valid(rx_ready),
 		.io_rxByte_bits(rx_byte),
 		.io_txByte_valid(tx_ready),
-		.io_txByte_bits(tx_byte)
+		.io_txByte_bits(tx_byte),
+		.io_nesButtons_a(nes_a),
+		.io_nesButtons_b(nes_b),
+		.io_nesButtons_select(nes_select),
+		.io_nesButtons_start(nes_start),
+		.io_nesButtons_up(nes_up),
+		.io_nesButtons_down(nes_down),
+		.io_nesButtons_left(nes_left),
+		.io_nesButtons_right(nes_right),
+		.io_useNES(use_nes)
 	);
-
-
-	// assign ja[1] = ps2_data;
-	// assign ja[0] = ps2_clk;
 
 	i2s_ctl audio_inout (
 		.CLK_I(clk),    // Sys clk
@@ -292,25 +282,34 @@ module top (
 		storedR <= out_audioR;
 	end
 
-	// Display display (
-	// 	.clk(clk),
-	// 	.clk_pix1(clk_pix1),
-	// 	.clk_pix5(clk_pix5),
-	// 	.sw(sw),
-	// 	.buttonL(btnl),
-	// 	.buttonR(btnr),
-	// 	.clk30(clk30MHz),
-	// 	.rst_n(cpu_resetn),
-	// 	.hdmi_tx_cec(hdmi_tx_cec),
-	// 	.hdmi_tx_hpd(hdmi_tx_hpd),
-	// 	.hdmi_tx_rscl(hdmi_tx_rscl),
-	// 	.hdmi_tx_rsda(hdmi_tx_rsda),
-	// 	.hdmi_tx_clk_n(hdmi_tx_clk_n),
-	// 	.hdmi_tx_clk_p(hdmi_tx_clk_p),
-	// 	.hdmi_tx_n(hdmi_tx_n),
-	// 	.hdmi_tx_p(hdmi_tx_p),
-	// 	.audioL(storedL),
-	// 	.audioR(storedR)
-	// );
+	Display display (
+		.clk(clk),
+		.clk_pix1(clk_pix1),
+		.clk_pix5(clk_pix5),
+		.sw(sw),
+		.buttonL(btnl),
+		.buttonR(btnr),
+		.clk30(clk30MHz),
+		.rst_n(cpu_resetn),
+		.hdmi_tx_cec(hdmi_tx_cec),
+		.hdmi_tx_hpd(hdmi_tx_hpd),
+		.hdmi_tx_rscl(hdmi_tx_rscl),
+		.hdmi_tx_rsda(hdmi_tx_rsda),
+		.hdmi_tx_clk_n(hdmi_tx_clk_n),
+		.hdmi_tx_clk_p(hdmi_tx_clk_p),
+		.hdmi_tx_n(hdmi_tx_n),
+		.hdmi_tx_p(hdmi_tx_p),
+		.audioL(storedL),
+		.audioR(storedR),
+		.nesAPulse(nes_a),
+		.nesBPulse(nes_b),
+		.nesSelectPulse(nes_select),
+		.nesStartPulse(nes_start),
+		.nesUpPulse(nes_up),
+		.nesDownPulse(nes_down),
+		.nesLeftPulse(nes_left),
+		.nesRightPulse(nes_right),
+		.useNES(use_nes)
+	);
 
 endmodule

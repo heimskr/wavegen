@@ -18,7 +18,16 @@ module Display (
 	output wire hdmi_tx_clk_n,   // HDMI clock differential negative
 	output wire hdmi_tx_clk_p,   // HDMI clock differential positive
 	output wire [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-	output wire [2:0] hdmi_tx_p  // Three HDMI channels differential positive
+	output wire [2:0] hdmi_tx_p, // Three HDMI channels differential positive
+	input  wire nesAPulse,
+	input  wire nesBPulse,
+	input  wire nesSelectPulse,
+	input  wire nesStartPulse,
+	input  wire nesUpPulse,
+	input  wire nesDownPulse,
+	input  wire nesLeftPulse,
+	input  wire nesRightPulse,
+	input  wire useNES
 );
 
 	wire pix_clk;    // pixel clock
@@ -67,7 +76,16 @@ module Display (
 		.io_rom(rom_out),
 		.io_red(red),
 		.io_green(green),
-		.io_blue(blue)
+		.io_blue(blue),
+		.io_nesButtons_a(nesAPulse),
+		.io_nesButtons_b(nesBPulse),
+		.io_nesButtons_select(nesSelectPulse),
+		.io_nesButtons_start(nesStartPulse),
+		.io_nesButtons_up(nesUpPulse),
+		.io_nesButtons_down(nesDownPulse),
+		.io_nesButtons_left(nesLeftPulse),
+		.io_nesButtons_right(nesRightPulse),
+		.io_useNES(useNES)
 	);
 
 	// TMDS Encoding and Serialization

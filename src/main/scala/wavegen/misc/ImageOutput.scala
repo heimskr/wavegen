@@ -11,21 +11,23 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val demoSlideNES = 11
 
 	val io = IO(new Bundle {
-		val x       = Input(UInt(11.W))
-		val y       = Input(UInt(10.W))
-		val sw      = Input(UInt(8.W))
-		val rom     = Input(UInt(4.W))
-		val pulseL  = Input(Bool())
-		val pulseR  = Input(Bool())
-		val addr    = Output(UInt(15.W))
-		val red     = Output(UInt(8.W))
-		val green   = Output(UInt(8.W))
-		val blue    = Output(UInt(8.W))
+		val x          = Input(UInt(11.W))
+		val y          = Input(UInt(10.W))
+		val sw         = Input(UInt(8.W))
+		val rom        = Input(UInt(4.W))
+		val pulseL     = Input(Bool())
+		val pulseR     = Input(Bool())
+		val addr       = Output(UInt(15.W))
+		val red        = Output(UInt(8.W))
+		val green      = Output(UInt(8.W))
+		val blue       = Output(UInt(8.W))
+		val nesButtons = Input(wavegen.NESButtons())
+		val useNES     = Input(Bool())
 	})
 
 	val slideshow = Module(new wavegen.presentation.Slideshow)
 	val slide     = RegInit(0.U(8.W))
-	val useNES    = io.sw(0)
+	val useNES    = io.useNES
 
 	slideshow.io.slide := slide
 	slideshow.io.x     := io.x
@@ -33,11 +35,11 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val maxSlides = 16
 
-	when (io.pulseL) {
+	when (io.pulseL || io.nesButtons.left) {
 		slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
 	}
 
-	when (io.pulseR) {
+	when (io.pulseR || io.nesButtons.right) {
 		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
 	}
 
@@ -91,6 +93,10 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 		def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
 
+		val warning = Module(new Text(TextOpts(text="Press select!", centerX=true, centerY=false, xOffset=1280/2, yOffset=720-10-(8<<2), shift=2)))
+		warning.io.x := io.x
+		warning.io.y := io.y
+
 		when (slide === demoSlideNES.U) {
 			val wavyBg = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
 			wavyBg.io.x := io.x
@@ -131,13 +137,8 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				setAll(255)
 			}
 
-			when (!useNES) {
-				val warning = Module(new Text(TextOpts(text="Flip switch 0!", centerX=false, centerY=false, xOffset=10, yOffset=720-10-(8<<2), shift=2)))
-				warning.io.x := io.x
-				warning.io.y := io.y
-				when (warning.io.out) {
-					setAll(0)
-				}
+			when (!useNES && warning.io.out) {
+				setAll(0)
 			}
 		} .otherwise {
 			val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
@@ -179,13 +180,8 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				setAll(255)
 			}
 
-			when (useNES) {
-				val warning = Module(new Text(TextOpts(text="Flip switch 0!", centerX=false, centerY=false, xOffset=10, yOffset=720-10-(8<<2), shift=2)))
-				warning.io.x := io.x
-				warning.io.y := io.y
-				when (warning.io.out) {
-					setAll(0)
-				}
+			when (useNES && warning.io.out) {
+				setAll(0)
 			}
 		}
 	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (720 - 70).U && slideshow.io.red === 255.U) {

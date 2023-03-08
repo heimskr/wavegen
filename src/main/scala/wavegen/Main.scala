@@ -117,48 +117,75 @@ class MainBoth extends Module {
 	val useInternalClocks = true
 
 	val io = IO(new Bundle {
-		val clockGB  = Input(Bool())
-		val clockNES = Input(Bool())
-		val pulseU   = Input(Bool())
-		val pulseR   = Input(Bool())
-		val pulseD   = Input(Bool())
-		val pulseL   = Input(Bool())
-		val pulseC   = Input(Bool())
-		val sw       = Input(UInt(8.W))
-		val romGB    = Input(UInt(romWidth.W))
-		val romNES   = Input(UInt(romWidth.W))
-		val outL     = Output(UInt(24.W))
-		val outR     = Output(UInt(24.W))
-		val led      = Output(UInt(8.W))
-		val addrGB   = Output(UInt(18.W))
-		val addrNES  = Output(UInt(17.W))
-		val jaIn     = Input(UInt(8.W))
-		val pulseOut = Output(Bool())
-		val latchOut = Output(Bool())
-		val rxByte   = Flipped(Valid(UInt(8.W)))
-		val txByte   = Valid(UInt(8.W))
+		val clockGB    = Input(Bool())
+		val clockNES   = Input(Bool())
+		val pulseU     = Input(Bool())
+		val pulseR     = Input(Bool())
+		val pulseD     = Input(Bool())
+		val pulseL     = Input(Bool())
+		val pulseC     = Input(Bool())
+		val sw         = Input(UInt(8.W))
+		val romGB      = Input(UInt(romWidth.W))
+		val romNES     = Input(UInt(romWidth.W))
+		val outL       = Output(UInt(24.W))
+		val outR       = Output(UInt(24.W))
+		val led        = Output(UInt(8.W))
+		val addrGB     = Output(UInt(18.W))
+		val addrNES    = Output(UInt(17.W))
+		val jaIn       = Input(UInt(8.W))
+		val pulseOut   = Output(Bool())
+		val latchOut   = Output(Bool())
+		val rxByte     = Flipped(Valid(UInt(8.W)))
+		val txByte     = Valid(UInt(8.W))
+		val nesButtons = Output(NESButtons())
+		val useNES     = Output(Bool())
 	})
 
 	io.addrGB := DontCare
 	io.addrNES := DontCare
 	io.outL := 0.U
 	io.outR := 0.U
+	io.led  := 0.U
 	io.txByte.bits  := 0.U
 	io.txByte.valid := false.B
 
-	def send(value: UInt) = { io.txByte.bits := value; io.txByte.valid := true.B }
+	val nesA      = RegInit(false.B)
+	val nesB      = RegInit(false.B)
+	val nesSelect = RegInit(false.B)
+	val nesStart  = RegInit(false.B)
+	val nesUp     = RegInit(false.B)
+	val nesDown   = RegInit(false.B)
+	val nesLeft   = RegInit(false.B)
+	val nesRight  = RegInit(false.B)
 
-	/*
-	val useNES = io.sw(0)
+
+	val nesDebouncer = Module(new Debouncer(8))
+	nesDebouncer.io.in   := VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
+	io.nesButtons.a      := nesDebouncer.io.out(0)
+	io.nesButtons.b      := nesDebouncer.io.out(1)
+	io.nesButtons.select := nesDebouncer.io.out(2)
+	io.nesButtons.start  := nesDebouncer.io.out(3)
+	io.nesButtons.up     := nesDebouncer.io.out(4)
+	io.nesButtons.down   := nesDebouncer.io.out(5)
+	io.nesButtons.left   := nesDebouncer.io.out(6)
+	io.nesButtons.right  := nesDebouncer.io.out(7)
+
+	val useNES = RegInit(false.B)
+	io.useNES := useNES
+	when (io.nesButtons.select) {
+		useNES := !useNES
+	}
+
+	val start = io.pulseC || io.nesButtons.start
 
 	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth, useInternalClocks)) }
 	gameboy.io.tick  := io.clockGB
-	gameboy.io.start := io.pulseC && !useNES
+	gameboy.io.start := start && !useNES
 	gameboy.io.sw    := io.sw
 
 	val nes = withReset(reset.asBool || !useNES) { Module(new wavegen.nes.NES(17, romWidth, useInternalClocks)) }
 	nes.io.tick  := io.clockNES
-	nes.io.start := io.pulseC && useNES
+	nes.io.start := start && useNES
 	nes.io.sw    := io.sw
 
 	def boost(value: UInt): UInt = value << 9.U
@@ -168,11 +195,11 @@ class MainBoth extends Module {
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
-	when (io.pulseU && multiplier =/= ((1 << multiplierWidth) - 1).U) {
+	when ((io.pulseU || io.nesButtons.up) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
 		multiplier := multiplier + 1.U
 	}
 
-	when (io.pulseD && multiplier =/= 0.U) {
+	when ((io.pulseD || io.nesButtons.down) && multiplier =/= 0.U) {
 		multiplier := multiplier - 1.U
 	}
 
@@ -213,10 +240,6 @@ class MainBoth extends Module {
 		gameboy.io.pulseC := io.pulseC
 	}
 
-	// */
-
-	io.led := io.jaIn
-
 	val reset12us = RegInit(true.B)
 	val reset6us  = RegInit(true.B)
 
@@ -238,15 +261,6 @@ class MainBoth extends Module {
 	val sWait60 :: sInitial12 :: sWait6 :: s8PulsesOn :: s8PulsesOff :: Nil = Enum(5)
 	val state    = RegInit(sWait60)
 	val counter8 = RegInit(0.U(3.W))
-
-	val nesA      = RegInit(false.B)
-	val nesB      = RegInit(false.B)
-	val nesSelect = RegInit(false.B)
-	val nesStart  = RegInit(false.B)
-	val nesUp     = RegInit(false.B)
-	val nesDown   = RegInit(false.B)
-	val nesLeft   = RegInit(false.B)
-	val nesRight  = RegInit(false.B)
 
 	when (state === sWait60) {
 		reset6us  := true.B
