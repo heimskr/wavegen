@@ -218,6 +218,12 @@ module top (
 	wire nes_right;
 	wire use_nes;
 
+	wire [10:0] x;
+	wire [ 9:0] y;
+	wire [ 7:0] red;
+	wire [ 7:0] green;
+	wire [ 7:0] blue;
+
 	MainBoth main_module_both (
 		.clock(clk),
 		.reset(!cpu_resetn),
@@ -253,7 +259,12 @@ module top (
 		.io_nesButtons_down(nes_down),
 		.io_nesButtons_left(nes_left),
 		.io_nesButtons_right(nes_right),
-		.io_useNES(use_nes)
+		.io_useNES(use_nes),
+		.io_x(x),
+		.io_y(y),
+		.io_red(red),
+		.io_green(green),
+		.io_blue(blue)
 	);
 
 	i2s_ctl audio_inout (
@@ -309,7 +320,12 @@ module top (
 		.nesDownPulse(nes_down),
 		.nesLeftPulse(nes_left),
 		.nesRightPulse(nes_right),
-		.useNES(use_nes)
+		.useNES(use_nes),
+		.x(x),
+		.y(y),
+		.red(red),
+		.green(green),
+		.blue(blue)
 	);
 
 endmodule

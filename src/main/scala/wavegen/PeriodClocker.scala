@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 
 class PeriodClocker(width: Int = 16) extends Module {
+	override val desiredName = "PeriodClocker" + width + "w"
+
 	val io = IO(new Bundle {
 		val tickIn  = Input(Bool())
 		val period  = Input(UInt(width.W))

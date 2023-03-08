@@ -11,6 +11,8 @@ class MainBoth extends Module {
 	val useInternalClocks = true
 
 	val io = IO(new Bundle {
+		val x          = Input(UInt(11.W))
+		val y          = Input(UInt(10.W))
 		val clockGB    = Input(Bool())
 		val clockNES   = Input(Bool())
 		val pulseU     = Input(Bool())
@@ -33,6 +35,9 @@ class MainBoth extends Module {
 		val txByte     = Valid(UInt(8.W))
 		val nesButtons = Output(NESButtons())
 		val useNES     = Output(Bool())
+		val red        = Output(UInt(8.W))
+		val green      = Output(UInt(8.W))
+		val blue       = Output(UInt(8.W))
 	})
 
 	io.addrGB := DontCare
@@ -43,6 +48,9 @@ class MainBoth extends Module {
 	io.txByte.bits  := 0.U
 	io.txByte.valid := false.B
 
+	val useNES = RegInit(false.B)
+	io.useNES := useNES
+
 	val nesA      = RegInit(false.B)
 	val nesB      = RegInit(false.B)
 	val nesSelect = RegInit(false.B)
@@ -51,7 +59,6 @@ class MainBoth extends Module {
 	val nesDown   = RegInit(false.B)
 	val nesLeft   = RegInit(false.B)
 	val nesRight  = RegInit(false.B)
-
 
 	val nesDebouncer = Module(new Debouncer(8))
 	nesDebouncer.io.in   := VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
@@ -63,11 +70,23 @@ class MainBoth extends Module {
 	io.nesButtons.down   := nesDebouncer.io.out(5)
 	io.nesButtons.left   := nesDebouncer.io.out(6)
 	io.nesButtons.right  := nesDebouncer.io.out(7)
-
-	val useNES = RegInit(false.B)
-	io.useNES := useNES
 	when (io.nesButtons.select) {
 		useNES := !useNES
+	}
+
+	val imageOutput = Module(new wavegen.misc.ImageOutput)
+	imageOutput.io.x       := io.x
+	imageOutput.io.y       := io.y
+	imageOutput.io.sw      := io.sw
+	imageOutput.io.left    := io.pulseL || io.nesButtons.left  || io.nesButtons.b
+	imageOutput.io.right   := io.pulseR || io.nesButtons.right || io.nesButtons.a
+	imageOutput.io.buttons := io.nesButtons
+	io.red   := imageOutput.io.red
+	io.green := imageOutput.io.green
+	io.blue  := imageOutput.io.blue
+
+	when (imageOutput.io.useNES.valid) {
+		useNES := imageOutput.io.useNES.bits
 	}
 
 	val start = io.pulseC || io.nesButtons.start
@@ -215,5 +234,4 @@ object MainRun extends scala.App {
 	(new ChiselStage).emitVerilog(new MainBoth, args)
 	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
 	(new ChiselStage).emitVerilog(new Debouncer(5), args)
-	(new ChiselStage).emitVerilog(new Debouncer(2), args)
 }

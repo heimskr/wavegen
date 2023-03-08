@@ -27,7 +27,12 @@ module Display (
 	input  wire nesDownPulse,
 	input  wire nesLeftPulse,
 	input  wire nesRightPulse,
-	input  wire useNES
+	input  wire useNES,
+	output wire [10:0] x,
+	output wire [ 9:0] y,
+	input  wire [ 7:0] red,
+	input  wire [ 7:0] green,
+	input  wire [ 7:0] blue
 );
 
 	wire pix_clk;    // pixel clock
@@ -36,57 +41,11 @@ module Display (
 	assign pix_clk = clk_pix1;
 	assign pix_clk_5x = clk_pix5;
 
-	wire [7:0] red;
-	wire [7:0] green;
-	wire [7:0] blue;
-
-	wire [14:0] rom_addr;
-	wire [3:0] rom_out;
-
 	wire [10:0] cx;
-	wire [9:0] cy;
+	wire [ 9:0] cy;
 
-	image_rom rom (
-		.clka(pix_clk),
-		.addra(rom_addr),
-		.douta(rom_out)
-	);
-
-	wire pulseL;
-	wire pulseR;
-
-	Debouncer2 dbuttons (
-		.clock(pix_clk),
-		.reset(~rst_n),
-		.io_in_0(buttonL),
-		.io_in_1(buttonR),
-		.io_out_0(pulseL),
-		.io_out_1(pulseR)
-	);
-
-	ImageOutput image_output (
-		.clock(pix_clk),
-		.reset(~rst_n),
-		.io_x(cx),
-		.io_y(cy),
-		.io_sw(sw),
-		.io_pulseL(pulseL),
-		.io_pulseR(pulseR),
-		.io_addr(rom_addr),
-		.io_rom(rom_out),
-		.io_red(red),
-		.io_green(green),
-		.io_blue(blue),
-		.io_nesButtons_a(nesAPulse),
-		.io_nesButtons_b(nesBPulse),
-		.io_nesButtons_select(nesSelectPulse),
-		.io_nesButtons_start(nesStartPulse),
-		.io_nesButtons_up(nesUpPulse),
-		.io_nesButtons_down(nesDownPulse),
-		.io_nesButtons_left(nesLeftPulse),
-		.io_nesButtons_right(nesRightPulse),
-		.io_useNES(useNES)
-	);
+	assign x = cx;
+	assign y = cy;
 
 	// TMDS Encoding and Serialization
 	wire tmds_ch0_serial, tmds_ch1_serial, tmds_ch2_serial, tmds_chc_serial;
