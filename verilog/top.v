@@ -218,9 +218,13 @@ module top (
 	wire nes_right;
 	wire use_nes;
 
+	wire use_nes_in;
+	wire use_nes_in_valid;
+
 	MainBoth main_module_both (
 		.clock(clk),
 		.reset(!cpu_resetn),
+		.io_pixClock(clk_pix1),
 		// .io_clockNES(clk_nes_buf),
 		// .io_clockGB(clk_gb_buf),
 		.io_clockNES(1'b0),
@@ -253,7 +257,9 @@ module top (
 		.io_nesButtons_down(nes_down),
 		.io_nesButtons_left(nes_left),
 		.io_nesButtons_right(nes_right),
-		.io_useNES(use_nes)
+		.io_useNES(use_nes),
+		.io_useNESIn_valid(use_nes_in_valid),
+		.io_useNESIn_bits(use_nes_in)
 	);
 
 	i2s_ctl audio_inout (
@@ -301,15 +307,17 @@ module top (
 		.hdmi_tx_p(hdmi_tx_p),
 		.audioL(storedL),
 		.audioR(storedR),
-		.nesAPulse(nes_a),
-		.nesBPulse(nes_b),
-		.nesSelectPulse(nes_select),
-		.nesStartPulse(nes_start),
-		.nesUpPulse(nes_up),
-		.nesDownPulse(nes_down),
-		.nesLeftPulse(nes_left),
-		.nesRightPulse(nes_right),
-		.useNES(use_nes)
+		.nesA(nes_a),
+		.nesB(nes_b),
+		.nesSelect(nes_select),
+		.nesStart(nes_start),
+		.nesUp(nes_up),
+		.nesDown(nes_down),
+		.nesLeft(nes_left),
+		.nesRight(nes_right),
+		.useNES(use_nes),
+		.useNESOutValid(use_nes_in_valid),
+		.useNESOut(use_nes_in)
 	);
 
 endmodule

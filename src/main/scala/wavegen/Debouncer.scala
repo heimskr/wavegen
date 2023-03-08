@@ -16,8 +16,12 @@ class PBDebouncer extends BlackBox {
 	})
 }
 
-class Debouncer(buttonCount: Int = 1) extends Module {
-	override val desiredName = "Debouncer" + buttonCount
+class Debouncer(buttonCount: Int = 1, moduleName: String = "") extends Module {
+	override val desiredName =
+		if (moduleName == "")
+			"Debouncer" + buttonCount
+		else
+			moduleName
 
 	val io = IO(new Bundle {
 		val in  = Input(Vec(buttonCount, Bool()))

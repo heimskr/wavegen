@@ -11,6 +11,7 @@ class MainBoth extends Module {
 	val useInternalClocks = true
 
 	val io = IO(new Bundle {
+		val pixClock   = Input(Clock())
 		val clockGB    = Input(Bool())
 		val clockNES   = Input(Bool())
 		val pulseU     = Input(Bool())
@@ -33,6 +34,7 @@ class MainBoth extends Module {
 		val txByte     = Valid(UInt(8.W))
 		val nesButtons = Output(NESButtons())
 		val useNES     = Output(Bool())
+		val useNESIn   = Flipped(Valid(Bool()))
 	})
 
 	io.addrGB := DontCare
@@ -52,25 +54,36 @@ class MainBoth extends Module {
 	val nesLeft   = RegInit(false.B)
 	val nesRight  = RegInit(false.B)
 
-
-	val nesDebouncer = Module(new Debouncer(8))
+	val nesDebouncer = Module(new Debouncer(8, "NESDebouncer"))
 	nesDebouncer.io.in   := VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
-	io.nesButtons.a      := nesDebouncer.io.out(0)
-	io.nesButtons.b      := nesDebouncer.io.out(1)
-	io.nesButtons.select := nesDebouncer.io.out(2)
-	io.nesButtons.start  := nesDebouncer.io.out(3)
-	io.nesButtons.up     := nesDebouncer.io.out(4)
-	io.nesButtons.down   := nesDebouncer.io.out(5)
-	io.nesButtons.left   := nesDebouncer.io.out(6)
-	io.nesButtons.right  := nesDebouncer.io.out(7)
+	val nesPulseA      = nesDebouncer.io.out(0)
+	val nesPulseB      = nesDebouncer.io.out(1)
+	val nesPulseSelect = nesDebouncer.io.out(2)
+	val nesPulseStart  = nesDebouncer.io.out(3)
+	val nesPulseUp     = nesDebouncer.io.out(4)
+	val nesPulseDown   = nesDebouncer.io.out(5)
+	val nesPulseLeft   = nesDebouncer.io.out(6)
+	val nesPulseRight  = nesDebouncer.io.out(7)
+	io.nesButtons.a      := nesA
+	io.nesButtons.b      := nesB
+	io.nesButtons.select := nesSelect
+	io.nesButtons.start  := nesStart
+	io.nesButtons.up     := nesUp
+	io.nesButtons.down   := nesDown
+	io.nesButtons.left   := nesLeft
+	io.nesButtons.right  := nesRight
 
 	val useNES = RegInit(false.B)
 	io.useNES := useNES
-	when (io.nesButtons.select) {
+	when (nesPulseSelect) {
 		useNES := !useNES
 	}
 
-	val start = io.pulseC || io.nesButtons.start
+	when (io.useNESIn.valid) {
+		useNES := io.useNESIn.bits
+	}
+
+	val start = io.pulseC || nesPulseStart
 
 	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth, useInternalClocks)) }
 	gameboy.io.tick  := io.clockGB
@@ -89,11 +102,11 @@ class MainBoth extends Module {
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
-	when ((io.pulseU || io.nesButtons.up) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
+	when ((io.pulseU || nesPulseUp) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
 		multiplier := multiplier + 1.U
 	}
 
-	when ((io.pulseD || io.nesButtons.down) && multiplier =/= 0.U) {
+	when ((io.pulseD || nesPulseDown) && multiplier =/= 0.U) {
 		multiplier := multiplier - 1.U
 	}
 
@@ -214,6 +227,7 @@ class MainBoth extends Module {
 object MainRun extends scala.App {
 	(new ChiselStage).emitVerilog(new MainBoth, args)
 	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
-	(new ChiselStage).emitVerilog(new Debouncer(5), args)
 	(new ChiselStage).emitVerilog(new Debouncer(2), args)
+	(new ChiselStage).emitVerilog(new Debouncer(5), args)
+	(new ChiselStage).emitVerilog(new Debouncer(8), args)
 }

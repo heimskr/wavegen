@@ -19,15 +19,17 @@ module Display (
 	output wire hdmi_tx_clk_p,   // HDMI clock differential positive
 	output wire [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	output wire [2:0] hdmi_tx_p, // Three HDMI channels differential positive
-	input  wire nesAPulse,
-	input  wire nesBPulse,
-	input  wire nesSelectPulse,
-	input  wire nesStartPulse,
-	input  wire nesUpPulse,
-	input  wire nesDownPulse,
-	input  wire nesLeftPulse,
-	input  wire nesRightPulse,
-	input  wire useNES
+	input  wire nesA,
+	input  wire nesB,
+	input  wire nesSelect,
+	input  wire nesStart,
+	input  wire nesUp,
+	input  wire nesDown,
+	input  wire nesLeft,
+	input  wire nesRight,
+	input  wire useNES,
+	output wire useNESOut,
+	output wire useNESOutValid
 );
 
 	wire pix_clk;    // pixel clock
@@ -55,6 +57,15 @@ module Display (
 	wire pulseL;
 	wire pulseR;
 
+	wire nesAPulse;
+	wire nesBPulse;
+	wire nesSelectPulse;
+	wire nesStartPulse;
+	wire nesUpPulse;
+	wire nesDownPulse;
+	wire nesLeftPulse;
+	wire nesRightPulse;
+
 	Debouncer2 dbuttons (
 		.clock(pix_clk),
 		.reset(~rst_n),
@@ -62,6 +73,27 @@ module Display (
 		.io_in_1(buttonR),
 		.io_out_0(pulseL),
 		.io_out_1(pulseR)
+	);
+
+	Debouncer8 debounce_nes (
+		.clock(pix_clk),
+		.reset(~rst_n),
+		.io_in_0(nesA),
+		.io_in_1(nesB),
+		.io_in_2(nesSelect),
+		.io_in_3(nesStart),
+		.io_in_4(nesUp),
+		.io_in_5(nesDown),
+		.io_in_6(nesLeft),
+		.io_in_7(nesRight),
+		.io_out_0(nesAPulse),
+		.io_out_1(nesBPulse),
+		.io_out_2(nesSelectPulse),
+		.io_out_3(nesStartPulse),
+		.io_out_4(nesUpPulse),
+		.io_out_5(nesDownPulse),
+		.io_out_6(nesLeftPulse),
+		.io_out_7(nesRightPulse)
 	);
 
 	ImageOutput image_output (
@@ -85,7 +117,9 @@ module Display (
 		.io_nesButtons_down(nesDownPulse),
 		.io_nesButtons_left(nesLeftPulse),
 		.io_nesButtons_right(nesRightPulse),
-		.io_useNES(useNES)
+		.io_useNES(useNES),
+		.io_useNESOut_valid(useNESOutValid),
+		.io_useNESOut_bits(useNESOut)
 	);
 
 	// TMDS Encoding and Serialization
