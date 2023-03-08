@@ -33,11 +33,13 @@ class MainBoth extends Module {
 		val latchOut   = Output(Bool())
 		val rxByte     = Flipped(Valid(UInt(8.W)))
 		val txByte     = Valid(UInt(8.W))
-		val nesButtons = Output(NESButtons())
-		val useNES     = Output(Bool())
-		val red        = Output(UInt(8.W))
-		val green      = Output(UInt(8.W))
-		val blue       = Output(UInt(8.W))
+		val clk_pix1      = Input(Clock())
+		val clk_pix5      = Input(Clock())
+		val clk30         = Input(Clock())
+		val hdmi_tx_clk_n = Output(Bool())
+		val hdmi_tx_clk_p = Output(Bool())
+		val hdmi_tx_n     = Output(UInt(3.W))
+		val hdmi_tx_p     = Output(UInt(3.W))
 	})
 
 	io.addrGB := DontCare
@@ -49,7 +51,6 @@ class MainBoth extends Module {
 	io.txByte.valid := false.B
 
 	val useNES = RegInit(false.B)
-	io.useNES := useNES
 
 	val nesA      = RegInit(false.B)
 	val nesB      = RegInit(false.B)
@@ -61,35 +62,61 @@ class MainBoth extends Module {
 	val nesRight  = RegInit(false.B)
 
 	val nesDebouncer = Module(new Debouncer(8))
-	nesDebouncer.io.in   := VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
-	io.nesButtons.a      := nesDebouncer.io.out(0)
-	io.nesButtons.b      := nesDebouncer.io.out(1)
-	io.nesButtons.select := nesDebouncer.io.out(2)
-	io.nesButtons.start  := nesDebouncer.io.out(3)
-	io.nesButtons.up     := nesDebouncer.io.out(4)
-	io.nesButtons.down   := nesDebouncer.io.out(5)
-	io.nesButtons.left   := nesDebouncer.io.out(6)
-	io.nesButtons.right  := nesDebouncer.io.out(7)
-	when (io.nesButtons.select) {
+	val nesButtons   = Wire(NESButtons())
+	nesDebouncer.io.in := VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
+	nesButtons.a       := nesDebouncer.io.out(0)
+	nesButtons.b       := nesDebouncer.io.out(1)
+	nesButtons.select  := nesDebouncer.io.out(2)
+	nesButtons.start   := nesDebouncer.io.out(3)
+	nesButtons.up      := nesDebouncer.io.out(4)
+	nesButtons.down    := nesDebouncer.io.out(5)
+	nesButtons.left    := nesDebouncer.io.out(6)
+	nesButtons.right   := nesDebouncer.io.out(7)
+	when (nesButtons.select) {
 		useNES := !useNES
 	}
 
-	val imageOutput = Module(new wavegen.misc.ImageOutput)
-	imageOutput.io.x       := io.x
-	imageOutput.io.y       := io.y
+	val display = Module(new presentation.Display)
+	display.io.clk      := clock
+	display.io.clk_pix1 := io.clk_pix1
+	display.io.clk_pix5 := io.clk_pix5
+	display.io.clk30    := io.clk30
+	display.io.rst_n    := !reset.asBool
+	display.io.audioL   := io.outL
+	display.io.audioR   := io.outR
+	io.hdmi_tx_clk_n    := display.io.hdmi_tx_clk_n
+	io.hdmi_tx_clk_p    := display.io.hdmi_tx_clk_p
+	io.hdmi_tx_n        := display.io.hdmi_tx_n
+	io.hdmi_tx_p        := display.io.hdmi_tx_p
+
+	val xReg = Reg(chiselTypeOf(io.x))
+	val yReg = Reg(chiselTypeOf(io.y))
+	xReg := display.io.x
+	yReg := display.io.y
+
+	val imageOutput = Module(new misc.ImageOutput)
+	imageOutput.io.x       := xReg
+	imageOutput.io.y       := yReg
 	imageOutput.io.sw      := io.sw
-	imageOutput.io.left    := io.pulseL || io.nesButtons.left  || io.nesButtons.b
-	imageOutput.io.right   := io.pulseR || io.nesButtons.right || io.nesButtons.a
-	imageOutput.io.buttons := io.nesButtons
-	io.red   := imageOutput.io.red
-	io.green := imageOutput.io.green
-	io.blue  := imageOutput.io.blue
+	imageOutput.io.left    := io.pulseL || nesButtons.left  || nesButtons.b
+	imageOutput.io.right   := io.pulseR || nesButtons.right || nesButtons.a
+	imageOutput.io.buttons := nesButtons
+
+	val redReg   = Reg(chiselTypeOf(display.io.red))
+	val greenReg = Reg(chiselTypeOf(display.io.green))
+	val blueReg  = Reg(chiselTypeOf(display.io.blue))
+	redReg   := imageOutput.io.red
+	greenReg := imageOutput.io.green
+	blueReg  := imageOutput.io.blue
+	display.io.red   := redReg
+	display.io.green := greenReg
+	display.io.blue  := blueReg
 
 	when (imageOutput.io.useNES.valid) {
 		useNES := imageOutput.io.useNES.bits
 	}
 
-	val start = io.pulseC || io.nesButtons.start
+	val start = io.pulseC || nesButtons.start
 
 	val gameboy = withReset(reset.asBool || useNES) { Module(new wavegen.gameboy.GameBoy(18, romWidth, useInternalClocks)) }
 	gameboy.io.tick  := io.clockGB
@@ -108,11 +135,11 @@ class MainBoth extends Module {
 	val lastU = RegInit(false.B)
 	val lastD = RegInit(false.B)
 
-	when ((io.pulseU || io.nesButtons.up) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
+	when ((io.pulseU || nesButtons.up) && multiplier =/= ((1 << multiplierWidth) - 1).U) {
 		multiplier := multiplier + 1.U
 	}
 
-	when ((io.pulseD || io.nesButtons.down) && multiplier =/= 0.U) {
+	when ((io.pulseD || nesButtons.down) && multiplier =/= 0.U) {
 		multiplier := multiplier - 1.U
 	}
 

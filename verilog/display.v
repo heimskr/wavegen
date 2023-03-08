@@ -5,29 +5,13 @@ module Display (
 	input  wire clk_pix1,
 	input  wire clk_pix5,
 	input  wire clk30,
-	input  wire [7:0] sw,
-	input  wire buttonL,
-	input  wire buttonR,
 	input  wire rst_n,
-	inout  wire hdmi_tx_cec,     // CE control bidirectional
-	input  wire hdmi_tx_hpd,     // hot-plug detect
-	inout  wire hdmi_tx_rscl,    // DDC bidirectional
-	inout  wire hdmi_tx_rsda,    // DDC bidirectional
 	input  wire [23:0] audioL,
 	input  wire [23:0] audioR,
 	output wire hdmi_tx_clk_n,   // HDMI clock differential negative
 	output wire hdmi_tx_clk_p,   // HDMI clock differential positive
 	output wire [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	output wire [2:0] hdmi_tx_p, // Three HDMI channels differential positive
-	input  wire nesAPulse,
-	input  wire nesBPulse,
-	input  wire nesSelectPulse,
-	input  wire nesStartPulse,
-	input  wire nesUpPulse,
-	input  wire nesDownPulse,
-	input  wire nesLeftPulse,
-	input  wire nesRightPulse,
-	input  wire useNES,
 	output wire [10:0] x,
 	output wire [ 9:0] y,
 	input  wire [ 7:0] red,
@@ -88,9 +72,5 @@ module Display (
 	OBUFDS #(.IOSTANDARD("TMDS_33")) tmds_buf_ch1 (.I(tmds_ch1_serial), .O(hdmi_tx_p[1]),  .OB(hdmi_tx_n[1]));
 	OBUFDS #(.IOSTANDARD("TMDS_33")) tmds_buf_ch2 (.I(tmds_ch2_serial), .O(hdmi_tx_p[2]),  .OB(hdmi_tx_n[2]));
 	OBUFDS #(.IOSTANDARD("TMDS_33")) tmds_buf_chc (.I(tmds_chc_serial), .O(hdmi_tx_clk_p), .OB(hdmi_tx_clk_n));
-
-	assign hdmi_tx_cec   = 1'bz;
-	assign hdmi_tx_rsda  = 1'bz;
-	assign hdmi_tx_rscl  = 1'b1;
 
 endmodule

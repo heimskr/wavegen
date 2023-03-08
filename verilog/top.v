@@ -216,13 +216,6 @@ module top (
 	wire nes_down;
 	wire nes_left;
 	wire nes_right;
-	wire use_nes;
-
-	wire [10:0] x;
-	wire [ 9:0] y;
-	wire [ 7:0] red;
-	wire [ 7:0] green;
-	wire [ 7:0] blue;
 
 	MainBoth main_module_both (
 		.clock(clk),
@@ -251,20 +244,13 @@ module top (
 		.io_rxByte_bits(rx_byte),
 		.io_txByte_valid(tx_ready),
 		.io_txByte_bits(tx_byte),
-		.io_nesButtons_a(nes_a),
-		.io_nesButtons_b(nes_b),
-		.io_nesButtons_select(nes_select),
-		.io_nesButtons_start(nes_start),
-		.io_nesButtons_up(nes_up),
-		.io_nesButtons_down(nes_down),
-		.io_nesButtons_left(nes_left),
-		.io_nesButtons_right(nes_right),
-		.io_useNES(use_nes),
-		.io_x(x),
-		.io_y(y),
-		.io_red(red),
-		.io_green(green),
-		.io_blue(blue)
+		.io_hdmi_tx_clk_n(hdmi_tx_clk_n),
+		.io_hdmi_tx_clk_p(hdmi_tx_clk_p),
+		.io_hdmi_tx_n(hdmi_tx_n),
+		.io_hdmi_tx_p(hdmi_tx_p),
+		.io_clk_pix1(clk_pix1),
+		.io_clk_pix5(clk_pix5),
+		.io_clk30(clk30MHz)
 	);
 
 	i2s_ctl audio_inout (
@@ -285,47 +271,8 @@ module top (
 		.SDATA_I(ac_adc_sdata)   // Input serial data
 	);
 
-	reg [23:0] storedL;
-	reg [23:0] storedR;
-
-	always @(posedge clk) begin
-		storedL <= out_audioL;
-		storedR <= out_audioR;
-	end
-
-	Display display (
-		.clk(clk),
-		.clk_pix1(clk_pix1),
-		.clk_pix5(clk_pix5),
-		.sw(sw),
-		.buttonL(btnl),
-		.buttonR(btnr),
-		.clk30(clk30MHz),
-		.rst_n(cpu_resetn),
-		.hdmi_tx_cec(hdmi_tx_cec),
-		.hdmi_tx_hpd(hdmi_tx_hpd),
-		.hdmi_tx_rscl(hdmi_tx_rscl),
-		.hdmi_tx_rsda(hdmi_tx_rsda),
-		.hdmi_tx_clk_n(hdmi_tx_clk_n),
-		.hdmi_tx_clk_p(hdmi_tx_clk_p),
-		.hdmi_tx_n(hdmi_tx_n),
-		.hdmi_tx_p(hdmi_tx_p),
-		.audioL(storedL),
-		.audioR(storedR),
-		.nesAPulse(nes_a),
-		.nesBPulse(nes_b),
-		.nesSelectPulse(nes_select),
-		.nesStartPulse(nes_start),
-		.nesUpPulse(nes_up),
-		.nesDownPulse(nes_down),
-		.nesLeftPulse(nes_left),
-		.nesRightPulse(nes_right),
-		.useNES(use_nes),
-		.x(x),
-		.y(y),
-		.red(red),
-		.green(green),
-		.blue(blue)
-	);
+	assign hdmi_tx_cec  = 1'bz;
+	assign hdmi_tx_rsda = 1'bz;
+	assign hdmi_tx_rscl = 1'b1;
 
 endmodule
