@@ -94,14 +94,18 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
 
 		when (slide === demoSlideNES.U) {
-			if (showScreenshot) {
-				val wavyBg = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
-				wavyBg.io.x := io.x
-				wavyBg.io.y := io.y
-				when (wavyBg.io.out) {
+			val wavyBg = Module(new WavyText(WavyTextOpts(text="NES", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
+			wavyBg.io.x := io.x
+			wavyBg.io.y := io.y
+			when (wavyBg.io.out) {
+				if (showScreenshot) {
 					io.red   := colors.io.red
 					io.green := colors.io.green
 					io.blue  := colors.io.blue
+				} else {
+					io.red   := 255.U - colors.io.red
+					io.green := 255.U - colors.io.green
+					io.blue  := 255.U - colors.io.blue
 				}
 			}
 
@@ -138,14 +142,18 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				}
 			}
 		} .otherwise {
-			if (showScreenshot) {
-				val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
-				wavyBg.io.x := io.x
-				wavyBg.io.y := io.y
-				when (wavyBg.io.out) {
+			val wavyBg = Module(new WavyText(WavyTextOpts(text="Game Boy", centerX=true, centerY=true, xOffset=xBase + distance, yOffset=yBase + distance, shift=wShift, waveCoefficient=wC)))
+			wavyBg.io.x := io.x
+			wavyBg.io.y := io.y
+			when (wavyBg.io.out) {
+				if (showScreenshot) {
 					io.red   := colors.io.red
 					io.green := colors.io.green
 					io.blue  := colors.io.blue
+				} else {
+					io.red   := 255.U - colors.io.red
+					io.green := 255.U - colors.io.green
+					io.blue  := 255.U - colors.io.blue
 				}
 			}
 
