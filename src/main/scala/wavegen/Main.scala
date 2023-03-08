@@ -133,7 +133,6 @@ class MainBoth extends Module {
 		val addrGB   = Output(UInt(18.W))
 		val addrNES  = Output(UInt(17.W))
 		val jaIn     = Input(UInt(8.W))
-		// val jaOut    = Valid(UInt(8.W))
 		val pulseOut = Output(Bool())
 		val latchOut = Output(Bool())
 		val rxByte   = Flipped(Valid(UInt(8.W)))
@@ -224,71 +223,20 @@ class MainBoth extends Module {
 	val clock60 = Module(new StaticClocker(60, clockFreq, true))
 	clock60.io.enable := true.B
 
-	// val clock12us = withReset(reset.asBool || reset12us) { Module(new StaticClocker(83_333, clockFreq, true)) }
-	// clock12us.io.enable := !reset12us
-
-	// val clock6us = withReset(reset.asBool || reset6us) { Module(new StaticClocker(83_333 * 2, clockFreq, true)) }
-	// clock6us.io.enable := !reset6us
-
-	val sReadIdle :: sRead12 :: sRead6 :: Nil = Enum(3)
-	val readState = RegInit(sReadIdle)
-	val readIdle  = readState === sReadIdle
-
-	val period12 = RegInit(1200.U(20.W))
-	val period6  = RegInit(600.U(20.W))
-
-	when (io.rxByte.valid) {
-		val byte = io.rxByte.bits
-
-		when (readIdle) {
-			when (byte === 'l'.U) {
-				send(byte)
-				readState := sRead12
-				period12  := 0.U
-				reset12us := true.B
-			} .elsewhen (byte === 's'.U) {
-				send(byte)
-				readState := sRead6
-				period6   := 0.U
-				reset6us  := true.B
-			}
-		} .elsewhen (readState === sRead12) {
-			when ('0'.U <= byte && byte <= '9'.U) {
-				send(byte)
-				period12 := period12 * 10.U + (byte - '0'.U)
-			} .elsewhen (byte === '.'.U) {
-				send(byte)
-				readState := sReadIdle
-				reset12us := false.B
-			}
-		} .elsewhen (readState === sRead6) {
-			when ('0'.U <= byte && byte <= '9'.U) {
-				send(byte)
-				period6 := period6 * 10.U + (byte - '0'.U)
-			} .elsewhen (byte === '.'.U) {
-				send(byte)
-				readState := sReadIdle
-				reset6us  := false.B
-			}
-		}
-	}
-
 	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(20)) }
-	clock12us.io.tickIn := readIdle
-	clock12us.io.period := period12
+	clock12us.io.tickIn := true.B
+	clock12us.io.period := 1200.U
 
 	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(20)) }
-	clock6us.io.tickIn := readIdle
-	clock6us.io.period := period6
+	clock6us.io.tickIn := true.B
+	clock6us.io.period := 600.U
 
 	val jaPulseOut = RegInit(false.B)
 	val jaLatchOut = RegInit(false.B)
 	val jaDataIn   = io.jaIn(1)
 
 	val sWait60 :: sInitial12 :: sWait6 :: s8PulsesOn :: s8PulsesOff :: Nil = Enum(5)
-
-	val state = RegInit(sWait60)
-
+	val state    = RegInit(sWait60)
 	val counter8 = RegInit(0.U(3.W))
 
 	val nesA      = RegInit(false.B)
@@ -303,7 +251,7 @@ class MainBoth extends Module {
 	when (state === sWait60) {
 		reset6us  := true.B
 		reset12us := true.B
-		when (clock60.io.tick && readIdle) {
+		when (clock60.io.tick) {
 			state := sInitial12
 			reset6us   := false.B
 			reset12us  := false.B
@@ -353,10 +301,6 @@ class MainBoth extends Module {
 
 	io.latchOut := jaLatchOut
 	io.pulseOut := jaPulseOut
-
-	when (!io.sw(1)) {
-		io.led := Cat(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
-	}
 }
 
 object MainRun extends scala.App {
