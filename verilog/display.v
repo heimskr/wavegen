@@ -19,18 +19,6 @@ module Display (
 	input  wire [ 7:0] blue
 );
 
-	wire pix_clk;    // pixel clock
-	wire pix_clk_5x; // 5x clock for 10:1 DDR SerDes
-
-	assign pix_clk = clk_pix1;
-	assign pix_clk_5x = clk_pix5;
-
-	wire [10:0] cx;
-	wire [ 9:0] cy;
-
-	assign x = cx;
-	assign y = cy;
-
 	// TMDS Encoding and Serialization
 	wire tmds_ch0_serial, tmds_ch1_serial, tmds_ch2_serial, tmds_chc_serial;
 	wire clk_audio;
@@ -51,16 +39,16 @@ module Display (
 		.VENDOR_NAME({"Heimskr", 8'b0}),
 		.AUDIO_RATE(48000)
 	) magic (
-		.clk_pixel_x5(pix_clk_5x),
-		.clk_pixel(pix_clk),
+		.clk_pixel_x5(clk_pix5),
+		.clk_pixel(clk_pix1),
 		.clk_audio(clk_audio_buf),
 		.reset(!rst_n),
 		.rgb({red, green, blue}),
 		.audio_sample_word_in({audioL, audioR}),
 		.tmds({tmds_ch2_serial, tmds_ch1_serial, tmds_ch0_serial}),
 		.tmds_clock(tmds_chc_serial),
-		.cx(cx),
-		.cy(cy),
+		.cx(x),
+		.cy(y),
 		.frame_width(),
 		.frame_height(),
 		.screen_width(),

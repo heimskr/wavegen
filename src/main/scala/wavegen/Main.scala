@@ -21,13 +21,9 @@ class MainBoth extends Module {
 		val pulseL     = Input(Bool())
 		val pulseC     = Input(Bool())
 		val sw         = Input(UInt(8.W))
-		val romGB      = Input(UInt(romWidth.W))
-		val romNES     = Input(UInt(romWidth.W))
 		val outL       = Output(UInt(24.W))
 		val outR       = Output(UInt(24.W))
 		val led        = Output(UInt(8.W))
-		val addrGB     = Output(UInt(18.W))
-		val addrNES    = Output(UInt(17.W))
 		val jaIn       = Input(UInt(8.W))
 		val pulseOut   = Output(Bool())
 		val latchOut   = Output(Bool())
@@ -42,8 +38,6 @@ class MainBoth extends Module {
 		val hdmi_tx_p     = Output(UInt(3.W))
 	})
 
-	io.addrGB := DontCare
-	io.addrNES := DontCare
 	io.outL := 0.U
 	io.outR := 0.U
 	io.led  := 0.U
@@ -94,31 +88,33 @@ class MainBoth extends Module {
 	io.hdmi_tx_n        := display.io.hdmi_tx_n
 	io.hdmi_tx_p        := display.io.hdmi_tx_p
 
-	val xReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.x)) }
-	val yReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.y)) }
-	xReg := display.io.x
-	yReg := display.io.y
+	// val xReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.x)) }
+	// val yReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(io.y)) }
+	// xReg := display.io.x
+	// yReg := display.io.y
 
 	val imageOutput = withClock(io.clk_pix1) { Module(new misc.ImageOutput) }
-	imageOutput.io.x       := xReg
-	imageOutput.io.y       := yReg
+	imageOutput.io.x       := display.io.x
+	imageOutput.io.y       := display.io.y
 	imageOutput.io.sw      := io.sw
 	imageOutput.io.left    := io.pulseL || nesButtons.left  || nesButtons.b
 	imageOutput.io.right   := io.pulseR || nesButtons.right || nesButtons.a
 	imageOutput.io.buttons := nesButtons
 
-	val redReg   = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.red))   }
-	val greenReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.green)) }
-	val blueReg  = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.blue))  }
-	redReg   := imageOutput.io.red
-	greenReg := imageOutput.io.green
-	blueReg  := imageOutput.io.blue
-	display.io.red   := redReg
-	display.io.green := greenReg
-	display.io.blue  := blueReg
+	// val redReg   = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.red))   }
+	// val greenReg = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.green)) }
+	// val blueReg  = withClock(io.clk_pix1) { Reg(chiselTypeOf(display.io.blue))  }
+	// redReg   := imageOutput.io.red
+	// greenReg := imageOutput.io.green
+	// blueReg  := imageOutput.io.blue
+	display.io.red   := imageOutput.io.red
+	display.io.green := imageOutput.io.green
+	display.io.blue  := imageOutput.io.blue
 
-	when (imageOutput.io.useNES.valid) {
-		useNES := imageOutput.io.useNES.bits
+	withClock (io.clk_pix1) {
+		when (imageOutput.io.useNES.valid) {
+			useNES := imageOutput.io.useNES.bits
+		}
 	}
 
 	val start = io.pulseC || nesButtons.start
@@ -148,26 +144,21 @@ class MainBoth extends Module {
 		multiplier := multiplier - 1.U
 	}
 
-	nes.io.rom    := DontCare
 	nes.io.pulseD := DontCare
 	nes.io.pulseU := DontCare
 	nes.io.pulseL := DontCare
 	nes.io.pulseR := DontCare
 	nes.io.pulseC := DontCare
-	gameboy.io.rom    := DontCare
 	gameboy.io.pulseD := DontCare
 	gameboy.io.pulseU := DontCare
 	gameboy.io.pulseL := DontCare
 	gameboy.io.pulseR := DontCare
 	gameboy.io.pulseC := DontCare
-	io.addrGB  := gameboy.io.addr
-	io.addrNES := nes.io.addr
 
 	when (useNES) {
 		io.outL := boost(nes.io.outL) * multiplier
 		io.outR := boost(nes.io.outR) * multiplier
 		io.led  := nes.io.leds
-		nes.io.rom    := io.romNES
 		nes.io.pulseD := io.pulseD
 		nes.io.pulseU := io.pulseU
 		nes.io.pulseL := io.pulseL
@@ -177,7 +168,6 @@ class MainBoth extends Module {
 		io.outL := boost(gameboy.io.outL) * multiplier
 		io.outR := boost(gameboy.io.outR) * multiplier
 		io.led  := gameboy.io.leds
-		gameboy.io.rom    := io.romGB
 		gameboy.io.pulseD := io.pulseD
 		gameboy.io.pulseU := io.pulseU
 		gameboy.io.pulseL := io.pulseL

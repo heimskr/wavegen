@@ -7,14 +7,14 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	val io = IO(new Bundle {
 		val start           = Input(Bool())
 		val tick            = Input(Bool())
-		val rom             = Input(UInt(romWidth.W))
+		// val rom             = Input(UInt(romWidth.W))
 		val state           = Output(UInt(4.W))
 		val error           = Output(UInt(4.W))
 		val errorInfo       = Output(UInt(8.W))
 		val errorInfo2      = Output(UInt(16.W))
 		val errorInfo3      = Output(UInt(8.W))
 		val registers       = Output(NESRegisters())
-		val addr            = Output(UInt(addressWidth.W))
+		// val addr            = Output(UInt(addressWidth.W))
 		val channelsEnabled = Output(UInt(4.W))
 		val info            = Output(UInt(8.W))
 		val opcode          = Output(UInt(8.W))
@@ -30,6 +30,9 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 	})
 
 	val channelsEnabled = RegInit(0.U(5.W)) // {ch5, ch4, ch3, ch2, ch1}
+
+	val rom = Module(new NesROM(addressWidth, romWidth))
+	rom.io.clka := clock
 
 	def setChannel(channel: Int, value: Boolean): Unit = {
 		if (channel == 1)
@@ -140,9 +143,9 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 			} .elsewhen (state === sGetOpcode) {
 				when (waitCounter === 0.U) {
 					io.info    := 9.U
-					opcode     := io.rom(23, 16)
-					operand1   := io.rom(15,  8)
-					operand2   := io.rom( 7,  0)
+					opcode     := rom.io.douta(23, 16)
+					operand1   := rom.io.douta(15,  8)
+					operand2   := rom.io.douta( 7,  0)
 					state      := sOperate
 					subpointer := 0.U
 				} .otherwise {
@@ -209,7 +212,7 @@ class NESStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Bo
 		}
 	}
 
-	io.addr            := pointer
+	rom.io.addra       := pointer
 	io.state           := state
 	io.error           := error
 	io.errorInfo       := errorInfo

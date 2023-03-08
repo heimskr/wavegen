@@ -16,7 +16,7 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 	val io = IO(new Bundle {
 		val tick   = Input(Bool())
 		val start  = Input(Bool())
-		val rom    = Input(UInt(romWidth.W))
+		// val rom    = Input(UInt(romWidth.W))
 		val sw     = Input(UInt(8.W))
 		val pulseU = Input(Bool())
 		val pulseR = Input(Bool())
@@ -25,7 +25,7 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 		val pulseC = Input(Bool())
 		val outL   = Output(UInt(9.W))
 		val outR   = Output(UInt(9.W))
-		val addr   = Output(UInt(addressWidth.W))
+		// val addr   = Output(UInt(addressWidth.W))
 		val leds   = Output(UInt(8.W))
 		val error  = Output(UInt(4.W))
 	})
@@ -46,14 +46,14 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 	sequencer.io.tick := cpuTick
 
 	stateMachine.io.start := io.start
-	stateMachine.io.rom   := io.rom
+	// stateMachine.io.rom   := io.rom
 	stateMachine.io.tick  := cpuTick
 	stateMachine.io.nr13In <> channel1.io.nr13
 	stateMachine.io.nr14In <> channel1.io.nr14
 
 	val registers = stateMachine.io.registers
 
-	io.addr  := stateMachine.io.addr
+	// io.addr  := stateMachine.io.addr
 	io.error := stateMachine.io.error
 	io.leds  := 0.U
 

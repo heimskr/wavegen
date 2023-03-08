@@ -165,24 +165,6 @@ module top (
 	wire [23:0] out_audioL;
 	wire [23:0] out_audioR;
 
-	wire [17:0] rom_addr_gb;
-	wire [23:0] rom_out_gb;
-
-	blk_mem_gen_0 gb_rom (
-		.clka(clk),
-		.addra(rom_addr_gb),
-		.douta(rom_out_gb)
-	);
-
-	wire [16:0] rom_addr_nes;
-	wire [23:0] rom_out_nes;
-
-	NesROM nes_rom (
-		.clka(clk),
-		.addra(rom_addr_nes),
-		.douta(rom_out_nes)
-	);
-
 	wire [7:0] rx_byte;
 	wire rx_ready;
 	wire rx_error;
@@ -233,10 +215,6 @@ module top (
 		.io_outL(out_audioL),
 		.io_outR(out_audioR),
 		.io_led(led),
-		.io_addrGB(rom_addr_gb),
-		.io_addrNES(rom_addr_nes),
-		.io_romGB(rom_out_gb),
-		.io_romNES(rom_out_nes),
 		.io_jaIn(ja),
 		.io_pulseOut(ja[3]),
 		.io_latchOut(ja[2]),
