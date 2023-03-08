@@ -28,8 +28,6 @@
    - Clocks and CDC are finicky
 
  - Got bored, implemented NES APU too
-
- - More than 137 hours of work, whoops
 \s
 
                Generators
@@ -143,6 +141,13 @@
 \s
 
    The Legend of Zelda (title screen)
+\s
+
+               Conclusion
+
+ - 140+ hours well spent
+
+ -
 \s
 
 
