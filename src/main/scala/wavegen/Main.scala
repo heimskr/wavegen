@@ -237,7 +237,6 @@ class MainBoth extends Module {
 	val period12 = RegInit(1200.U(20.W))
 	val period6  = RegInit(600.U(20.W))
 
-
 	when (io.rxByte.valid) {
 		val byte = io.rxByte.bits
 
@@ -246,10 +245,12 @@ class MainBoth extends Module {
 				send(byte)
 				readState := sRead12
 				period12  := 0.U
+				reset12us := true.B
 			} .elsewhen (byte === 's'.U) {
 				send(byte)
 				readState := sRead6
 				period6   := 0.U
+				reset6us  := true.B
 			}
 		} .elsewhen (readState === sRead12) {
 			when ('0'.U <= byte && byte <= '9'.U) {
@@ -258,6 +259,7 @@ class MainBoth extends Module {
 			} .elsewhen (byte === '.'.U) {
 				send(byte)
 				readState := sReadIdle
+				reset12us := false.B
 			}
 		} .elsewhen (readState === sRead6) {
 			when ('0'.U <= byte && byte <= '9'.U) {
@@ -266,15 +268,16 @@ class MainBoth extends Module {
 			} .elsewhen (byte === '.'.U) {
 				send(byte)
 				readState := sReadIdle
+				reset6us  := false.B
 			}
 		}
 	}
 
-	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(11)) }
+	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(20)) }
 	clock12us.io.tickIn := readIdle
 	clock12us.io.period := period12
 
-	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(16)) }
+	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(20)) }
 	clock6us.io.tickIn := readIdle
 	clock6us.io.period := period6
 
@@ -299,7 +302,7 @@ class MainBoth extends Module {
 
 	when (state === sWait60) {
 		reset6us  := true.B
-		reset12us := true.B // ?
+		reset12us := true.B
 		when (clock60.io.tick && readIdle) {
 			state := sInitial12
 			reset6us   := false.B
@@ -309,16 +312,13 @@ class MainBoth extends Module {
 	} .elsewhen (state === sInitial12) {
 		when (clock12us.io.tickOut) {
 			jaLatchOut := false.B
-			// reset6us   := false.B
 			state      := sWait6
-			nesA       := jaDataIn
+			nesA       := !jaDataIn
 		}
 	} .elsewhen (state === sWait6) {
 		when (clock6us.io.tickOut) {
-			// reset6us  := false.B
 			counter8  := 0.U
 			state     := s8PulsesOn
-			// reset12us := true.B
 		}
 	} .elsewhen (state === s8PulsesOn) {
 		jaPulseOut := true.B
@@ -328,13 +328,13 @@ class MainBoth extends Module {
 			state      := s8PulsesOff
 
 			switch (counter8) {
-				is (1.U) { nesB      := jaDataIn }
-				is (2.U) { nesSelect := jaDataIn }
-				is (3.U) { nesStart  := jaDataIn }
-				is (4.U) { nesUp     := jaDataIn }
-				is (5.U) { nesDown   := jaDataIn }
-				is (6.U) { nesLeft   := jaDataIn }
-				is (7.U) { nesRight  := jaDataIn }
+				is (0.U) { nesB      := !jaDataIn }
+				is (1.U) { nesSelect := !jaDataIn }
+				is (2.U) { nesStart  := !jaDataIn }
+				is (3.U) { nesUp     := !jaDataIn }
+				is (4.U) { nesDown   := !jaDataIn }
+				is (5.U) { nesLeft   := !jaDataIn }
+				is (6.U) { nesRight  := !jaDataIn }
 			}
 
 			when (counter8 === 7.U) {
@@ -346,7 +346,6 @@ class MainBoth extends Module {
 		}
 	} .elsewhen (state === s8PulsesOff) {
 		jaPulseOut := false.B
-
 		when (clock6us.io.tickOut) {
 			state := s8PulsesOn
 		}
