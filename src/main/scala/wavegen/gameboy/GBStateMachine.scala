@@ -5,27 +5,14 @@ import chisel3.util._
 
 class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boolean) extends Module {
 	val io = IO(new Bundle {
-		val start           = Input(Bool())
-		val tick            = Input(Bool())
-		val rom             = Input(UInt(romWidth.W))
-		val state           = Output(UInt(4.W))
-		val error           = Output(UInt(4.W))
-		val errorInfo       = Output(UInt(8.W))
-		val errorInfo2      = Output(UInt(16.W))
-		val errorInfo3      = Output(UInt(8.W))
-		val registers       = Output(GBRegisters())
-		val addr            = Output(UInt(addressWidth.W))
-		val channelsEnabled = Output(UInt(4.W))
-		val info            = Output(UInt(8.W))
-		val adjusted        = Output(UInt(8.W))
-		val value           = Output(UInt(8.W))
-		val opcode          = Output(UInt(8.W))
-		val operand1        = Output(UInt(8.W))
-		val operand2        = Output(UInt(8.W))
-		// val pointer         = Output(UInt(addressWidth.W))
-		val waitCounter     = Output(UInt(32.W))
-		val nr13In          = Flipped(Valid(UInt(8.W)))
-		val nr14In          = Flipped(Valid(UInt(8.W)))
+		val start     = Input(Bool())
+		val tick      = Input(Bool())
+		val rom       = Input(UInt(romWidth.W))
+		val state     = Output(UInt(4.W))
+		val registers = Output(GBRegisters())
+		val addr      = Output(UInt(addressWidth.W))
+		val nr13In    = Flipped(Valid(UInt(8.W)))
+		val nr14In    = Flipped(Valid(UInt(8.W)))
 	})
 
 	val adjustedReg     = RegInit(0.U(8.W))
@@ -130,8 +117,6 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		when (failed) {
 			printf(cf"Bad reg: 0xff$adjusted%x\n")
 			error := eBadReg
-			errorInfo  := adjusted
-			errorInfo2 := pointer(15, 0)
 		}
 	}
 
@@ -143,37 +128,29 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 	val pointer     = RegInit(0.U(addressWidth.W))
 	val registers   = RegInit(0.U.asTypeOf(GBRegisters()))
 	val waitCounter = RegInit(0.U(32.W))
-	val errorInfo   = RegInit(0.U(8.W))
-	val errorInfo2  = RegInit(0.U(16.W))
-	val errorInfo3  = RegInit(0.U(8.W))
 	val opcode      = RegInit(0.U(8.W))
 	val operand1    = RegInit(0.U(8.W))
 	val operand2    = RegInit(0.U(8.W))
-	val tempByte    = RegInit(0.U(8.W))
 	val subpointer  = RegInit(0.U(3.W))
 
 	val pausedState     = RegInit(sIdle)
 	val pausedRegisters = Reg(GBRegisters())
 
-	def badSubpointer(): Unit = { error := eBadSubpointer; errorInfo := opcode }
+	def badSubpointer(): Unit = { error := eBadSubpointer }
 	def advance(): Unit = { setAddr(pointer + 1.U) }
 
 	def toCycles(samples: UInt) = (samples << 6.U) + (samples << 4.U) + (samples << 3.U) + (samples << 2.U) + (samples << 1.U) + samples
-
-	io.info := 1.U
 
 	when (io.start) {
 		when (state === sIdle) {
 			setAddr(0.U)
 			state       := sGetOpcode
 			waitCounter := 0.U
-			io.info     := 3.U
 		} .elsewhen (state === sPaused) {
 			state     := pausedState
 			registers := pausedRegisters
 		} .elsewhen (state === sDone) {
 			registers   := 0.U.asTypeOf(GBRegisters())
-			errorInfo   := 0.U
 			state       := sGetOpcode
 			waitCounter := 0.U
 			setAddr(0.U)
@@ -183,10 +160,7 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 			registers       := 0.U.asTypeOf(GBRegisters())
 			state           := sPaused
 		}
-	} .elsewhen (!io.tick) {
-		io.info := 24.U
-	} .otherwise {
-
+	} .elsewhen (io.tick) {
 		// Disable triggers
 		registers.NR14 := Cat(0.U(1.W), registers.NR14(6, 0))
 		registers.NR24 := Cat(0.U(1.W), registers.NR24(6, 0))
@@ -195,29 +169,24 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 
 		when (error === eNone) {
 			when (state === sIdle) {
-				io.info := 4.U
+				// Do nothing
 			} .elsewhen (state === sGetOpcode) {
 				when (waitCounter === 0.U) {
-					io.info    := 9.U
 					opcode     := io.rom(23, 16)
 					operand1   := io.rom(15,  8)
 					operand2   := io.rom( 7,  0)
 					state      := sOperate
 					subpointer := 0.U
 				} .otherwise {
-					io.info := 11.U
 					waitCounter := waitCounter - 1.U
 				}
 			} .elsewhen (state === sOperate && subpointer =/= 0.U) {
 				subpointer := subpointer - 1.U
 			} .elsewhen (state === sOperate) {
-				io.info := 12.U
-
 				val failed = WireDefault(true.B)
 
 				switch (opcode) {
 					is("h90".U) {
-						io.info := 13.U
 						failed := false.B
 						setReg(operand1, operand2)
 						advance()
@@ -225,7 +194,6 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 					}
 
 					is ("h91".U) {
-						io.info := 14.U
 						failed := false.B
 						val toWait = if (inSimulator) 2.U else toCycles(Cat(operand2, operand1))
 						waitCounter := toWait
@@ -234,35 +202,24 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 					}
 
 					is ("h92".U) {
-						io.info   := 15.U
 						state     := sDone
 						registers := 0.U.asTypeOf(GBRegisters())
 						failed    := false.B
-						errorInfo := "b01010101".U
 						Seq.tabulate(4)(c => setChannel(c + 1, false))
 					}
 				}
 
 				when (failed) {
 					printf(cf"Bad opcode: 0x$opcode%x around 0x${pointer}%x\n")
-					io.info    := 18.U
-					error      := eInvalidOpcode
-					errorInfo  := opcode
-					errorInfo2 := pointer(15, 0)
-					errorInfo3 := Cat(0.U(6.W), pointer(17, 16))
+					error := eInvalidOpcode
 				}
 			} .elsewhen (state === sWaiting) {
-				io.info := 19.U
 				when (waitCounter === 0.U) {
-					io.info := 21.U
 					state   := sGetOpcode
 				} .otherwise {
-					io.info     := 22.U
 					waitCounter := waitCounter - 1.U
 				}
 			}
-		} .otherwise {
-			io.info := 2.U
 		}
 	}
 
@@ -274,18 +231,7 @@ class GBStateMachine(addressWidth: Int, romWidth: Int)(implicit inSimulator: Boo
 		registers.NR14 := io.nr14In.bits
 	}
 
-	io.addr            := pointer
-	io.state           := state
-	io.error           := error
-	io.errorInfo       := errorInfo
-	io.errorInfo2      := errorInfo2
-	io.errorInfo3      := errorInfo3
-	io.registers       := registers
-	io.adjusted        := adjustedReg
-	io.value           := valueReg
-	io.opcode          := opcode
-	io.operand1        := operand1
-	io.operand2        := operand2
-	io.waitCounter     := waitCounter
-	io.channelsEnabled := channelsEnabled
+	io.addr      := pointer
+	io.state     := state
+	io.registers := registers
 }

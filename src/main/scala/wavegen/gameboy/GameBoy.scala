@@ -27,7 +27,6 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 		val outR   = Output(UInt(9.W))
 		val addr   = Output(UInt(addressWidth.W))
 		val leds   = Output(UInt(8.W))
-		val error  = Output(UInt(4.W))
 	})
 
 	val stateMachine = Module(new GBStateMachine(addressWidth, romWidth))
@@ -53,9 +52,8 @@ class GameBoy(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true
 
 	val registers = stateMachine.io.registers
 
-	io.addr  := stateMachine.io.addr
-	io.error := stateMachine.io.error
-	io.leds  := 0.U
+	io.addr := stateMachine.io.addr
+	io.leds := 0.U
 
 	channel1.io.tick         := cpuTick
 	channel1.io.sweeperTick  := sequencer.io.sweeper
