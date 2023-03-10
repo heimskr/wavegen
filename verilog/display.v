@@ -30,7 +30,9 @@ module Display (
 	input  wire useNES,
 	output wire useNESOut,
 	output wire useNESOutValid,
-	input  wire [4:0] multiplier
+	input  wire [4:0] multiplier,
+	input  wire rx_ready,
+	input  wire [7:0] rx_byte
 );
 
 	wire pix_clk;    // pixel clock
@@ -43,18 +45,8 @@ module Display (
 	wire [7:0] green;
 	wire [7:0] blue;
 
-	wire [14:0] rom_addr;
-	wire [3:0] rom_out;
-
 	wire [10:0] cx;
 	wire [9:0] cy;
-
-	image_rom rom (
-		.clka(pix_clk),
-		.addra(rom_addr),
-		.douta(rom_out)
-	);
-
 	wire pulseL;
 	wire pulseR;
 
@@ -105,8 +97,6 @@ module Display (
 		.io_sw(sw),
 		.io_pulseL(pulseL),
 		.io_pulseR(pulseR),
-		.io_addr(rom_addr),
-		.io_rom(rom_out),
 		.io_red(red),
 		.io_green(green),
 		.io_blue(blue),
@@ -121,6 +111,8 @@ module Display (
 		.io_useNES(useNES),
 		.io_useNESOut_valid(useNESOutValid),
 		.io_useNESOut_bits(useNESOut),
+		.io_rxByte_valid(rx_ready),
+		.io_rxByte_bits(rx_byte),
 		.io_multiplier(multiplier)
 	);
 

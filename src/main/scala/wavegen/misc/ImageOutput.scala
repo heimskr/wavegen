@@ -17,10 +17,8 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val x          = Input(UInt(11.W))
 		val y          = Input(UInt(10.W))
 		val sw         = Input(UInt(8.W))
-		val rom        = Input(UInt(4.W))
 		val pulseL     = Input(Bool())
 		val pulseR     = Input(Bool())
-		val addr       = Output(UInt(15.W))
 		val red        = Output(UInt(8.W))
 		val green      = Output(UInt(8.W))
 		val blue       = Output(UInt(8.W))
@@ -28,6 +26,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val useNES     = Input(Bool())
 		val useNESOut  = Valid(Bool())
 		val multiplier = Input(UInt(5.W))
+		val rxByte     = Flipped(Valid(UInt(8.W)))
 	})
 
 	val slideshow = Module(new wavegen.presentation.Slideshow)
@@ -38,15 +37,16 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	slideshow.io.x     := io.x
 	slideshow.io.y     := io.y
 
-	when (io.pulseL || io.nesButtons.left) {
+	val goPrevious = io.pulseL || io.nesButtons.left  || (io.rxByte.valid && io.rxByte.bits === 'a'.U)
+	val goNext     = io.pulseR || io.nesButtons.right || (io.rxByte.valid && io.rxByte.bits === 'd'.U)
+
+	when (goPrevious) {
 		slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
 	}
 
-	when (io.pulseR || io.nesButtons.right) {
+	when (goNext) {
 		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
 	}
-
-	io.addr := DontCare
 
 	val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, true))
 	hueClocker.io.enable := true.B
@@ -86,12 +86,12 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val bar = Module(new Bar(screenWidth  - barInnerWidth  - 2 * barStrokeWidth - barMargin,
 		                         screenHeight - barInnerHeight - 2 * barStrokeWidth - barMargin,
 		                         barInnerWidth + 2 * barStrokeWidth, barInnerHeight + 2 * barStrokeWidth,
-		                         barStrokeWidth, 5, (0, 0, 0), (255, 255, 255)))
+		                         barStrokeWidth, 5, (0, 0, 0), (128, 128, 128), (255, 255, 255)))
 		bar.io.x     := io.x
 		bar.io.y     := io.y
 		bar.io.value := io.multiplier
 		when (bar.io.out.valid) {
-			when (bar.io.out.bits.red === 255.U) {
+			when (bar.io.out.bits.red === 128.U) {
 				io.red   := 255.U - colors.io.red
 				io.green := 255.U - colors.io.green
 				io.blue  := 255.U - colors.io.blue

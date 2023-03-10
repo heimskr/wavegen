@@ -76,7 +76,7 @@ class NES(addressWidth: Int, romWidth: Int, useInternalClock: Boolean = true)(im
 	channel4.io.registers := stateMachine.io.registers
 	channel4.io.writes    := stateMachine.io.noiseWrites
 
-	val sum = Cat(channel1.io.out +& channel2.io.out +& channel3.io.out +& channel4.io.out, 0.U(3.W))
+	val sum = RegNext(Cat(channel1.io.out +& channel2.io.out +& channel3.io.out +& channel4.io.out, 0.U(3.W)))
 
 	io.leds := stateMachine.io.state
 	io.outL := sum

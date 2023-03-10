@@ -24,7 +24,7 @@ module top (
 	output hdmi_tx_clk_n,   // HDMI clock differential negative
 	output hdmi_tx_clk_p,   // HDMI clock differential positive
 	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
-	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive,
+	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive
 	inout  [7:0] ja, // Pmod JA connector
 	output uart_rx_out,
 	input  uart_tx_in
@@ -340,6 +340,8 @@ module top (
 		.useNES(use_nes),
 		.useNESOutValid(use_nes_in_valid),
 		.useNESOut(use_nes_in),
+		.rx_ready(rx_ready),
+		.rx_byte(rx_byte),
 		.multiplier(multiplier)
 	);
 

@@ -43,8 +43,7 @@ class MainBoth extends Module {
 	io.outL := 0.U
 	io.outR := 0.U
 	io.led  := 0.U
-	io.txByte.bits  := 0.U
-	io.txByte.valid := false.B
+	io.txByte := io.rxByte
 
 	val nesA      = RegInit(false.B)
 	val nesB      = RegInit(false.B)
@@ -58,14 +57,14 @@ class MainBoth extends Module {
 	val nesDebouncer = Module(new Debouncer(8, "NESDebouncer"))
 	val buttonVec = VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
 	nesDebouncer.io.in   := Mux(io.sw(0), 0.U.asTypeOf(buttonVec), buttonVec)
-	val nesPulseA         = nesDebouncer.io.out(0)
-	val nesPulseB         = nesDebouncer.io.out(1)
-	val nesPulseSelect    = nesDebouncer.io.out(2)
-	val nesPulseStart     = nesDebouncer.io.out(3)
-	val nesPulseUp        = nesDebouncer.io.out(4)
-	val nesPulseDown      = nesDebouncer.io.out(5)
-	val nesPulseLeft      = nesDebouncer.io.out(6)
-	val nesPulseRight     = nesDebouncer.io.out(7)
+	val nesPulseA         = RegNext(nesDebouncer.io.out(0))
+	val nesPulseB         = RegNext(nesDebouncer.io.out(1))
+	val nesPulseSelect    = RegNext(nesDebouncer.io.out(2))
+	val nesPulseStart     = RegNext(nesDebouncer.io.out(3))
+	val nesPulseUp        = RegNext(nesDebouncer.io.out(4))
+	val nesPulseDown      = RegNext(nesDebouncer.io.out(5))
+	val nesPulseLeft      = RegNext(nesDebouncer.io.out(6))
+	val nesPulseRight     = RegNext(nesDebouncer.io.out(7))
 	io.nesButtons.a      := nesA
 	io.nesButtons.b      := nesB
 	io.nesButtons.select := nesSelect

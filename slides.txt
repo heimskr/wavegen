@@ -137,7 +137,6 @@
 
  - Triggering based on register writes,
    not designated bits
-
 \s
 
    The Legend of Zelda (title screen)
@@ -147,7 +146,8 @@
 
  - 140+ hours well spent
 
- -
+ - Definitely avoid using 6 different
+   clocks if you can
 \s
 
 
@@ -155,7 +155,7 @@
      Thanks for a great quarter! =)
 
 
-   https://github.com/heimskr/wavegen
+     Repo @ https://heimskr.gay/apu
 
 
          Discord: Heimskr#0001

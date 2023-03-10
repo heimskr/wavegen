@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import wavegen.misc.ColorBundle
 
-class Bar(xPos: Int, yPos: Int, width: Int, height: Int, stroke: Int, valueWidth: Int, strokeColor: (Int, Int, Int), fillColor: (Int, Int, Int), xWidth: Int = 11, yWidth: Int = 10) extends Module {
+class Bar(xPos: Int, yPos: Int, width: Int, height: Int, stroke: Int, valueWidth: Int, strokeColor: (Int, Int, Int), fillColor: (Int, Int, Int), semifillColor: (Int, Int, Int), xWidth: Int = 11, yWidth: Int = 10) extends Module {
 	val io = IO(new Bundle {
 		val x     = Input(UInt(xWidth.W))
 		val y     = Input(UInt(yWidth.W))
@@ -31,6 +31,11 @@ class Bar(xPos: Int, yPos: Int, width: Int, height: Int, stroke: Int, valueWidth
 			io.out.bits.red   := fillColor._1.U
 			io.out.bits.green := fillColor._2.U
 			io.out.bits.blue  := fillColor._3.U
+		} .otherwise {
+			io.out.valid := true.B
+			io.out.bits.red   := semifillColor._1.U
+			io.out.bits.green := semifillColor._2.U
+			io.out.bits.blue  := semifillColor._3.U
 		}
 	}
 }
