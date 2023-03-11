@@ -13,6 +13,9 @@ testGB:
 testNES:
 	sbt "testOnly *NESTests"
 
+testScope:
+	sbt "testOnly *OscilloscopeTests"
+
 .build: $(shell find src/main -name '*.scala')
 	sbt run && touch .build
 

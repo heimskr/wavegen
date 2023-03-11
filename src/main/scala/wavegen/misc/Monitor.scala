@@ -14,7 +14,7 @@ class Monitor(dataType: UInt) extends Module {
 
 object Monitor {
 	def apply(value: UInt): Bool = {
-		val module = Module(new Monitor(value))
+		val module = Module(new Monitor(chiselTypeOf(value)))
 		module.io.in := value
 		module.io.changed
 	}

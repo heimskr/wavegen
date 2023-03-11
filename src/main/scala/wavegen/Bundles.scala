@@ -1,6 +1,7 @@
 package wavegen
 
 import chisel3._
+import chisel3.util._
 
 class NESButtons extends Bundle {
 	val a      = Bool()

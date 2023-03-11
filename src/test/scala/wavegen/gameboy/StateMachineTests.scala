@@ -21,9 +21,9 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 		val start      = Input(Bool())
 		val data       = Input(UInt(8.W))
 		val state      = Output(UInt(4.W))
-		val error      = Output(UInt(4.W))
-		val errorInfo  = Output(UInt(8.W))
-		val errorInfo2 = Output(UInt(16.W))
+		// val error      = Output(UInt(4.W))
+		// val errorInfo  = Output(UInt(8.W))
+		// val errorInfo2 = Output(UInt(16.W))
 		val registers  = Output(GBRegisters())
 		val addr       = Output(UInt(18.W))
 	})
@@ -37,9 +37,9 @@ class StateMachineTestModule(implicit clockFreq: Int) extends Module {
 	stateMachine.io.rom   := io.data
 	addr := stateMachine.io.addr
 
-	io.error := stateMachine.io.error
-	io.errorInfo := stateMachine.io.errorInfo
-	io.errorInfo2 := stateMachine.io.errorInfo2
+	// io.error := stateMachine.io.error
+	// io.errorInfo := stateMachine.io.errorInfo
+	// io.errorInfo2 := stateMachine.io.errorInfo2
 	io.registers := stateMachine.io.registers
 	io.addr := addr
 	io.state := stateMachine.io.state
@@ -71,8 +71,8 @@ class StateMachineTests extends AnyFlatSpec with ChiselScalatestTester {
 					}
 					if ((i % 250) == 0)
 						println(i)
-					if (dut.io.error.peek().litValue != 0)
-						break()
+					// if (dut.io.error.peek().litValue != 0)
+					// 	break()
 				}
 			}
 		}

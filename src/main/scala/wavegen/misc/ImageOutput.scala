@@ -3,10 +3,13 @@ package wavegen.misc
 import chisel3._
 import chisel3.util._
 import scala.math.{sin, floor, Pi}
-import wavegen.Util
+import wavegen._
 import wavegen.presentation.Bar
+import wavegen.presentation.Slideshow
 
 class ImageOutput(val showScreenshot: Boolean = false) extends Module {
+	implicit val clockFreq = 74_250_000
+
 	val screenWidth  = 1280
 	val screenHeight = 720
 	val demoSlideGB  = 9
@@ -14,6 +17,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val maxSlides    = 16
 
 	val io = IO(new Bundle {
+		val audioClock  = Input(Clock())
 		val x           = Input(UInt(11.W))
 		val y           = Input(UInt(10.W))
 		val sw          = Input(UInt(8.W))
@@ -29,9 +33,14 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val rxByte      = Flipped(Valid(UInt(8.W)))
 		val gbChannels  = Input(Vec(4, UInt(4.W)))
 		val nesChannels = Input(Vec(4, UInt(4.W)))
+		val jb0 = Output(Bool())
+		val jb1 = Output(Bool())
+		val jb2 = Output(Bool())
+		val jb3 = Output(Bool())
+		val jb4 = Output(Bool())
 	})
 
-	val slideshow = Module(new wavegen.presentation.Slideshow)
+	val slideshow = Module(new Slideshow)
 	val slide     = RegInit(0.U(8.W))
 	val useNES    = io.useNES
 
@@ -50,15 +59,14 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
 	}
 
-	val hueClocker = Module(new wavegen.StaticClocker(50, 74_250_000, true))
-	hueClocker.io.enable := true.B
+	val hueClock = StaticClocker(50, clockFreq, true)
 
 	val waves = 2
 	val amplitude = 100
 	val table = VecInit.tabulate(screenWidth)(x => floor((1 + sin(2 * x * Pi / screenWidth * waves)) / 2 * amplitude).intValue().U(10.W))
 	val shift = table(io.x)
 
-	val (hue, hueWrap) = Counter(0 to 255, hueClocker.io.tick)
+	val (hue, hueWrap) = Counter(0 to 255, hueClock)
 	val adjustedHue = (hue + (io.x >> 2.U) + (io.y >> 3.U) - shift)(7, 0)
 
 	val colors = Module(new Colors)
@@ -67,6 +75,14 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val isDemo = slide === demoSlideGB.U || slide === demoSlideNES.U
 	io.useNESOut.valid := isDemo
 	io.useNESOut.bits  := DontCare
+
+	val fakeAudioClock = StaticClocker(48000, clockFreq)
+
+	io.jb0 := 0.U
+	io.jb1 := 0.U
+	io.jb2 := 0.U
+	io.jb3 := 0.U
+	io.jb4 := 0.U
 
 	when (isDemo) {
 		io.red   := colors.io.red
@@ -174,7 +190,31 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				setAll(255)
 			}
 
-			// val channel1
+			val channel1 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2-160, 720/2-128)))
+			channel1.io.x := io.x
+			channel1.io.y := io.y
+			channel1.io.trigger := 8.U
+			channel1.io.slope := true.B
+			channel1.io.sampleIn.valid := fakeAudioClock
+			channel1.io.sampleIn.bits  := io.gbChannels(0)
+			// io.jb0 := channel1.io.sampleIn.bits(0)
+			// io.jb1 := channel1.io.sampleIn.bits(1)
+			// io.jb2 := channel1.io.sampleIn.bits(2)
+			// io.jb3 := channel1.io.sampleIn.bits(3)
+
+			io.jb0 := channel1.io.debug.state(0)
+			io.jb1 := channel1.io.debug.state(1)
+			io.jb4 := fakeAudioClock
+
+			// val jb4 = RegInit(false.B)
+			// when (Pulser(io.audioClock.asBool)) { jb4 := !jb4 }
+			// io.jb4 := jb4
+			when (channel1.io.out.valid) {
+				val color = Mux(channel1.io.out.bits, 0.U, 255.U)
+				io.red   := color
+				io.green := color
+				io.blue  := color
+			}
 		}
 	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (screenHeight - 70).U && slideshow.io.red === 255.U) {
 		io.red   := colors.io.red

@@ -32,7 +32,10 @@ module Display (
 	output wire useNESOutValid,
 	input  wire [4:0] multiplier,
 	input  wire rx_ready,
-	input  wire [7:0] rx_byte
+	input  wire [7:0] rx_byte,
+	input  wire [15:0] gb_channels,
+	input  wire [15:0] nes_channels,
+	output wire [4:0] jb
 );
 
 	wire pix_clk;    // pixel clock
@@ -92,6 +95,7 @@ module Display (
 	ImageOutput image_output (
 		.clock(pix_clk),
 		.reset(~rst_n),
+		.io_audioClock(clk_audio_buf),
 		.io_x(cx),
 		.io_y(cy),
 		.io_sw(sw),
@@ -113,7 +117,20 @@ module Display (
 		.io_useNESOut_bits(useNESOut),
 		.io_rxByte_valid(rx_ready),
 		.io_rxByte_bits(rx_byte),
-		.io_multiplier(multiplier)
+		.io_multiplier(multiplier),
+		.io_gbChannels_0(gb_channels[3:0]),
+		.io_gbChannels_1(gb_channels[7:4]),
+		.io_gbChannels_2(gb_channels[11:8]),
+		.io_gbChannels_3(gb_channels[15:12]),
+		.io_nesChannels_0(nes_channels[3:0]),
+		.io_nesChannels_1(nes_channels[7:4]),
+		.io_nesChannels_2(nes_channels[11:8]),
+		.io_nesChannels_3(nes_channels[15:12]),
+		.io_jb0(jb[0]),
+		.io_jb1(jb[1]),
+		.io_jb2(jb[2]),
+		.io_jb3(jb[3]),
+		.io_jb4(jb[4])
 	);
 
 	// TMDS Encoding and Serialization

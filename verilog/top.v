@@ -26,6 +26,7 @@ module top (
 	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive
 	inout  [7:0] ja, // Pmod JA connector
+	output [4:0] jb,
 	output uart_rx_out,
 	input  uart_tx_in
 );
@@ -188,30 +189,30 @@ module top (
 		.douta(rom_out_nes)
 	);
 
-	wire [7:0] rx_byte;
-	wire rx_ready;
-	wire rx_error;
-	reg rx_ack;
-	wire [7:0] tx_byte;
-	wire tx_ready;
+	// wire [7:0] rx_byte;
+	// wire rx_ready;
+	// wire rx_error;
+	// reg rx_ack;
+	// wire [7:0] tx_byte;
+	// wire tx_ready;
 
-	always @(posedge clk) begin
-		rx_ack <= cpu_resetn & rx_ready;
-	end
+	// always @(posedge clk) begin
+	// 	rx_ack <= cpu_resetn & rx_ready;
+	// end
 
-	UART #(.FREQ(100_000_000)) uart_thing (
-		.reset(cpu_resetn),
-		.clk(clk),
-		.rx_i(uart_tx_in ^ sw[0]),
-		.rx_data_o(rx_byte),
-		.rx_ready_o(rx_ready),
-		.rx_ack_i(rx_ack),
-		.rx_error_o(rx_error),
-		.tx_o(uart_rx_out),
-		.tx_data_i(tx_byte),
-		.tx_ready_i(tx_ready),
-		.tx_ack_o()
-	);
+	// UART #(.FREQ(100_000_000)) uart_thing (
+	// 	.reset(cpu_resetn),
+	// 	.clk(clk),
+	// 	.rx_i(uart_tx_in ^ sw[0]),
+	// 	.rx_data_o(rx_byte),
+	// 	.rx_ready_o(rx_ready),
+	// 	.rx_ack_i(rx_ack),
+	// 	.rx_error_o(rx_error),
+	// 	.tx_o(uart_rx_out),
+	// 	.tx_data_i(tx_byte),
+	// 	.tx_ready_i(tx_ready),
+	// 	.tx_ack_o()
+	// );
 
 	wire nes_a;
 	wire nes_b;
@@ -242,6 +243,9 @@ module top (
 
 	wire [4:0] multiplier;
 
+	wire [3:0] gb_channels  [3:0];
+	wire [3:0] nes_channels [3:0];
+
 	MainBoth main_module_both (
 		.clock(clk),
 		.reset(!cpu_resetn),
@@ -266,10 +270,12 @@ module top (
 		.io_jaIn(ja),
 		.io_pulseOut(ja[3]),
 		.io_latchOut(ja[2]),
-		.io_rxByte_valid(rx_ready),
-		.io_rxByte_bits(rx_byte),
-		.io_txByte_valid(tx_ready),
-		.io_txByte_bits(tx_byte),
+		// .io_rxByte_valid(rx_ready),
+		// .io_rxByte_bits(rx_byte),
+		.io_rxByte_valid(1'b0),
+		.io_rxByte_bits(8'b0),
+		// .io_txByte_valid(tx_ready),
+		// .io_txByte_bits(tx_byte),
 		.io_nesButtons_a(nes_a),
 		.io_nesButtons_b(nes_b),
 		.io_nesButtons_select(nes_select),
@@ -281,7 +287,15 @@ module top (
 		.io_useNES(use_nes),
 		.io_useNESIn_valid(use_nes_in_valid_stored),
 		.io_useNESIn_bits(use_nes_in_stored),
-		.io_multiplier(multiplier)
+		.io_multiplier(multiplier),
+		.io_gbChannels_0(gb_channels[0]),
+		.io_gbChannels_1(gb_channels[1]),
+		.io_gbChannels_2(gb_channels[2]),
+		.io_gbChannels_3(gb_channels[3]),
+		.io_nesChannels_0(nes_channels[0]),
+		.io_nesChannels_1(nes_channels[1]),
+		.io_nesChannels_2(nes_channels[2]),
+		.io_nesChannels_3(nes_channels[3])
 	);
 
 	i2s_ctl audio_inout (
@@ -340,9 +354,14 @@ module top (
 		.useNES(use_nes),
 		.useNESOutValid(use_nes_in_valid),
 		.useNESOut(use_nes_in),
-		.rx_ready(rx_ready),
-		.rx_byte(rx_byte),
-		.multiplier(multiplier)
+		// .rx_ready(rx_ready),
+		// .rx_byte(rx_byte),
+		.rx_ready(1'b0),
+		.rx_byte(8'b0),
+		.multiplier(multiplier),
+		.gb_channels({gb_channels[3], gb_channels[2], gb_channels[1], gb_channels[0]}),
+		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]}),
+		.jb(jb)
 	);
 
 endmodule

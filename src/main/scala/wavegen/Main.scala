@@ -3,6 +3,7 @@ package wavegen
 import chisel3._
 import chisel3.util._
 import chisel3.stage._
+import wavegen.misc.ImageOutput
 
 class MainBoth extends Module {
 	implicit val clockFreq   = 100_000_000
@@ -11,31 +12,33 @@ class MainBoth extends Module {
 	val useInternalClocks = true
 
 	val io = IO(new Bundle {
-		val pixClock   = Input(Clock())
-		val clockGB    = Input(Bool())
-		val clockNES   = Input(Bool())
-		val pulseU     = Input(Bool())
-		val pulseR     = Input(Bool())
-		val pulseD     = Input(Bool())
-		val pulseL     = Input(Bool())
-		val pulseC     = Input(Bool())
-		val sw         = Input(UInt(8.W))
-		val romGB      = Input(UInt(romWidth.W))
-		val romNES     = Input(UInt(romWidth.W))
-		val outL       = Output(UInt(24.W))
-		val outR       = Output(UInt(24.W))
-		val led        = Output(UInt(8.W))
-		val addrGB     = Output(UInt(18.W))
-		val addrNES    = Output(UInt(17.W))
-		val jaIn       = Input(UInt(8.W))
-		val pulseOut   = Output(Bool())
-		val latchOut   = Output(Bool())
-		val rxByte     = Flipped(Valid(UInt(8.W)))
-		val txByte     = Valid(UInt(8.W))
-		val nesButtons = Output(NESButtons())
-		val useNES     = Output(Bool())
-		val useNESIn   = Flipped(Valid(Bool()))
-		val multiplier = Output(UInt(5.W))
+		val pixClock    = Input(Clock())
+		val clockGB     = Input(Bool())
+		val clockNES    = Input(Bool())
+		val pulseU      = Input(Bool())
+		val pulseR      = Input(Bool())
+		val pulseD      = Input(Bool())
+		val pulseL      = Input(Bool())
+		val pulseC      = Input(Bool())
+		val sw          = Input(UInt(8.W))
+		val romGB       = Input(UInt(romWidth.W))
+		val romNES      = Input(UInt(romWidth.W))
+		val outL        = Output(UInt(24.W))
+		val outR        = Output(UInt(24.W))
+		val led         = Output(UInt(8.W))
+		val addrGB      = Output(UInt(18.W))
+		val addrNES     = Output(UInt(17.W))
+		val jaIn        = Input(UInt(8.W))
+		val pulseOut    = Output(Bool())
+		val latchOut    = Output(Bool())
+		val rxByte      = Flipped(Valid(UInt(8.W)))
+		val txByte      = Valid(UInt(8.W))
+		val nesButtons  = Output(NESButtons())
+		val useNES      = Output(Bool())
+		val useNESIn    = Flipped(Valid(Bool()))
+		val multiplier  = Output(UInt(5.W))
+		val gbChannels  = Output(Vec(4, UInt(4.W)))
+		val nesChannels = Output(Vec(4, UInt(4.W)))
 	})
 
 	io.addrGB := DontCare
@@ -221,13 +224,15 @@ class MainBoth extends Module {
 		}
 	}
 
-	io.latchOut := jaLatchOut
-	io.pulseOut := jaPulseOut
+	io.latchOut    := jaLatchOut
+	io.pulseOut    := jaPulseOut
+	io.gbChannels  := gameboy.io.channels
+	io.nesChannels := nes.io.channels
 }
 
 object MainRun extends scala.App {
 	(new ChiselStage).emitVerilog(new MainBoth, args)
-	(new ChiselStage).emitVerilog(new wavegen.misc.ImageOutput, args)
+	(new ChiselStage).emitVerilog(new ImageOutput, args)
 	(new ChiselStage).emitVerilog(new Debouncer(2), args)
 	(new ChiselStage).emitVerilog(new Debouncer(5), args)
 	(new ChiselStage).emitVerilog(new Debouncer(8), args)

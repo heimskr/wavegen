@@ -25,7 +25,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 		val buttonL = Input(Bool())
 		val buttonC = Input(Bool())
 		val addr    = Output(UInt(addressWidth.W))
-		val error   = Output(UInt(4.W))
+		// val error   = Output(UInt(4.W))
 		val leds    = Output(UInt(8.W))
 		val audioL  = Output(UInt(7.W))
 		val audioR  = Output(UInt(7.W))
@@ -43,7 +43,7 @@ class GameBoyTestModule(implicit clockFreq: Int) extends Module {
 	gameboy.io.pulseL := io.buttonL
 	gameboy.io.pulseC := io.buttonC
 	io.addr   := gameboy.io.addr
-	io.error  := gameboy.io.error
+	// io.error  := gameboy.io.error
 	io.leds   := gameboy.io.leds
 	io.audioL := gameboy.io.outL
 	io.audioR := gameboy.io.outR
