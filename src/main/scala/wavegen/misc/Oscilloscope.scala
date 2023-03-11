@@ -62,13 +62,15 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	val trigger = io.trigger
 	val sample  = sampleMemory(addr)
 
-	val framebuffer0  = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
-	val framebuffer1  = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
+	val bufferSize = (opts.width / opts.scale) * (opts.height / opts.scale)
+
+	val framebuffer0  = SyncReadMem(bufferSize, Bool())
+	val framebuffer1  = SyncReadMem(bufferSize, Bool())
 	val activeBuffer = RegInit(0.U(1.W))
 	val xPointer  = RegInit(0.U(log2Ceil(opts.width).W))
 	val yPointer  = RegInit(0.U(log2Ceil(opts.height).W))
-	val fwPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
-	val frPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
+	val fwPointer = RegInit(0.U(log2Ceil(bufferSize).W))
+	val frPointer = RegInit(0.U(log2Ceil(bufferSize).W))
 
 	def getSample(xPixel: UInt): Unit = {
 		val nextSampleIndex = Util.divide(xPixel, opts.scale) - triggerIndex
@@ -108,7 +110,7 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 				triggerIndex := addr
 			}
 
-			// prevSample := sample
+			prevSample := sample
 
 			when (addrReg >= (opts.sampleCount - 1).U) {
 				addrReg := 0.U
@@ -154,29 +156,41 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	val adjustedY = Util.divide(io.y - opts.yOffset.U, opts.scale)
 	val nextAdjustedY =
 		if (opts.yOffset == 0)
-			Util.divide(io.y - opts.yOffset.U + 1.U, opts.scale)
+			Util.divide(io.y + 1.U, opts.scale)
 		else
 			Util.divide(io.y - (opts.yOffset - 1).U, opts.scale)
+	val nextAdjustedX =
+		if (opts.xOffset == 0)
+			Util.divide(io.x + 1.U, opts.scale)
+		else
+			Util.divide(io.x - (opts.xOffset - 1).U, opts.scale)
 
-	when (Monitor(adjustedX)) {
-		when (io.x < (opts.xOffset + opts.width).U) {
-			// When the downscaled x value changes but we haven't reached the end of the row, increment the frame pointer.
-			frPointer := frPointer + 1.U
-		} .elsewhen (io.x === (opts.xOffset + opts.width).U) {
-			// When the downscaled x value changes and we're past the end of the row, we either increase the frame
-			// pointer as normal if the downscaled y value is about to change or set it back to the beginning of the
-			// row if it's not. We need to be sure in the latter case to transition back to the accepting state if
-			// we're done with the rendering for this frame.
-			when (adjustedY === nextAdjustedY) {
-				frPointer := frPointer - (opts.width / opts.scale - 1).U
-			} .elsewhen (frPointer >= ((opts.width / opts.scale) * (opts.height / opts.scale) - 1).U && state === sDisplaying) {
-				triggerIndex := 0.U
-				state        := sAccepting
-			} .otherwise {
-				frPointer := frPointer + 1.U
-			}
-		}
+	when (io.x === (opts.xOffset + opts.width - 1).U && io.y === (opts.yOffset + opts.height - 1).U) {
+		triggerIndex := 0.U
+		state        := sAccepting
+	} .otherwise {
+		frPointer := Util.multiply(adjustedY, opts.width / opts.scale) + nextAdjustedX
 	}
+
+	// when (Monitor(adjustedX)) {
+	// 	when (io.x < (opts.xOffset + opts.width).U) {
+	// 		// When the downscaled x value changes but we haven't reached the end of the row, increment the frame pointer.
+	// 		frPointer := frPointer + 1.U
+	// 	} .elsewhen (io.x === (opts.xOffset + opts.width).U) {
+	// 		// When the downscaled x value changes and we're past the end of the row, we either increase the frame
+	// 		// pointer as normal if the downscaled y value is about to change or set it back to the beginning of the
+	// 		// row if it's not. We need to be sure in the latter case to transition back to the accepting state if
+	// 		// we're done with the rendering for this frame.
+	// 		when (adjustedY === nextAdjustedY) {
+	// 			frPointer := frPointer - (opts.width / opts.scale - 1).U
+	// 		} .elsewhen (frPointer >= (bufferSize - 1).U && state === sDisplaying) {
+	// 			triggerIndex := 0.U
+	// 			state        := sAccepting
+	// 		} .otherwise {
+	// 			frPointer := frPointer + 1.U
+	// 		}
+	// 	}
+	// }
 
 	when (opts.xOffset.U <= io.x && io.x < (opts.xOffset + opts.width).U && opts.yOffset.U <= io.y && io.y < (opts.yOffset + opts.height).U) {
 		io.out.valid := true.B

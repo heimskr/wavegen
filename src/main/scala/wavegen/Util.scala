@@ -15,6 +15,27 @@ object Util {
 		}
 	}
 
+	def modulo(signal: UInt, divisor: Int) = {
+		require(divisor != 0)
+		if (divisor == 1) {
+			0.U
+		} else if ((divisor & (divisor - 1)) == 0) {
+			signal(log2Ceil(divisor) - 1, 0)
+		} else {
+			signal % divisor.U
+		}
+	}
+
+	def multiply(signal: UInt, multiplicand: Int) = {
+		if (multiplicand == 0) {
+			0.U
+		} else if ((multiplicand & (multiplicand - 1)) == 0) {
+			signal << log2Ceil(multiplicand)
+		} else {
+			signal * multiplicand.U
+		}
+	}
+
 	def transmitPulseFrom(pulse: Bool, sourceClock: Clock, depth: Int = 2): Bool = {
 		val pipe = RegInit(VecInit.fill(depth)(false.B))
 
