@@ -7,11 +7,12 @@ import wavegen.Util
 case class OscilloscopeOpts(sampleCount: Int, sampleWidth: Int, width: Int, height: Int, scale: Int, xOffset: Int, yOffset: Int, xWidth: Int = 11, yWidth: Int = 10)
 
 class OscilloDebug(opts: OscilloscopeOpts) extends Bundle {
-	val state     = UInt(2.W)
-	val fwPointer = Output(UInt(log2Ceil(opts.width * opts.height).W))
-	val frPointer = Output(UInt(log2Ceil(opts.width * opts.height).W))
-	val xPointer  = Output(UInt(log2Ceil(opts.width).W))
-	val yPointer  = Output(UInt(log2Ceil(opts.height).W))
+	val state        = UInt(2.W)
+	val fwPointer    = Output(UInt(log2Ceil(opts.width * opts.height).W))
+	val frPointer    = Output(UInt(log2Ceil(opts.width * opts.height).W))
+	val activeBuffer = Output(UInt(1.W))
+	val xPointer     = Output(UInt(log2Ceil(opts.width).W))
+	val yPointer     = Output(UInt(log2Ceil(opts.height).W))
 }
 
 object OscilloDebug {
@@ -61,9 +62,11 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	val trigger = io.trigger
 	val sample  = sampleMemory(addr)
 
-	val framebuffer = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
-	val xPointer = RegInit(0.U(log2Ceil(opts.width).W))
-	val yPointer = RegInit(0.U(log2Ceil(opts.height).W))
+	val framebuffer0  = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
+	val framebuffer1  = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
+	val activeBuffer = RegInit(0.U(1.W))
+	val xPointer  = RegInit(0.U(log2Ceil(opts.width).W))
+	val yPointer  = RegInit(0.U(log2Ceil(opts.height).W))
 	val fwPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
 	val frPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
 
@@ -72,6 +75,24 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 		addrReg    := nextSampleIndex
 		addr       := nextSampleIndex
 		prevSample := sample
+	}
+
+	def writePixel(value: Bool): Unit = {
+		when (activeBuffer === 0.U) {
+			framebuffer0.write(fwPointer, value)
+		} .otherwise {
+			framebuffer1.write(fwPointer, value)
+		}
+	}
+
+	def readPixel(): Bool = {
+		val out = Wire(Bool())
+		when (activeBuffer === 0.U) {
+			out := framebuffer1.read(frPointer)
+		} .otherwise {
+			out := framebuffer0.read(frPointer)
+		}
+		out
 	}
 
 	when (state === sAccepting) {
@@ -104,9 +125,9 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 		val sampleMatch = adjustedY === sample
 
 		when (xPointer === 0.U) {
-			framebuffer.write(fwPointer, sampleMatch)
+			writePixel(sampleMatch)
 		} .otherwise {
-			framebuffer.write(fwPointer, sampleMatch || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample))
+			writePixel(sampleMatch || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample))
 		}
 
 		fwPointer := fwPointer + 1.U
@@ -115,9 +136,10 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 			xPointer := 0.U
 			getSample(0.U)
 			when (yPointer === (opts.height / opts.scale - 1).U) {
-				yPointer := 0.U
+				yPointer  := 0.U
 				fwPointer := 0.U
-				state    := sDisplaying
+				state     := sDisplaying
+				activeBuffer := 1.U - activeBuffer
 			} .otherwise {
 				yPointer := yPointer + 1.U
 			}
@@ -158,7 +180,7 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 
 	when (opts.xOffset.U <= io.x && io.x < (opts.xOffset + opts.width).U && opts.yOffset.U <= io.y && io.y < (opts.yOffset + opts.height).U) {
 		io.out.valid := true.B
-		io.out.bits  := framebuffer.read(frPointer)
+		io.out.bits  := readPixel()
 
 		// val adjustedY = Util.divide(opts.height.U - (io.y - opts.yOffset.U), opts.height / (1 << opts.sampleWidth))
 
@@ -166,9 +188,10 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 		// io.out.bits  := adjustedY === sample || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample)
 	}
 
-	io.debug.state     := state
-	io.debug.fwPointer := fwPointer
-	io.debug.frPointer := frPointer
-	io.debug.xPointer  := xPointer
-	io.debug.yPointer  := yPointer
+	io.debug.state        := state
+	io.debug.fwPointer    := fwPointer
+	io.debug.frPointer    := frPointer
+	io.debug.activeBuffer := activeBuffer
+	io.debug.xPointer     := xPointer
+	io.debug.yPointer     := yPointer
 }
