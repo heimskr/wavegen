@@ -190,17 +190,37 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 				setAll(255)
 			}
 
-			val channel1 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2-160, 720/2-128)))
+			val channel1 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2-325, 720/2-133)))
 			channel1.io.x := io.x
 			channel1.io.y := io.y
 			channel1.io.trigger := 8.U
 			channel1.io.slope := true.B
 			channel1.io.sampleIn.valid := fakeAudioClock
 			channel1.io.sampleIn.bits  := io.gbChannels(0)
-			// io.jb0 := channel1.io.sampleIn.bits(0)
-			// io.jb1 := channel1.io.sampleIn.bits(1)
-			// io.jb2 := channel1.io.sampleIn.bits(2)
-			// io.jb3 := channel1.io.sampleIn.bits(3)
+
+			val channel2 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2+5, 720/2-133)))
+			channel2.io.x := io.x
+			channel2.io.y := io.y
+			channel2.io.trigger := 8.U
+			channel2.io.slope := true.B
+			channel2.io.sampleIn.valid := fakeAudioClock
+			channel2.io.sampleIn.bits  := io.gbChannels(1)
+
+			val channel3 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2-325, 720/2+5)))
+			channel3.io.x := io.x
+			channel3.io.y := io.y
+			channel3.io.trigger := 8.U
+			channel3.io.slope := true.B
+			channel3.io.sampleIn.valid := fakeAudioClock
+			channel3.io.sampleIn.bits  := io.gbChannels(2)
+
+			val channel4 = Module(new Oscilloscope(OscilloscopeOpts(160, 4, 320, 128, 2, 1280/2+5, 720/2+5)))
+			channel4.io.x := io.x
+			channel4.io.y := io.y
+			channel4.io.trigger := 0.U
+			channel4.io.slope := true.B
+			channel4.io.sampleIn.valid := fakeAudioClock
+			channel4.io.sampleIn.bits  := io.gbChannels(3)
 
 			io.jb0 := channel1.io.debug.state(0)
 			io.jb1 := channel1.io.debug.state(1)
@@ -211,6 +231,27 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 			// io.jb4 := jb4
 			when (channel1.io.out.valid) {
 				val color = Mux(channel1.io.out.bits, 0.U, 255.U)
+				io.red   := color
+				io.green := color
+				io.blue  := color
+			}
+
+			when (channel2.io.out.valid) {
+				val color = Mux(channel2.io.out.bits, 0.U, 255.U)
+				io.red   := color
+				io.green := color
+				io.blue  := color
+			}
+
+			when (channel3.io.out.valid) {
+				val color = Mux(channel3.io.out.bits, 0.U, 255.U)
+				io.red   := color
+				io.green := color
+				io.blue  := color
+			}
+
+			when (channel4.io.out.valid) {
+				val color = Mux(channel4.io.out.bits, 0.U, 255.U)
 				io.red   := color
 				io.green := color
 				io.blue  := color

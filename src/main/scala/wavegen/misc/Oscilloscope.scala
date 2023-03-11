@@ -7,10 +7,11 @@ import wavegen.Util
 case class OscilloscopeOpts(sampleCount: Int, sampleWidth: Int, width: Int, height: Int, scale: Int, xOffset: Int, yOffset: Int, xWidth: Int = 11, yWidth: Int = 10)
 
 class OscilloDebug(opts: OscilloscopeOpts) extends Bundle {
-	val state = UInt(2.W)
-	val fPointer = Output(UInt(log2Ceil(opts.width * opts.height).W))
-	val xPointer = Output(UInt(log2Ceil(opts.width).W))
-	val yPointer = Output(UInt(log2Ceil(opts.height).W))
+	val state     = UInt(2.W)
+	val fwPointer = Output(UInt(log2Ceil(opts.width * opts.height).W))
+	val frPointer = Output(UInt(log2Ceil(opts.width * opts.height).W))
+	val xPointer  = Output(UInt(log2Ceil(opts.width).W))
+	val yPointer  = Output(UInt(log2Ceil(opts.height).W))
 }
 
 object OscilloDebug {
@@ -40,7 +41,7 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 		val debug    = Output(OscilloDebug(opts))
 	})
 
-	val sampleMemory = SyncReadMem(opts.sampleCount, UInt(opts.sampleWidth.W))
+	val sampleMemory = SyncReadMem(opts.sampleCount * 2, UInt(opts.sampleWidth.W))
 	val addrReg = RegInit(0.U(addrWidth.W))
 	val addr    = WireInit(addrReg)
 
@@ -50,7 +51,8 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	val sAccepting :: sRendering :: sDisplaying :: Nil = Enum(3)
 
 	val state        = RegInit(sAccepting)
-	val prevSample   = Mux(addrReg === 0.U, 0.U, sampleMemory(addrReg - 1.U))
+	// val prevSample   = Mux(addrReg === 0.U, 0.U, sampleMemory(addrReg - 1.U))
+	val prevSample   = RegInit(0.U(opts.sampleWidth.W))
 	val triggerIndex = RegInit(0.U(addrWidth.W))
 
 	io.out.valid := false.B
@@ -62,24 +64,26 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	val framebuffer = SyncReadMem((opts.width / opts.scale) * (opts.height / opts.scale), Bool())
 	val xPointer = RegInit(0.U(log2Ceil(opts.width).W))
 	val yPointer = RegInit(0.U(log2Ceil(opts.height).W))
-	val fPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
+	val fwPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
+	val frPointer = RegInit(0.U(log2Ceil(opts.width * opts.height).W))
 
 	def getSample(xPixel: UInt): Unit = {
 		val nextSampleIndex = Util.divide(xPixel, opts.scale) - triggerIndex
-		addrReg := nextSampleIndex
-		addr    := nextSampleIndex
+		addrReg    := nextSampleIndex
+		addr       := nextSampleIndex
+		prevSample := sample
 	}
 
 	when (state === sAccepting) {
 
 		xPointer := 0.U
 		yPointer := 0.U
-		fPointer := 0.U
+		fwPointer := 0.U
 
 		when (io.sampleIn.valid) {
 			sampleMemory.write(addrReg, io.sampleIn.bits)
 
-			when ((io.slope && prevSample < trigger && trigger <= sample) || (!io.slope && sample <= trigger && trigger < prevSample)) {
+			when (addr <= opts.sampleCount.U && trigger =/= 0.U && ((io.slope && prevSample < trigger && trigger <= sample) || (!io.slope && sample <= trigger && trigger < prevSample))) {
 				triggerIndex := addr
 			}
 
@@ -96,23 +100,23 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	} .elsewhen (state === sRendering) {
 
 		// If height is 48 and sampleWidth is 4 (2^4 = 16), divide the y value by 48/16 = 3.
-		val adjustedY = Util.divide(opts.height.U - yPointer, opts.height / (1 << opts.sampleWidth))
+		val adjustedY = Util.divide((opts.height - 1).U - yPointer, opts.height / (1 << opts.sampleWidth))
 		val sampleMatch = adjustedY === sample
 
 		when (xPointer === 0.U) {
-			framebuffer.write(fPointer, sampleMatch)
+			framebuffer.write(fwPointer, sampleMatch)
 		} .otherwise {
-			framebuffer.write(fPointer, sampleMatch || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample))
+			framebuffer.write(fwPointer, sampleMatch || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample))
 		}
 
-		fPointer := fPointer + 1.U
+		fwPointer := fwPointer + 1.U
 
-		when (xPointer +& 1.U === (opts.width / opts.scale).U) {
+		when (xPointer === (opts.width / opts.scale - 1).U) {
 			xPointer := 0.U
 			getSample(0.U)
-			when (yPointer +& 1.U === (opts.height / opts.scale).U) {
+			when (yPointer === (opts.height / opts.scale - 1).U) {
 				yPointer := 0.U
-				fPointer := 0.U
+				fwPointer := 0.U
 				state    := sDisplaying
 			} .otherwise {
 				yPointer := yPointer + 1.U
@@ -135,26 +139,26 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 	when (Monitor(adjustedX)) {
 		when (io.x < (opts.xOffset + opts.width).U) {
 			// When the downscaled x value changes but we haven't reached the end of the row, increment the frame pointer.
-			fPointer := fPointer + 1.U
+			frPointer := frPointer + 1.U
 		} .elsewhen (io.x === (opts.xOffset + opts.width).U) {
 			// When the downscaled x value changes and we're past the end of the row, we either increase the frame
 			// pointer as normal if the downscaled y value is about to change or set it back to the beginning of the
 			// row if it's not. We need to be sure in the latter case to transition back to the accepting state if
 			// we're done with the rendering for this frame.
 			when (adjustedY === nextAdjustedY) {
-				fPointer := fPointer - (opts.width / opts.scale - 1).U
-			} .elsewhen (fPointer >= ((opts.width / opts.scale) * (opts.height / opts.scale) - 1).U && state === sDisplaying) {
+				frPointer := frPointer - (opts.width / opts.scale - 1).U
+			} .elsewhen (frPointer >= ((opts.width / opts.scale) * (opts.height / opts.scale) - 1).U && state === sDisplaying) {
 				triggerIndex := 0.U
 				state        := sAccepting
 			} .otherwise {
-				fPointer := fPointer + 1.U
+				frPointer := frPointer + 1.U
 			}
 		}
 	}
 
 	when (opts.xOffset.U <= io.x && io.x < (opts.xOffset + opts.width).U && opts.yOffset.U <= io.y && io.y < (opts.yOffset + opts.height).U) {
 		io.out.valid := true.B
-		io.out.bits  := framebuffer.read(fPointer)
+		io.out.bits  := framebuffer.read(frPointer)
 
 		// val adjustedY = Util.divide(opts.height.U - (io.y - opts.yOffset.U), opts.height / (1 << opts.sampleWidth))
 
@@ -162,8 +166,9 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 		// io.out.bits  := adjustedY === sample || (prevSample <= adjustedY && adjustedY <= sample) || (prevSample >= adjustedY && adjustedY >= sample)
 	}
 
-	io.debug.state    := state
-	io.debug.fPointer := fPointer
-	io.debug.xPointer := xPointer
-	io.debug.yPointer := yPointer
+	io.debug.state     := state
+	io.debug.fwPointer := fwPointer
+	io.debug.frPointer := frPointer
+	io.debug.xPointer  := xPointer
+	io.debug.yPointer  := yPointer
 }
