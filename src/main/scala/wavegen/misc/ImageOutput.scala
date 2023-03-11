@@ -14,19 +14,21 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val maxSlides    = 16
 
 	val io = IO(new Bundle {
-		val x          = Input(UInt(11.W))
-		val y          = Input(UInt(10.W))
-		val sw         = Input(UInt(8.W))
-		val pulseL     = Input(Bool())
-		val pulseR     = Input(Bool())
-		val red        = Output(UInt(8.W))
-		val green      = Output(UInt(8.W))
-		val blue       = Output(UInt(8.W))
-		val nesButtons = Input(wavegen.NESButtons())
-		val useNES     = Input(Bool())
-		val useNESOut  = Valid(Bool())
-		val multiplier = Input(UInt(5.W))
-		val rxByte     = Flipped(Valid(UInt(8.W)))
+		val x           = Input(UInt(11.W))
+		val y           = Input(UInt(10.W))
+		val sw          = Input(UInt(8.W))
+		val pulseL      = Input(Bool())
+		val pulseR      = Input(Bool())
+		val red         = Output(UInt(8.W))
+		val green       = Output(UInt(8.W))
+		val blue        = Output(UInt(8.W))
+		val nesButtons  = Input(wavegen.NESButtons())
+		val useNES      = Input(Bool())
+		val useNESOut   = Valid(Bool())
+		val multiplier  = Input(UInt(5.W))
+		val rxByte      = Flipped(Valid(UInt(8.W)))
+		val gbChannels  = Input(Vec(4, UInt(4.W)))
+		val nesChannels = Input(Vec(4, UInt(4.W)))
 	})
 
 	val slideshow = Module(new wavegen.presentation.Slideshow)
@@ -171,6 +173,8 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 			when (wavy.io.out) {
 				setAll(255)
 			}
+
+			// val channel1
 		}
 	} .elsewhen (slide === 0.U && ((11 << 2) + (8 << 2)).U <= io.y && io.y < (screenHeight - 70).U && slideshow.io.red === 255.U) {
 		io.red   := colors.io.red
