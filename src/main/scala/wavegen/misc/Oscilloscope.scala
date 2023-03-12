@@ -138,9 +138,9 @@ class Oscilloscope(opts: OscilloscopeOpts) extends Module {
 			xPointer := 0.U
 			getSample(0.U)
 			when (yPointer === (opts.height / opts.scale - 1).U) {
-				yPointer  := 0.U
-				fwPointer := 0.U
-				state     := sDisplaying
+				yPointer     := 0.U
+				fwPointer    := 0.U
+				state        := sDisplaying
 				activeBuffer := 1.U - activeBuffer
 			} .otherwise {
 				yPointer := yPointer + 1.U
