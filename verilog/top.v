@@ -171,14 +171,28 @@ module top (
 	wire mem_oen;
 	wire mem_wen;
 	wire read_data_valid;
-	reg read_data_valid_d1;
-	reg read_data_valid_d2;
+	reg read_data_valid_d1a;
+	reg read_data_valid_d1b;
+	reg read_data_valid_d2a;
+	reg read_data_valid_d2b;
 	wire read_data_valid_rise;
-	always @(posedge clk) begin
-		read_data_valid_d1 <= read_data_valid;
-		read_data_valid_d2 <= read_data_valid_d1;
+	always @(posedge clk200MHz) begin
+		read_data_valid_d1a <= read_data_valid;
+		read_data_valid_d1b <= read_data_valid_d1a;
 	end
-	assign read_data_valid_rise = read_data_valid_d1 & ~read_data_valid_d2;
+
+	always @(posedge clk) begin
+		read_data_valid_d2a <= read_data_valid_d1a | read_data_valid_d1b;
+		read_data_valid_d2b <= read_data_valid_d2a;
+	end
+
+	assign read_data_valid_rise = read_data_valid_d2a & ~read_data_valid_d2b;
+
+	always @(posedge clk200MHz) begin
+		if (read_data_valid) begin
+			mem_dq_o_b <= mem_dq_o;
+		end
+	end
 
 	DDRcontrol ram (
 		.clk_200MHz_i(clk200MHz),
@@ -425,8 +439,8 @@ module top (
 		.io_nesChannels_1(nes_channels[1]),
 		.io_nesChannels_2(nes_channels[2]),
 		.io_nesChannels_3(nes_channels[3]),
-		.io_ram_readData_valid(mem_dq_o),
-		.io_ram_readData_bits(read_data_valid_rise),
+		.io_ram_readData_valid(read_data_valid_rise),
+		.io_ram_readData_bits(mem_dq_o_b),
 		.io_ram_readData_ready(mem_oen),
 		.io_ram_writeData_valid(mem_wen),
 		.io_ram_writeData_bits(mem_dq_i),

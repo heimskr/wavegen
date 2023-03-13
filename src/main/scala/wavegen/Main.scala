@@ -313,6 +313,7 @@ class RAMTest extends Module {
 
 
 	} .elsewhen (state === sReading) {
+
 		io.led := Cat(1.U(1.W), 1.U(1.W), state, block(3, 0))
 
 		when (!cacheValid) {
@@ -336,6 +337,7 @@ class RAMTest extends Module {
 				}
 			}
 		}
+
 	}
 }
 
