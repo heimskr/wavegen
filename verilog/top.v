@@ -28,19 +28,35 @@ module top (
 	inout  [7:0] ja, // Pmod JA connector
 	output [4:0] jb,
 	output uart_rx_out,
-	input  uart_tx_in
+	input  uart_tx_in,
+	output [14:0] ddr3_addr,
+	output [2:0] ddr3_ba,
+	output ddr3_ras_n,
+	output ddr3_cas_n,
+	output ddr3_reset_n,
+	output ddr3_we_n,
+	output ddr3_ck_p,
+	output ddr3_ck_n,
+	output ddr3_cke,
+	output [1:0] ddr3_dm,
+	output ddr3_odt,
+	inout  [15:0] ddr3_dq,
+	inout  [1:0] ddr3_dqs_p,
+	inout  [1:0] ddr3_dqs_n
 );
 
 	wire clk12MHz;
 	wire clk30MHz;
 	wire clk50MHz;
+	wire clk200MHz;
 
 	clk_wiz_0 clk_0 (
 		.clk(clk),
 		.reset(!cpu_resetn),
 		.clk12(clk12MHz),
 		.clk30(clk30MHz),
-		.clk50(clk50MHz)
+		.clk50(clk50MHz),
+		.clk200(clk200MHz)
 	);
 
 	wire clk_pix1;
@@ -132,6 +148,119 @@ module top (
 
 	// assign clk_nes_fast = clk_nes_state == 2'd1;
 	// BUFG nes_bufg (.I(clk_nes_fast), .O(clk_nes_buf));
+
+
+
+
+	// From Nexys Video looper demo
+
+	wire del_mem;              // Clear delete flag
+	wire delete;               // Delete flag
+	wire [3:0] delete_bank;    // Bank to delete
+	wire [3:0] mem_bank;       // Bank
+	wire write_zero;           // Used when deleting
+	wire [21:0] current_block; // Block address
+	wire [15:0] active;        // Bank is recorded on
+	wire [3:0]  current_bank;
+	wire [25:0] mem_a;
+	assign mem_a = {current_block, mem_bank}; // Address is block*8 + banknumber
+	wire [63:0] mem_dq_i;
+	wire [63:0] mem_dq_o;
+	reg  [63:0] mem_dq_o_b;
+	wire mem_cen;
+	wire mem_oen;
+	wire mem_wen;
+	wire read_data_valid;
+	reg read_data_valid_d1;
+	reg read_data_valid_d2;
+	wire read_data_valid_rise;
+	always @(posedge clk) begin
+		read_data_valid_d1 <= read_data_valid;
+		read_data_valid_d2 <= read_data_valid_d1;
+	end
+	assign read_data_valid_rise = read_data_valid_d1 & ~read_data_valid_d2;
+
+	DDRcontrol ram (
+		.clk_200MHz_i(clk200MHz),
+		// .clk_200MHz_i(clk),
+		.rst_i       (!cpu_resetn),
+		// RAM interface
+		.ram_a       (mem_a),
+		.ram_dq_i    (mem_dq_i),
+		.ram_dq_o    (mem_dq_o),
+		.ram_cen     (mem_cen),
+		.ram_oen     (!mem_oen),
+		.ram_wen     (!mem_wen),
+		.data_valid  (read_data_valid),
+		// ddr3 interface
+		.ddr3_addr   (ddr3_addr),
+		.ddr3_ba     (ddr3_ba),
+		.ddr3_ras_n  (ddr3_ras_n),
+		.ddr3_cas_n  (ddr3_cas_n),
+		.ddr3_reset_n(ddr3_reset_n),
+		.ddr3_we_n   (ddr3_we_n),
+		.ddr3_ck_p   (ddr3_ck_p),
+		.ddr3_ck_n   (ddr3_ck_n),
+		.ddr3_cke    (ddr3_cke),
+		.ddr3_dm     (ddr3_dm),
+		.ddr3_odt    (ddr3_odt),
+		.ddr3_dq     (ddr3_dq),
+		.ddr3_dqs_p  (ddr3_dqs_p),
+		.ddr3_dqs_n  (ddr3_dqs_n)
+	);
+
+	// reg pulse48kHz;
+	// wire lrclkrise;
+	// assign lrclkrise = lrclkD1 & ~lrclkD2;
+	// reg [3:0] lrclkcnt = 0;
+    // reg lrclkD1 = 0;
+    // reg lrclkD2 = 0;
+
+    // always @(posedge clk) begin
+    //     lrclkD1 <= ac_lrclk;
+    //     lrclkD2 <= lrclkD1;
+    // end
+
+	// always @(posedge clk) begin
+	// 	if (lrclkcnt == 8) begin
+	// 		pulse48kHz <= 1;
+	// 		lrclkcnt <= 0;
+	// 	end else begin
+	// 		pulse48kHz <= 0;
+	// 	end
+	// 	if (lrclkrise)
+	// 		lrclkcnt <= lrclkcnt+1;
+	// end
+
+	// mem_ctrl mem_controller (
+	// 	.clk_100MHz(clk),
+	// 	.rst(rst),
+	// 	.pulse(pulse48kHz),
+
+	// 	.playing(play),
+	// 	.recording(r),
+	// 	.read_data_valid(read_data_valid_rise),
+
+	// 	.delete(delete),
+	// 	.delete_bank(delete_bank),
+	// 	.max_block(max_block),
+	// 	.delete_clear(del_mem),
+	// 	.RamCEn(mem_cen),
+	// 	.RamOEn(mem_oen),
+	// 	.RamWEn(mem_wen),
+	// 	.write_zero(write_zero),
+	// 	.get_data(data_flag),
+	// 	.data_ready(data_ready),
+	// 	.mix_data(mix_data),
+
+	// 	.addrblock48khz(block48KHz),
+	// 	.mem_block_addr(current_block),
+	// 	.mem_bank(mem_bank)
+	// );
+
+
+
+
 
 	assign ac_mclk = clk12MHz;
 
@@ -295,7 +424,15 @@ module top (
 		.io_nesChannels_0(nes_channels[0]),
 		.io_nesChannels_1(nes_channels[1]),
 		.io_nesChannels_2(nes_channels[2]),
-		.io_nesChannels_3(nes_channels[3])
+		.io_nesChannels_3(nes_channels[3]),
+		.io_ram_readData_valid(mem_dq_o),
+		.io_ram_readData_bits(read_data_valid_rise),
+		.io_ram_readData_ready(mem_oen),
+		.io_ram_writeData_valid(mem_wen),
+		.io_ram_writeData_bits(mem_dq_i),
+		.io_ram_block(current_block),
+		.io_ram_bank(mem_bank),
+		.io_ram_cen(mem_cen)
 	);
 
 	i2s_ctl audio_inout (

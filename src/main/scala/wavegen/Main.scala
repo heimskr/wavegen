@@ -39,6 +39,7 @@ class MainBoth extends Module {
 		val multiplier  = Output(UInt(5.W))
 		val gbChannels  = Output(Vec(4, UInt(4.W)))
 		val nesChannels = Output(Vec(4, UInt(4.W)))
+		val ram         = RAMBundle()
 	})
 
 	io.addrGB := DontCare
@@ -59,7 +60,7 @@ class MainBoth extends Module {
 
 	val nesDebouncer = Module(new Debouncer(8, "NESDebouncer"))
 	val buttonVec = VecInit(nesA, nesB, nesSelect, nesStart, nesUp, nesDown, nesLeft, nesRight)
-	nesDebouncer.io.in   := Mux(io.sw(0), 0.U.asTypeOf(buttonVec), buttonVec)
+	nesDebouncer.io.in   := buttonVec
 	val nesPulseA         = RegNext(nesDebouncer.io.out(0) & io.sw(7))
 	val nesPulseB         = RegNext(nesDebouncer.io.out(1) & io.sw(7))
 	val nesPulseSelect    = RegNext(nesDebouncer.io.out(2) & io.sw(7))
@@ -228,6 +229,114 @@ class MainBoth extends Module {
 	io.pulseOut    := jaPulseOut
 	io.gbChannels  := gameboy.io.channels
 	io.nesChannels := nes.io.channels
+
+	val ramtest = Module(new RAMTest)
+
+	ramtest.io.sw     := io.sw
+	ramtest.io.a      := nesA
+	ramtest.io.b      := nesB
+	ramtest.io.aPulse := nesPulseA
+	ramtest.io.bPulse := nesPulseB
+	io.led := ramtest.io.led
+	io.ram <> ramtest.io.ram
+
+	// io.ram.bank            := DontCare
+	// io.ram.writeData.bits  := DontCare
+	// io.ram.writeData.valid := false.B
+}
+
+class RAMTest extends Module {
+	val io = IO(new Bundle {
+		val ram = RAMBundle()
+		val sw  = Input(UInt(8.W))
+		val a   = Input(Bool())
+		val b   = Input(Bool())
+		val aPulse = Input(Bool())
+		val bPulse = Input(Bool())
+		val led = Output(UInt(8.W))
+	})
+
+	val cen = RegInit(false.B)
+	io.ram.cen := cen
+
+	cen := false.B
+
+	io.ram.bank := 0.U
+	io.led := 0.U
+
+	val sInit :: sWriting :: sReading :: Nil = Enum(3)
+	val state = RegInit(sInit)
+
+	val block = RegInit(0.U(22.W))
+	io.ram.block := block
+	io.ram.writeData.bits  := DontCare
+	io.ram.writeData.valid := false.B
+	io.ram.readData.ready  := false.B
+
+	val cachedData = RegInit(0.U(64.W))
+	val cacheValid = RegInit(false.B)
+	when (io.ram.readData.valid) {
+		cacheValid := true.B
+		cachedData := io.ram.readData.bits
+	}
+
+	val counter = RegInit(0.U(8.W))
+
+	when (state === sInit) {
+
+		state := sWriting
+		block := 0.U
+		counter := 0.U
+		io.led := "b10010110".U
+		cen := true.B
+
+	} .elsewhen (state === sWriting) {
+
+		io.ram.writeData.bits  := block * 7.U
+		io.ram.writeData.valid := true.B
+
+		io.led := Cat(1.U(1.W), 0.U(1.W), state, block(3, 0))
+
+		when (counter === 200.U) {
+			counter := 0.U
+			cen := true.B
+			when (block === 15.U) {
+				block := 0.U
+				state := sReading
+				cacheValid := false.B
+			} .otherwise {
+				block := block + 1.U
+			}
+		} .otherwise {
+			counter := counter + 1.U
+		}
+
+
+	} .elsewhen (state === sReading) {
+		io.led := Cat(1.U(1.W), 1.U(1.W), state, block(3, 0))
+
+		when (!cacheValid) {
+			io.ram.readData.ready := true.B
+		}
+
+		when (io.b) {
+			io.led := Cat(cacheValid, cachedData(6, 0))
+		}
+
+		when (io.aPulse) {
+			cacheValid := false.B
+			cen := true.B
+			when (io.b) {
+				state := sInit
+			} .otherwise {
+				when (block === 15.U) {
+					block := 0.U
+				} .otherwise {
+					block := block + 1.U
+				}
+			}
+		}
+	}
 }
 
 object MainRun extends scala.App {
