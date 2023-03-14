@@ -39,7 +39,7 @@ class MainBoth extends Module {
 		val multiplier  = Output(UInt(5.W))
 		val gbChannels  = Output(Vec(4, UInt(4.W)))
 		val nesChannels = Output(Vec(4, UInt(4.W)))
-		val ram         = RAMBundle()
+		val sd          = SDData()
 	})
 
 	io.addrGB := DontCare
@@ -230,118 +230,119 @@ class MainBoth extends Module {
 	io.gbChannels  := gameboy.io.channels
 	io.nesChannels := nes.io.channels
 
-	val ramtest = Module(new RAMTest)
-
-	ramtest.io.sw     := io.sw
-	ramtest.io.a      := nesA
-	ramtest.io.b      := nesB
-	ramtest.io.aPulse := nesPulseA
-	ramtest.io.bPulse := nesPulseB
-	io.led := ramtest.io.led
-	io.ram <> ramtest.io.ram
-
-	// io.ram.bank            := DontCare
-	// io.ram.writeData.bits  := DontCare
-	// io.ram.writeData.valid := false.B
+	val sdtest = Module(new SDTest)
+	sdtest.io.sw     := io.sw
+	sdtest.io.a      := nesA
+	sdtest.io.b      := nesB
+	sdtest.io.aPulse := nesPulseA
+	sdtest.io.bPulse := nesPulseB
+	io.led := sdtest.io.led
+	io.sd  <> sdtest.io.sd
 }
 
-class RAMTest extends Module {
+class TOCRow extends Bundle {
+	val valid   = Bool()
+	val apu     = UInt(8.W)
+	val address = UInt(32.W)
+	val name    = Vec(59, UInt(8.W))
+}
+
+class SDTest extends Module {
 	val io = IO(new Bundle {
-		val ram = RAMBundle()
-		val sw  = Input(UInt(8.W))
-		val a   = Input(Bool())
-		val b   = Input(Bool())
+		val sd = SDData()
+		val sw = Input(UInt(8.W))
+		val a  = Input(Bool())
+		val b  = Input(Bool())
 		val aPulse = Input(Bool())
 		val bPulse = Input(Bool())
 		val led = Output(UInt(8.W))
 	})
 
-	val cen = RegInit(false.B)
-	io.ram.cen := cen
+	val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
+	val state = RegInit(sIdle)
 
-	cen := false.B
+	// val stInit :: stReadingName :: stReadingAddress :: Nil = Enum(3)
+	// val tocState = RegInit(stInit)
 
-	io.ram.bank := 0.U
-	io.led := 0.U
+	val tocSize = 64 // Number of TOC entries, rather than the size of an individual TOC row
+	val toc = SyncReadMem(tocSize, new TOCRow)
+	val tocPointer = RegInit(0.U(log2Ceil(tocSize).W))
 
-	val sInit :: sWriting :: sReading :: Nil = Enum(3)
-	val state = RegInit(sInit)
+	val tocRow = RegInit(0.U.asTypeOf(new TOCRow))
+	val tocRowPointer = RegInit(0.U(6.W))
 
-	val block = RegInit(0.U(22.W))
-	io.ram.block := block
-	io.ram.writeData.bits  := DontCare
-	io.ram.writeData.valid := false.B
-	io.ram.readData.ready  := false.B
+	// The number of entries as indicated in the first byte of the SD card.
+	val tocCount = RegInit(0.U(8.W))
 
-	val cachedData = RegInit(0.U(64.W))
-	val cacheValid = RegInit(false.B)
-	when (io.ram.readData.valid) {
-		cacheValid := true.B
-		cachedData := io.ram.readData.bits
-	}
+	val reading = RegInit(false.B)
+	val cache   = Module(new SDCache(4))
+	io.sd <> cache.io.sd
+	cache.io.address := DontCare
+	cache.io.read    := reading
 
-	val counter = RegInit(0.U(8.W))
+	val byte      = cache.io.dataOut.bits
+	val byteValid = cache.io.dataOut.valid
 
-	when (state === sInit) {
+	def isValidAPU(value: UInt): Bool = (value === 1.U || value === 2.U)
 
-		state := sWriting
-		block := 0.U
-		counter := 0.U
-		io.led := "b10010110".U
-		cen := true.B
+	// TOC FORMAT:
+	// | APU Type | Address[0] | Address[1] | Address[2] | Address[3] | Name[0] | ... | Name[58] |
+	// APU Type is 1 for GameBoy, 2 for NES, anything else for invalid.
+	// The TOC consists of zero or more entries with a valid APU type followed by as many entries with an invalid APU
+	// type as it takes to pad the rest of the TOC.
 
-	} .elsewhen (state === sWriting) {
-
-		when (counter < 60.U) {
-			io.ram.writeData.bits  := block * 7.U
-			io.ram.writeData.valid := true.B
-		}
-
-		io.led := Cat(1.U(1.W), 0.U(1.W), state, block(3, 0))
-
-		when (counter === 60.U) {
-			counter := 61.U
-			cen := true.B
-		} .elsewhen (counter === 62.U) {
-			when (block === 15.U) {
-				block := 0.U
-				state := sReading
-				cacheValid := false.B
-			} .otherwise {
-				block := block + 1.U
-			}
-		} .otherwise {
-			counter := counter + 1.U
-		}
-
-
-	} .elsewhen (state === sReading) {
-
-		io.led := Cat(1.U(1.W), 1.U(1.W), state, block(3, 0))
-
-		when (!cacheValid) {
-			io.ram.readData.ready := true.B
-		}
-
-		when (io.b) {
-			io.led := Cat(cacheValid, cachedData(6, 0))
-		}
+	when (state === sIdle) {
 
 		when (io.aPulse) {
-			cacheValid := false.B
-			cen := true.B
-			when (io.b) {
-				state := sInit
-			} .otherwise {
-				when (block === 15.U) {
-					block := 0.U
+			state      := sClearing
+			tocPointer := 0.U
+		}
+
+	} .elsewhen (state === sClearing) {
+
+		toc.write(tocPointer, 0.U.asTypeOf(new TOCRow))
+
+		when (tocPointer === (tocSize - 1).U) {
+			state         := sReadingTOC
+			tocPointer    := 0.U
+			tocRowPointer := 0.U
+			tocRow        := 0.U.asTypeOf(new TOCRow)
+		} .otherwise {
+			tocPointer := tocPointer + 1.U
+		}
+
+	} .elsewhen (state === sReadingTOC) {
+		cache.io.address := Cat(tocPointer, tocRowPointer)
+		cache.io.read    := true.B
+
+		when (tocRowPointer === 0.U) { // Reading APU type
+			when (byteValid) {
+				when (isValidAPU(byte)) {
+					tocRow.apu := byte
+					tocRowPointer := 1.U
 				} .otherwise {
-					block := block + 1.U
+					state := sDone
+				}
+			}
+		} .elsewhen (tocRowPointer < 5.U) {
+			when (byteValid) {
+				tocRow.address := tocRow.address | (byte << ((tocRowPointer - 1.U) << 3.U))
+				tocRowPointer := tocRowPointer + 1.U
+			}
+		} .otherwise {
+			when (byteValid) {
+				tocRow.name(tocRowPointer - 5.U) := byte
+				when (tocRowPointer === 63.U) {
+					tocRowPointer := 0.U
+					tocPointer := tocPointer + 1.U
+				} .otherwise {
+					tocRowPointer := tocRowPointer + 1.U
 				}
 			}
 		}
-
 	}
+
+	io.led := state
 }
 
 object MainRun extends scala.App {

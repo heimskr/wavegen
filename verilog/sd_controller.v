@@ -8,11 +8,11 @@ module sd_controller(
     output mosi, // Connect to SD_CMD.
     input miso, // Connect to SD_DAT[0].
     output sclk, // Connect to SD_SCK.
-                // For SPI mode, SD_DAT[2] and SD_DAT[1] should be held HIGH. 
+                // For SPI mode, SD_DAT[2] and SD_DAT[1] should be held HIGH.
                 // SD_RESET should be held LOW.
 
-    input rd,   // Read-enable. When [ready] is HIGH, asseting [rd] will 
-                // begin a 512-byte READ operation at [address]. 
+    input rd,   // Read-enable. When [ready] is HIGH, asseting [rd] will
+                // begin a 512-byte READ operation at [address].
                 // [byte_available] will transition HIGH as a new byte has been
                 // read from the SD card. The byte is presented on [dout].
     output reg [7:0] dout, // Data output for READ operation.
@@ -21,13 +21,13 @@ module sd_controller(
     input wr,   // Write-enable. When [ready] is HIGH, asserting [wr] will
                 // begin a 512-byte WRITE operation at [address].
                 // [ready_for_next_byte] will transition HIGH to request that
-                // the next byte to be written should be presentaed on [din].
+                // the next byte to be written should be presented on [din].
     input [7:0] din, // Data input for WRITE operation.
     output reg ready_for_next_byte, // A new byte should be presented on [din].
 
     input reset, // Resets controller on assertion.
     output ready, // HIGH if the SD card is ready for a read or write operation.
-    input [31:0] address,   // Memory address for read/write operation. This MUST 
+    input [31:0] address,   // Memory address for read/write operation. This MUST
                             // be a multiple of 512 bytes, due to SD sectoring.
     input clk,  // 25 MHz clock.
     output [4:0] status // For debug purposes: Current state of controller.
@@ -39,7 +39,7 @@ module sd_controller(
     parameter CMD55 = 3;
     parameter CMD41 = 4;
     parameter POLL_CMD = 5;
-    
+
     parameter IDLE = 6;
     parameter READ_BLOCK = 7;
     parameter READ_BLOCK_WAIT = 8;
@@ -53,9 +53,9 @@ module sd_controller(
     parameter WRITE_BLOCK_DATA = 16;
     parameter WRITE_BLOCK_BYTE = 17;
     parameter WRITE_BLOCK_WAIT = 18;
-    
+
     parameter WRITE_DATA_SIZE = 515;
-    
+
     reg [4:0] state = RST;
     assign status = state;
     reg [4:0] return_state;
@@ -64,10 +64,10 @@ module sd_controller(
     reg [7:0] recv_data;
     reg cmd_mode = 1;
     reg [7:0] data_sig = 8'hFF;
-    
+
     reg [9:0] byte_counter;
     reg [9:0] bit_counter;
-    
+
     reg [26:0] boot_counter = 27'd100_000_000;
     always @(posedge clk) begin
         if(reset == 1) begin
@@ -219,7 +219,7 @@ module sd_controller(
                 end
                 WRITE_BLOCK_INIT: begin
                     cmd_mode <= 0;
-                    byte_counter <= WRITE_DATA_SIZE; 
+                    byte_counter <= WRITE_DATA_SIZE;
                     state <= WRITE_BLOCK_DATA;
                     ready_for_next_byte <= 0;
                 end

@@ -29,26 +29,32 @@ module top (
 	output [4:0] jb,
 	output uart_rx_out,
 	input  uart_tx_in,
-	output [14:0] ddr3_addr,
-	output [2:0] ddr3_ba,
-	output ddr3_ras_n,
-	output ddr3_cas_n,
-	output ddr3_reset_n,
-	output ddr3_we_n,
-	output ddr3_ck_p,
-	output ddr3_ck_n,
-	output ddr3_cke,
-	output [1:0] ddr3_dm,
-	output ddr3_odt,
-	inout  [15:0] ddr3_dq,
-	inout  [1:0] ddr3_dqs_p,
-	inout  [1:0] ddr3_dqs_n
+	// output [14:0] ddr3_addr,
+	// output [2:0] ddr3_ba,
+	// output ddr3_ras_n,
+	// output ddr3_cas_n,
+	// output ddr3_reset_n,
+	// output ddr3_we_n,
+	// output ddr3_ck_p,
+	// output ddr3_ck_n,
+	// output ddr3_cke,
+	// output [1:0] ddr3_dm,
+	// output ddr3_odt,
+	// inout  [15:0] ddr3_dq,
+	// inout  [1:0] ddr3_dqs_p,
+	// inout  [1:0] ddr3_dqs_n
+	input sd_cd,
+	output sd_reset,
+	output sd_cclk,
+	output sd_cmd,
+	inout [3:0] sd_dat
 );
 
 	wire clk12MHz;
 	wire clk30MHz;
 	wire clk50MHz;
 	wire clk200MHz;
+	wire clk25MHz;
 
 	clk_wiz_0 clk_0 (
 		.clk(clk),
@@ -56,7 +62,8 @@ module top (
 		.clk12(clk12MHz),
 		.clk30(clk30MHz),
 		.clk50(clk50MHz),
-		.clk200(clk200MHz)
+		.clk200(clk200MHz),
+		.clk25(clk25MHz)
 	);
 
 	wire clk_pix1;
@@ -194,34 +201,65 @@ module top (
 		end
 	end
 
-	DDRcontrol ram (
-		.clk_200MHz_i(clk200MHz),
-		// .clk_200MHz_i(clk),
-		.rst_i       (!cpu_resetn),
-		// RAM interface
-		.ram_a       (mem_a),
-		.ram_dq_i    (mem_dq_i),
-		.ram_dq_o    (mem_dq_o),
-		.ram_cen     (mem_cen),
-		.ram_oen     (!mem_oen),
-		.ram_wen     (!mem_wen),
-		.data_valid  (read_data_valid),
-		// ddr3 interface
-		.ddr3_addr   (ddr3_addr),
-		.ddr3_ba     (ddr3_ba),
-		.ddr3_ras_n  (ddr3_ras_n),
-		.ddr3_cas_n  (ddr3_cas_n),
-		.ddr3_reset_n(ddr3_reset_n),
-		.ddr3_we_n   (ddr3_we_n),
-		.ddr3_ck_p   (ddr3_ck_p),
-		.ddr3_ck_n   (ddr3_ck_n),
-		.ddr3_cke    (ddr3_cke),
-		.ddr3_dm     (ddr3_dm),
-		.ddr3_odt    (ddr3_odt),
-		.ddr3_dq     (ddr3_dq),
-		.ddr3_dqs_p  (ddr3_dqs_p),
-		.ddr3_dqs_n  (ddr3_dqs_n)
+	wire sd_read;
+	wire [7:0] sd_dout;
+	wire sd_byte_available;
+	wire sd_write;
+	wire [7:0] sd_din;
+	wire sd_write_ready;
+	wire sd_ready;
+	wire [31:0] sd_address;
+
+	sd_controller sd (
+		.cs(sd_dat[3]),
+		.mosi(sd_cmd),
+		.miso(sd_dat[0]),
+		.sclk(sd_cclk),
+		.rd(sd_read),
+		.dout(sd_dout),
+		.byte_available(sd_byte_available),
+		.wr(sd_write),
+		.din(sd_din),
+		.ready_for_next_byte(sd_write_ready),
+		.reset(!cpu_resetn),
+		.ready(sd_ready),
+		.address(sd_address),
+		.clk(clk25MHz),
+		.status()
 	);
+
+	assign sd_dat[1] = 1'b1;
+	assign sd_dat[2] = 1'b1;
+	assign sd_reset  = 1'b0;
+
+	// DDRcontrol ram (
+	// 	.clk_200MHz_i(clk200MHz),
+	// 	// .clk_200MHz_i(clk),
+	// 	.rst_i       (!cpu_resetn),
+	// 	// RAM interface
+	// 	.ram_a       (mem_a),
+	// 	.ram_dq_i    (mem_dq_i),
+	// 	.ram_dq_o    (mem_dq_o),
+	// 	.ram_cen     (mem_cen),
+	// 	.ram_oen     (!mem_oen),
+	// 	.ram_wen     (!mem_wen),
+	// 	.data_valid  (read_data_valid),
+	// 	// ddr3 interface
+	// 	.ddr3_addr   (ddr3_addr),
+	// 	.ddr3_ba     (ddr3_ba),
+	// 	.ddr3_ras_n  (ddr3_ras_n),
+	// 	.ddr3_cas_n  (ddr3_cas_n),
+	// 	.ddr3_reset_n(ddr3_reset_n),
+	// 	.ddr3_we_n   (ddr3_we_n),
+	// 	.ddr3_ck_p   (ddr3_ck_p),
+	// 	.ddr3_ck_n   (ddr3_ck_n),
+	// 	.ddr3_cke    (ddr3_cke),
+	// 	.ddr3_dm     (ddr3_dm),
+	// 	.ddr3_odt    (ddr3_odt),
+	// 	.ddr3_dq     (ddr3_dq),
+	// 	.ddr3_dqs_p  (ddr3_dqs_p),
+	// 	.ddr3_dqs_n  (ddr3_dqs_n)
+	// );
 
 	// reg pulse48kHz;
 	// wire lrclkrise;

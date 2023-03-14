@@ -14,7 +14,7 @@ class NESButtons extends Bundle {
 	val right  = Bool()
 }
 
-class RAMBundle(dataWidth: Int, blockWidth: Int, bankWidth: Int) extends Bundle {
+class RAMData(dataWidth: Int, blockWidth: Int, bankWidth: Int) extends Bundle {
 	val readData  = Flipped(DecoupledIO(UInt(dataWidth.W)))
 	val writeData = Valid(UInt(dataWidth.W))
 	val block     = Output(UInt(blockWidth.W))
@@ -22,11 +22,24 @@ class RAMBundle(dataWidth: Int, blockWidth: Int, bankWidth: Int) extends Bundle 
 	val cen       = Output(Bool())
 }
 
+class SDData extends Bundle {
+	val ready   = Input(Bool())
+	val dataIn  = Flipped(Valid(UInt(8.W)))
+	val doRead  = Output(Bool())
+	val doWrite = Output(Bool())
+	val address = Output(UInt(32.W))
+	val dataOut = Output(UInt(8.W))
+}
+
 object NESButtons {
 	def apply() = new NESButtons
 }
 
-object RAMBundle {
+object RAMData {
 	def apply(dataWidth: Int = 64, blockWidth: Int = 22, bankWidth: Int = 4) =
-		new RAMBundle(dataWidth, blockWidth, bankWidth)
+		new RAMData(dataWidth, blockWidth, bankWidth)
+}
+
+object SDData {
+	def apply() = new SDData
 }
