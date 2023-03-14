@@ -292,14 +292,17 @@ class RAMTest extends Module {
 
 	} .elsewhen (state === sWriting) {
 
-		io.ram.writeData.bits  := block * 7.U
-		io.ram.writeData.valid := true.B
+		when (counter < 60.U) {
+			io.ram.writeData.bits  := block * 7.U
+			io.ram.writeData.valid := true.B
+		}
 
 		io.led := Cat(1.U(1.W), 0.U(1.W), state, block(3, 0))
 
-		when (counter === 200.U) {
-			counter := 0.U
+		when (counter === 60.U) {
+			counter := 61.U
 			cen := true.B
+		} .elsewhen (counter === 62.U) {
 			when (block === 15.U) {
 				block := 0.U
 				state := sReading
