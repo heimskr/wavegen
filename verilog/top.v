@@ -224,7 +224,7 @@ module top (
 		.reset(!cpu_resetn),
 		.ready(sd_ready),
 		.address(sd_address),
-		.clk(clk25MHz),
+		.clk(clk),
 		.status()
 	);
 
