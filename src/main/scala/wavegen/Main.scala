@@ -39,7 +39,6 @@ class MainBoth extends Module {
 		val multiplier  = Output(UInt(5.W))
 		val gbChannels  = Output(Vec(4, UInt(4.W)))
 		val nesChannels = Output(Vec(4, UInt(4.W)))
-		val sd          = SDData()
 	})
 
 	io.addrGB := DontCare
@@ -80,9 +79,6 @@ class MainBoth extends Module {
 
 	val useNES = RegInit(false.B)
 	io.useNES := useNES
-	when (nesPulseSelect) {
-		useNES := !useNES
-	}
 
 	when (io.useNESIn.valid) {
 		useNES := io.useNESIn.bits
@@ -230,119 +226,14 @@ class MainBoth extends Module {
 	io.gbChannels  := gameboy.io.channels
 	io.nesChannels := nes.io.channels
 
-	val sdtest = Module(new SDTest)
-	sdtest.io.sw     := io.sw
-	sdtest.io.a      := nesA
-	sdtest.io.b      := nesB
-	sdtest.io.aPulse := nesPulseA
-	sdtest.io.bPulse := nesPulseB
-	io.led := sdtest.io.led
-	io.sd  <> sdtest.io.sd
-}
-
-class TOCRow extends Bundle {
-	val valid   = Bool()
-	val apu     = UInt(8.W)
-	val address = UInt(32.W)
-	val name    = Vec(59, UInt(8.W))
-}
-
-class SDTest extends Module {
-	val io = IO(new Bundle {
-		val sd = SDData()
-		val sw = Input(UInt(8.W))
-		val a  = Input(Bool())
-		val b  = Input(Bool())
-		val aPulse = Input(Bool())
-		val bPulse = Input(Bool())
-		val led = Output(UInt(8.W))
-	})
-
-	val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
-	val state = RegInit(sIdle)
-
-	// val stInit :: stReadingName :: stReadingAddress :: Nil = Enum(3)
-	// val tocState = RegInit(stInit)
-
-	val tocSize = 64 // Number of TOC entries, rather than the size of an individual TOC row
-	val toc = SyncReadMem(tocSize, new TOCRow)
-	val tocPointer = RegInit(0.U(log2Ceil(tocSize).W))
-
-	val tocRow = RegInit(0.U.asTypeOf(new TOCRow))
-	val tocRowPointer = RegInit(0.U(6.W))
-
-	// The number of entries as indicated in the first byte of the SD card.
-	val tocCount = RegInit(0.U(8.W))
-
-	val reading = RegInit(false.B)
-	val cache   = Module(new SDCache(4))
-	io.sd <> cache.io.sd
-	cache.io.address := DontCare
-	cache.io.read    := reading
-
-	val byte      = cache.io.dataOut.bits
-	val byteValid = cache.io.dataOut.valid
-
-	def isValidAPU(value: UInt): Bool = (value === 1.U || value === 2.U)
-
-	// TOC FORMAT:
-	// | APU Type | Address[0] | Address[1] | Address[2] | Address[3] | Name[0] | ... | Name[58] |
-	// APU Type is 1 for GameBoy, 2 for NES, anything else for invalid.
-	// The TOC consists of zero or more entries with a valid APU type followed by as many entries with an invalid APU
-	// type as it takes to pad the rest of the TOC.
-
-	when (state === sIdle) {
-
-		when (io.aPulse) {
-			state      := sClearing
-			tocPointer := 0.U
-		}
-
-	} .elsewhen (state === sClearing) {
-
-		toc.write(tocPointer, 0.U.asTypeOf(new TOCRow))
-
-		when (tocPointer === (tocSize - 1).U) {
-			state         := sReadingTOC
-			tocPointer    := 0.U
-			tocRowPointer := 0.U
-			tocRow        := 0.U.asTypeOf(new TOCRow)
-		} .otherwise {
-			tocPointer := tocPointer + 1.U
-		}
-
-	} .elsewhen (state === sReadingTOC) {
-		cache.io.address := Cat(tocPointer, tocRowPointer)
-		cache.io.read    := true.B
-
-		when (tocRowPointer === 0.U) { // Reading APU type
-			when (byteValid) {
-				when (isValidAPU(byte)) {
-					tocRow.apu := byte
-					tocRowPointer := 1.U
-				} .otherwise {
-					state := sDone
-				}
-			}
-		} .elsewhen (tocRowPointer < 5.U) {
-			when (byteValid) {
-				tocRow.address := tocRow.address | (byte << ((tocRowPointer - 1.U) << 3.U))
-				tocRowPointer := tocRowPointer + 1.U
-			}
-		} .otherwise {
-			when (byteValid) {
-				tocRow.name(tocRowPointer - 5.U) := byte
-				when (tocRowPointer === 63.U) {
-					tocRowPointer := 0.U
-					tocPointer := tocPointer + 1.U
-				} .otherwise {
-					tocRowPointer := tocRowPointer + 1.U
-				}
-			}
-		}
-	}
-
-	io.led := state
+	// val sdtest = Module(new SDTest)
+	// sdtest.io.sw     := io.sw
+	// sdtest.io.a      := nesA
+	// sdtest.io.b      := nesB
+	// sdtest.io.aPulse := nesPulseA
+	// sdtest.io.bPulse := nesPulseB
+	// io.led := sdtest.io.led
+	// io.sd  <> sdtest.io.sd
 }
 
 object MainRun extends scala.App {

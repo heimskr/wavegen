@@ -279,3 +279,13 @@ class Font extends Module {
 		io.out := data0(io.char(6, 0))(io.y)(io.x)
 	}
 }
+
+object Font {
+	def apply(char: UInt, x: UInt, y: UInt): Bool = {
+		val module = Module(new Font)
+		module.io.char := char
+		module.io.x    := x
+		module.io.y    := y
+		module.io.out
+	}
+}

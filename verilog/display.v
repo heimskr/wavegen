@@ -35,7 +35,15 @@ module Display (
 	input  wire [7:0] rx_byte,
 	input  wire [15:0] gb_channels,
 	input  wire [15:0] nes_channels,
-	output wire [4:0] jb
+	output wire [4:0] jb,
+	output wire sd_read,
+	input  wire [7:0] sd_dout,
+	input  wire sd_byte_available,
+	output wire sd_write,
+	output wire [7:0] sd_din,
+	input  wire sd_write_ready,
+	input  wire sd_ready,
+	output wire [31:0] sd_address
 );
 
 	wire pix_clk;    // pixel clock
@@ -130,7 +138,15 @@ module Display (
 		.io_jb1(jb[1]),
 		.io_jb2(jb[2]),
 		.io_jb3(jb[3]),
-		.io_jb4(jb[4])
+		.io_jb4(jb[4]),
+		.io_sd_doRead(sd_read),
+		.io_sd_dataIn_bits(sd_dout),
+		.io_sd_dataIn_valid(sd_byte_available),
+		.io_sd_doWrite(sd_write),
+		.io_sd_dataOut(sd_din),
+		.io_sd_writeReady(sd_write_ready),
+		.io_sd_ready(sd_ready),
+		.io_sd_address(sd_address)
 	);
 
 	// TMDS Encoding and Serialization

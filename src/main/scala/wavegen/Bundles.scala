@@ -23,12 +23,21 @@ class RAMData(dataWidth: Int, blockWidth: Int, bankWidth: Int) extends Bundle {
 }
 
 class SDData extends Bundle {
-	val ready   = Input(Bool())
-	val dataIn  = Flipped(Valid(UInt(8.W)))
-	val doRead  = Output(Bool())
-	val doWrite = Output(Bool())
-	val address = Output(UInt(32.W))
-	val dataOut = Output(UInt(8.W))
+	val ready      = Input(Bool())
+	val writeReady = Input(Bool())
+	val dataIn     = Flipped(Valid(UInt(8.W)))
+	val doRead     = Output(Bool())
+	val doWrite    = Output(Bool())
+	val address    = Output(UInt(32.W))
+	val dataOut    = Output(UInt(8.W))
+}
+
+class TOCRow extends Bundle {
+	val apu     = UInt(8.W)
+	val address = UInt(32.W)
+	val name    = Vec(59, UInt(8.W))
+
+	def valid: Bool = apu === 1.U || apu === 2.U
 }
 
 object NESButtons {
@@ -42,4 +51,8 @@ object RAMData {
 
 object SDData {
 	def apply() = new SDData
+}
+
+object TOCRow {
+	def apply() = new TOCRow
 }

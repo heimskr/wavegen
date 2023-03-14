@@ -47,7 +47,7 @@ module top (
 	output sd_reset,
 	output sd_cclk,
 	output sd_cmd,
-	inout [3:0] sd_dat
+	inout [3:0] sd_d
 );
 
 	wire clk12MHz;
@@ -211,9 +211,9 @@ module top (
 	wire [31:0] sd_address;
 
 	sd_controller sd (
-		.cs(sd_dat[3]),
+		.cs(sd_d[3]),
 		.mosi(sd_cmd),
-		.miso(sd_dat[0]),
+		.miso(sd_d[0]),
 		.sclk(sd_cclk),
 		.rd(sd_read),
 		.dout(sd_dout),
@@ -228,8 +228,8 @@ module top (
 		.status()
 	);
 
-	assign sd_dat[1] = 1'b1;
-	assign sd_dat[2] = 1'b1;
+	assign sd_d[1] = 1'b1;
+	assign sd_d[2] = 1'b1;
 	assign sd_reset  = 1'b0;
 
 	// DDRcontrol ram (
@@ -476,15 +476,15 @@ module top (
 		.io_nesChannels_0(nes_channels[0]),
 		.io_nesChannels_1(nes_channels[1]),
 		.io_nesChannels_2(nes_channels[2]),
-		.io_nesChannels_3(nes_channels[3]),
-		.io_ram_readData_valid(read_data_valid_rise),
-		.io_ram_readData_bits(mem_dq_o_b),
-		.io_ram_readData_ready(mem_oen),
-		.io_ram_writeData_valid(mem_wen),
-		.io_ram_writeData_bits(mem_dq_i),
-		.io_ram_block(current_block),
-		.io_ram_bank(mem_bank),
-		.io_ram_cen(mem_cen)
+		.io_nesChannels_3(nes_channels[3])
+		// .io_ram_readData_valid(read_data_valid_rise),
+		// .io_ram_readData_bits(mem_dq_o_b),
+		// .io_ram_readData_ready(mem_oen),
+		// .io_ram_writeData_valid(mem_wen),
+		// .io_ram_writeData_bits(mem_dq_i),
+		// .io_ram_block(current_block),
+		// .io_ram_bank(mem_bank),
+		// .io_ram_cen(mem_cen)
 	);
 
 	i2s_ctl audio_inout (
@@ -550,7 +550,15 @@ module top (
 		.multiplier(multiplier),
 		.gb_channels({gb_channels[3], gb_channels[2], gb_channels[1], gb_channels[0]}),
 		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]}),
-		.jb(jb)
+		.jb(jb),
+		.sd_read(sd_read),
+		.sd_dout(sd_dout),
+		.sd_byte_available(sd_byte_available),
+		.sd_write(sd_write),
+		.sd_din(sd_din),
+		.sd_write_ready(sd_write_ready),
+		.sd_ready(sd_ready),
+		.sd_address(sd_address)
 	);
 
 endmodule

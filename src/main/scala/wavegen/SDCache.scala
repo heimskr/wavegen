@@ -16,8 +16,12 @@ class SDCache(blocks: Int) extends Module {
 		val dataOut = Valid(UInt(8.W))
 	})
 
-	io.sd.doWrite := false.B
-	io.sd.dataOut := DontCare
+	io.sd.doWrite    := false.B
+	io.sd.doRead     := false.B
+	io.sd.dataOut    := DontCare
+	io.sd.address    := DontCare
+	io.dataOut.valid := false.B
+	io.dataOut.bits  := DontCare
 
 	val invalidBlock = "hffffffff".U(32.W)
 
@@ -67,11 +71,12 @@ class SDCache(blocks: Int) extends Module {
 
 	} .elsewhen (state === sReading) {
 
-		io.sd.doRead := true.B
+		io.sd.doRead  := true.B
+		io.sd.address := chop(storedAddress) + bytePointer
 
 		when (cooldown =/= 0.U) {
 			cooldown := cooldown - 1.U
-		} .elsewhen (io.sd.dataIn.valid) {
+		} .elsewhen (io.sd.dataIn.valid && io.sd.ready) {
 			cooldown := 8.U // Might be able to set this as low as 4? (100 MHz) / (25 MHz) = 4
 
 			val subindex = storedAddress(8, 0)

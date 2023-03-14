@@ -6,6 +6,7 @@ import scala.math.{sin, floor, Pi}
 import wavegen._
 import wavegen.presentation.Bar
 import wavegen.presentation.Slideshow
+import wavegen.presentation.Font
 
 class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	implicit val clockFreq = 74_250_000
@@ -15,6 +16,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val demoSlideGB  = 9
 	val demoSlideNES = 11
 	val maxSlides    = 16
+	val playground   = 14
 
 	val io = IO(new Bundle {
 		val audioClock  = Input(Clock())
@@ -33,6 +35,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val rxByte      = Flipped(Valid(UInt(8.W)))
 		val gbChannels  = Input(Vec(4, UInt(4.W)))
 		val nesChannels = Input(Vec(4, UInt(4.W)))
+		val sd  = SDData()
 		val jb0 = Output(Bool())
 		val jb1 = Output(Bool())
 		val jb2 = Output(Bool())
@@ -57,6 +60,11 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	when (goNext) {
 		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
+	}
+
+	when (io.nesButtons.select && slide =/= playground.U) {
+		io.useNESOut.valid := true.B
+		io.useNESOut.bits  := !useNES
 	}
 
 	val hueClock = StaticClocker(50, clockFreq, true)
@@ -84,7 +92,109 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	io.jb3 := 0.U
 	io.jb4 := 0.U
 
-	when (isDemo) {
+	val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
+	val state = RegInit(sIdle)
+
+	// val stInit :: stReadingName :: stReadingAddress :: Nil = Enum(3)
+	// val tocState = RegInit(stInit)
+
+	val tocSize = 64 // Number of TOC entries, rather than the size of an individual TOC row
+	val toc = SyncReadMem(tocSize, new TOCRow)
+	val tocPointer = RegInit(0.U(log2Ceil(tocSize).W))
+
+	val tocRow = RegInit(0.U.asTypeOf(new TOCRow))
+	val tocRowPointer = RegInit(0.U(6.W))
+
+	// The number of entries as indicated in the first byte of the SD card.
+	val tocCount = RegInit(0.U(8.W))
+
+	val reading = RegInit(false.B)
+	val cache   = Module(new SDCache(4))
+	io.sd <> cache.io.sd
+	cache.io.address := DontCare
+	cache.io.read    := reading
+
+	val byte      = cache.io.dataOut.bits
+	val byteValid = cache.io.dataOut.valid
+
+	def isValidAPU(value: UInt): Bool = (value === 1.U || value === 2.U)
+	def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
+
+	// TOC FORMAT:
+	// | APU Type | Address[0] | Address[1] | Address[2] | Address[3] | Name[0] | ... | Name[58] |
+	// APU Type is 1 for GameBoy, 2 for NES, anything else for invalid.
+	// The TOC consists of zero or more entries with a valid APU type followed by as many entries with an invalid APU
+	// type as it takes to pad the rest of the TOC.
+
+	when (state === sIdle) {
+
+		reading := false.B
+
+		when (io.nesButtons.a && slide === playground.U) {
+			state      := sClearing
+			tocPointer := 0.U
+		}
+
+	} .elsewhen (state === sClearing) {
+
+		toc.write(tocPointer, 0.U.asTypeOf(new TOCRow))
+
+		when (tocPointer === (tocSize - 1).U) {
+			state         := sReadingTOC
+			tocPointer    := 0.U
+			tocRowPointer := 0.U
+			tocRow        := 0.U.asTypeOf(new TOCRow)
+		} .otherwise {
+			tocPointer := tocPointer + 1.U
+		}
+
+	} .elsewhen (state === sReadingTOC) {
+
+		cache.io.address := Cat(tocPointer, tocRowPointer)
+		reading := true.B
+
+		when (tocRowPointer === 0.U) { // Reading APU type
+			when (byteValid) {
+				when (isValidAPU(byte)) {
+					tocRow.apu := byte
+					tocRowPointer := 1.U
+				} .otherwise {
+					state := sDone
+				}
+			}
+		} .elsewhen (tocRowPointer < 5.U) {
+			when (byteValid) {
+				tocRow.address := tocRow.address | (byte << ((tocRowPointer - 1.U) << 3.U))
+				tocRowPointer := tocRowPointer + 1.U
+			}
+		} .otherwise {
+			when (byteValid) {
+				tocRow.name(tocRowPointer - 5.U) := byte
+				when (tocRowPointer === 63.U) {
+					toc.write(tocPointer, tocRow)
+					tocRowPointer := 0.U
+					tocPointer := tocPointer + 1.U
+				} .otherwise {
+					tocRowPointer := tocRowPointer + 1.U
+				}
+			}
+		}
+
+	}
+
+	when (slide === playground.U) {
+
+		val rowIndex = io.y >> 3.U
+		val row = toc(rowIndex)
+		val charIndex = (io.x >> 3.U) - 1.U
+
+		setAll(255)
+
+		when (0.U <= charIndex && charIndex < 59.U && Font(row.name(charIndex), io.x(2, 0), io.y(2, 0))) {
+			setAll(0)
+		}
+
+	} .elsewhen (isDemo) {
 		io.red   := colors.io.red
 		io.green := colors.io.green
 		io.blue  := colors.io.blue
@@ -94,8 +204,6 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val wShift   = 4
 		val distance = 3 << (wShift - 2)
 		val wC       = 6
-
-		def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
 
 		val barInnerWidth  = 256
 		val barInnerHeight = 64
