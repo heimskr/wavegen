@@ -26,7 +26,7 @@ module top (
 	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive
 	inout  [7:0] ja, // Pmod JA connector
-	output [4:0] jb,
+	output [7:0] jb,
 	output uart_rx_out,
 	input  uart_tx_in,
 	// output [14:0] ddr3_addr,
@@ -210,7 +210,7 @@ module top (
 	wire sd_ready;
 	wire [31:0] sd_address;
 
-	assign led[7:5] = 3'b0;
+	wire [4:0] sd_status;
 
 	sd_controller sd (
 		.cs(sd_d[3]),
@@ -223,16 +223,21 @@ module top (
 		.wr(sd_write),
 		.din(sd_din),
 		.ready_for_next_byte(sd_write_ready),
-		.reset(!cpu_resetn),
+		.reset(!cpu_resetn | dbu),
 		.ready(sd_ready),
 		.address(sd_address),
 		.clk(clk25MHz),
-		.status(led[4:0])
+		.status(sd_status)
 	);
 
 	assign sd_d[1]  = 1'b1;
 	assign sd_d[2]  = 1'b1;
 	assign sd_reset = 1'b0;
+
+	assign jb[4:0] = sd_status;
+	assign jb[7:5] = {sd_byte_available, sd_write, sd_read};
+	// assign led[4:0] = sd_status;
+	// assign jb[7:5]  = 3'b0;
 
 	// DDRcontrol ram (
 	// 	.clk_200MHz_i(clk200MHz),
@@ -555,7 +560,7 @@ module top (
 		.multiplier(multiplier),
 		.gb_channels({gb_channels[3], gb_channels[2], gb_channels[1], gb_channels[0]}),
 		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]}),
-		.jb(jb),
+		.jb(),
 		.sd_read(sd_read),
 		.sd_dout(sd_dout),
 		.sd_byte_available(sd_byte_available),
