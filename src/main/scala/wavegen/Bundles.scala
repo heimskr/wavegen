@@ -30,6 +30,7 @@ class SDData extends Bundle {
 	val doWrite    = Output(Bool())
 	val address    = Output(UInt(32.W))
 	val dataOut    = Output(UInt(8.W))
+	val readAck    = Output(Bool())
 }
 
 class TOCRow extends Bundle {

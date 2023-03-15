@@ -76,7 +76,7 @@
 -- sd_error:
 -- Goes active immediately when an error is detected
 -- Resets when RD or WR is raised for the next command (except for 110 or 111 status)
--- 
+--
 -- sd_error_code:
 -- 000 No error (operation complete)
 -- 001 SD Card R1 error (R1 bit 6-0)
@@ -99,7 +99,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity sd_controller is
+entity sd_spi is
 generic (
 	clockRate : integer := 50000000;		-- Incoming clock is 50MHz (can change this to 2000 to test Write Timeout)
 	slowClockDivider : integer := 64;	-- Basic clock is 25MHz, slow clock for startup is 25/64 = 390kHz
@@ -119,32 +119,32 @@ port (
 	dout : out std_logic_vector(7 downto 0);	-- Data from SD card
 	dout_avail : out std_logic;		-- Set when dout is valid
 	dout_taken : in std_logic;		-- Acknowledgement for dout
-	
+
 	wr : in std_logic;				-- Trigger single block write
 	wr_multiple : in std_logic;		-- Trigger multiple block write
 	din : in std_logic_vector(7 downto 0);	-- Data to SD card
 	din_valid : in std_logic;		-- Set when din is valid
-	din_taken : out std_logic;		-- Ackowledgement for din
-	
+	din_taken : out std_logic;		-- Acknowledgement for din
+
 	addr : in std_logic_vector(31 downto 0);	-- Block address
 	erase_count : in std_logic_vector(7 downto 0); -- For wr_multiple only
 
 	sd_error : out std_logic;		-- '1' if an error occurs, reset on next RD or WR
 	sd_busy : out std_logic;		-- '0' if a RD or WR can be accepted
 	sd_error_code : out std_logic_vector(2 downto 0); -- See above, 000=No error
-	
-	
+
+
 	reset : in std_logic;	-- System reset
 	clk : in std_logic;		-- twice the SPI clk (max 50MHz)
-	
+
 	-- Optional debug outputs
 	sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
 	sd_fsm : out std_logic_vector(7 downto 0) := "11111111" -- FSM state (see block at end of file)
 );
 
-end sd_controller;
+end sd_spi;
 
-architecture rtl of sd_controller is
+architecture rtl of sd_spi is
 type states is (
 	RST, RST2,						-- Initial FSM resetting
 	INIT,								-- Send initial clock pulses
@@ -155,7 +155,7 @@ type states is (
 	POLL_CMD,						-- Wait for card initialised
 	CMD58, CMD58R1, CMD58B2, CMD58B3, CMD58B4,	-- Send CMD58
 	CMD59, CMD59R1,				-- Send CMD59
-  
+
 	IDLE, IDLE2,					-- wait for read or write pulse
 	READ_BLOCK,						-- Initiate Read command
 	READ_MULTIPLE_BLOCK,			-- Initiate Read Multiple command
@@ -167,7 +167,7 @@ type states is (
 	READ_BLOCK_FINISH,			-- Wait until RD drops
 	READ_MULTIPLE_BLOCK_STOP,
 	READ_MULTIPLE_BLOCK_STOP_2,
-	
+
 	SEND_RCV,
 	SEND_RCV_CLK1,
 	SEND_CMD,
@@ -176,7 +176,7 @@ type states is (
 	SEND_CMD_3,
 	SEND_CMD_4,
 	SEND_CMD_5,
-	
+
 	SET_ERASE_COUNT_CMD,			-- Send Set Erase Count
 	SET_ERASE_COUNT_CMD_2,		-- Send ACMD23
 	WRITE_BLOCK_CMD,				-- Initiate Write command
@@ -419,15 +419,15 @@ begin
 		new_multiple <= multiple;
 		new_skipFirstR1Byte <= skipFirstR1Byte;
 		new_wr_erase_count <= wr_erase_count;
-		
+
 		case state is
-		
+
 		when RST =>
 			-- Reset, including error codes
 			new_error_code <= ec_NoSDError;
 			new_error <= '1';
 			new_state <= RST2;
-			
+
 		when RST2 =>
 			-- Reset, retaining error codes
 			new_card_type <= ct_None;
@@ -442,14 +442,14 @@ begin
 			-- Wait for card present indication before attempting initialisation
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when INIT =>
 			if byte_counter=0 then
 				new_state <= CMD0;
 			else
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when CMD0 =>
 			-- Send CMD0
 			new_cs <= '0';
@@ -457,7 +457,7 @@ begin
 			new_cmd_out <= x"4000000000"; set_cmd_out <= true;
 			new_return_state <= CMD8; set_return_state <= true;
 			new_state <= SEND_CMD;
-			
+
 		when CMD8 =>
 			-- Check CMD0 response and send CMD8 or Error
 			if data_in="00000001" then
@@ -470,7 +470,7 @@ begin
 				new_error_code <= ec_R1Error;
 				new_state <= RST2;
 			end if;
-			
+
 		when CMD8R1 =>
 			-- Check R1 response to CMD8
 			if data_in(R1_ILLEGALCOMMAND)='1' then -- Illegal command?
@@ -481,17 +481,17 @@ begin
 				new_sr_return_state <= CMD8B2; set_sr_return_state <= true;
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when CMD8B2 =>
 			-- Got first byte of CMD8 response
 			new_sr_return_state <= CMD8B3; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD8B3 =>
 			-- Got second byte of CMD8 response
 			new_sr_return_state <= CMD8B4; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD8B4 =>
 			-- Got third byte of CMD8 response
 			-- Check operating voltage
@@ -501,7 +501,7 @@ begin
 			-- Get byte 4 (check pattern)
 			new_sr_return_state <= CMD8GOTB4; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD8GOTB4 =>
 			-- Got fourth byte of CMD8 response
 			-- Check pattern
@@ -510,13 +510,13 @@ begin
 			else
 				new_state <= RST;
 			end if;
-			
+
 		when CMD55 =>
 			-- Send CMD55
 			new_return_state <= CMD41; set_return_state <= true;
 			new_cmd_out <= x"7700000000"; set_cmd_out <= true;
 			new_state <= SEND_CMD;
-			
+
 		when CMD41 =>
 			-- Send CMD41
 			new_return_state <= POLL_CMD; set_return_state <= true;
@@ -527,7 +527,7 @@ begin
 			end if;
 			set_cmd_out <= true;
 			new_state <= SEND_CMD;
-			
+
 		when POLL_CMD =>
 			-- Poll until card ready, then send CMD58 or CMD59 depending on type
 			if (data_in(R1_IDLE) = '0') then -- In idle state?
@@ -539,13 +539,13 @@ begin
 			else
 				new_state <= CMD55; -- Still in idle, repeat ACMD41
 			end if;
-			
+
 		when CMD58 =>
 			-- Send CMD58
 			new_return_state <= CMD58R1; set_return_state <= true;
 			new_cmd_out <= x"7A00000000"; set_cmd_out <= true;
 			new_state <= SEND_CMD;
-			
+
 		when CMD58R1 =>
 			-- Check R1 response to CMD58
 			if data_in(R1_ILLEGALCOMMAND)='1' then
@@ -559,7 +559,7 @@ begin
 				new_sr_return_state <= CMD58B2; set_sr_return_state <= true;
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when CMD58B2 =>
 			-- Check CCS: 0=SD2 1=SDHC
 			-- card_type already set to ct_SDV2 (10) in CMD8R1
@@ -569,23 +569,23 @@ begin
 			-- Go fetch byte 2
 			new_sr_return_state <= CMD58B3; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD58B3 =>
 			-- Fetch byte 3
 			new_sr_return_state <= CMD58B4; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD58B4 =>
 			-- Fetch byte 4
 			new_sr_return_state <= CMD59; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when CMD59 =>
 			-- Send CMD59
 			new_return_state <= CMD59R1; set_return_state <= true;
 			new_cmd_out <= x"7B00000001"; set_cmd_out <= true; -- Enable CRC
 			new_state <= SEND_CMD;
-			
+
 		when CMD59R1 =>
 			-- Check reply from CMD59
 			if data_in/="00000000" then
@@ -597,7 +597,7 @@ begin
 				new_error <= '0';
 				new_state <= IDLE;
 			end if;
-			
+
 		when IDLE =>
 			-- Generate 8 clocks when entering idle
 			new_slow_clock <= false;	-- Can run at full speed now
@@ -606,7 +606,7 @@ begin
 			new_transfer_data_out <= false;
 			new_sr_return_state <= IDLE2; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when IDLE2 =>
 			-- Sits in this state when idle
 			if card_present='0' then
@@ -655,7 +655,7 @@ begin
 				new_cs <= '1';
 				new_busy <= '0';
 			end if;
-			
+
 		when READ_BLOCK =>
 			-- Basic Read command
 			if card_type=ct_SDHC then
@@ -668,7 +668,7 @@ begin
 			set_cmd_out <= true;
 			new_return_state <= READ_BLOCK_R1; set_return_state <= true;
 			new_state <= SEND_CMD;
-			
+
 		when READ_MULTIPLE_BLOCK =>
 			-- Read Multiple command
 			if card_type=ct_SDHC then
@@ -681,7 +681,7 @@ begin
 			set_cmd_out <= true;
 			new_return_state <= READ_BLOCK_R1; set_return_state <= true;
 			new_state <= SEND_CMD;
-			
+
 		when READ_BLOCK_R1 =>
 			-- Get R1 response to Read or Read Multiple command
 			if data_in/="00000000" then -- Some error
@@ -692,7 +692,7 @@ begin
 				new_sr_return_state <= READ_BLOCK_WAIT_CHECK; set_sr_return_state <= true;
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when READ_BLOCK_WAIT_CHECK =>
 			-- Wait for Read token, or Error token
 			new_in_crc16 <= (others=>'0');
@@ -713,7 +713,7 @@ begin
 			else
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when READ_BLOCK_DATA =>
 			-- Read a byte of data from the card
 			if rd='0' and rd_multiple='0' then
@@ -727,7 +727,7 @@ begin
 				end if;
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when READ_BLOCK_SKIP =>
 			-- Skip all remaining bytes without transferring them
 			new_transfer_data_out <= false;
@@ -743,12 +743,12 @@ begin
 				new_sr_return_state <= READ_BLOCK_SKIP; set_sr_return_state <= true;
 				new_state <= SEND_RCV;
 			end if;
-			
+
 		when READ_BLOCK_CRC =>
 			-- Read second CRC byte
 			new_sr_return_state <= READ_BLOCK_CHECK_CRC; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when READ_BLOCK_CHECK_CRC =>
 			-- After reading all the data and the two CRC bytes, the result should be zero
 			if in_crc16/="0000000000000000" then
@@ -763,7 +763,7 @@ begin
 				-- Transfer complete
 				new_state <= READ_BLOCK_FINISH;
 			end if;
-			
+
 		when READ_BLOCK_FINISH =>
 			new_transfer_data_out <= false;
 			-- Wait for RD to fall after last byte has been transferred
@@ -774,14 +774,14 @@ begin
 					new_state <= IDLE;
 				end if;
 			end if;
-			
+
 		when READ_MULTIPLE_BLOCK_STOP =>
 			-- Send CMD12
 			new_skipFirstR1Byte <= true;
 			new_return_state <= READ_MULTIPLE_BLOCK_STOP_2; set_return_state <= true;
 			new_cmd_out <= x"4C00000000"; set_cmd_out <= true;
 			new_state <= SEND_CMD;
-			
+
 		when READ_MULTIPLE_BLOCK_STOP_2 =>
 			-- Check R1 and wait for not-busy when we get to IDLE
 			if data_in/="00000000" then
@@ -791,13 +791,13 @@ begin
 					new_state <= IDLE;
 				end if;
 			end if;
-			
+
 		when SET_ERASE_COUNT_CMD =>
 			-- Send CMD55
 			new_return_state <= SET_ERASE_COUNT_CMD_2; set_return_state <= true;
 			new_cmd_out <= x"7700000000"; set_cmd_out <= true;
 			new_state <= SEND_CMD;
-			
+
 		when SET_ERASE_COUNT_CMD_2 =>
 			-- Send ACMD23
 			new_cmd_out <= x"57000000" & wr_erase_count;
@@ -809,7 +809,7 @@ begin
 			set_cmd_out <= true;
 			set_return_state <= true;
 			new_state <= SEND_CMD;
-		
+
 		when WRITE_BLOCK_CMD =>
 			-- Send CMD24 for single block write
 			if (card_type=ct_SDHC) then
@@ -820,7 +820,7 @@ begin
 			set_cmd_out <= true;
 			new_return_state <= WRITE_BLOCK_INIT; set_return_state <= true;
 			new_state <= SEND_CMD;
-			
+
 		when WRITE_MULTIPLE_BLOCK_CMD =>
 			-- Send CMD25 for multiple write
 			if (card_type=ct_SDHC) then
@@ -831,7 +831,7 @@ begin
 			set_cmd_out <= true;
 			new_return_state <= WRITE_BLOCK_INIT; set_return_state <= true;
 			new_state <= SEND_CMD;
-		
+
 		when WRITE_BLOCK_INIT =>
 			-- Check for response to write command, then send data token
 			if data_in/="00000000" then
@@ -841,7 +841,7 @@ begin
 			else
 				new_state <= WRITE_BLOCK_DATA_TOKEN;
 			end if;
-			
+
 		when WRITE_BLOCK_DATA_TOKEN =>
 			-- Send data start token
 			if multiple then
@@ -880,13 +880,13 @@ begin
 			new_data_out <= crcLow;
 			new_sr_return_state <= WRITE_BLOCK_GET_RESPONSE; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when WRITE_BLOCK_GET_RESPONSE =>
 			-- Get response byte from write
 			new_byte_counter <= R1_TIMEOUT; set_byte_counter <= true;
 			new_sr_return_state <= WRITE_BLOCK_CHECK_RESPONSE; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when WRITE_BLOCK_CHECK_RESPONSE =>
 			-- Check write response for error
 			if (data_in(4) /= '0') or (data_in(0) /= '1') then
@@ -937,7 +937,7 @@ begin
 					new_state <= WRITE_BLOCK_FINISH;
 				end if;
 			end if;
-			
+
 		when WRITE_BLOCK_ABORT =>
 			-- Abort write due to Write command input being dropped - write remaining bytes and force CRC error
 			if byte_counter=0 then
@@ -961,13 +961,13 @@ begin
 			else
 				new_state <= WRITE_BLOCK_FINISH;
 			end if;
-		
+
 		when WRITE_BLOCK_FINISH =>
 			-- Wait for WR to fall after last byte has been transferred
 			if (wr='0' and wr_multiple='0') then
 				new_state <= IDLE;
 			end if;
-		
+
 		when SEND_RCV =>
 			-- Send the byte in data_out while simultaneously receiving one into data_in
 			-- ** Must enter with bit_counter = 7 **
@@ -976,11 +976,11 @@ begin
 			-- Decrement byte_counter
 			-- Leave data_out as 11111111
 			-- Leave bit_counter as 7 for next time
-			
+
 			-- When we enter SPI Clock should be low, we set the output data, wait half a cycle, raise
 			-- the clock, latch the input data, then wait a further half cycle before dropping the clock
 			-- The output data (MOSI) follows data_out(7)
-			
+
 			-- Clock is low, output data is set
 			if slow_clock=false or clock_divider=0 then
 				new_clock_divider <= slowClockDivider;
@@ -1053,13 +1053,13 @@ begin
 			new_data_out <= "11111111";
 			new_sr_return_state <= SEND_CMD_1; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when SEND_CMD_1 =>
 			-- Initialise CRC and byte counter
 			new_crc7 <= "0000000";
 			new_byte_counter <= 5; set_byte_counter <= true; -- 5 bytes are CC NN NN NN NN
 			new_state <= SEND_CMD_2;
-			
+
 		when SEND_CMD_2 =>
 			-- Send one byte of the command and parameter
 			if byte_counter=0 then
@@ -1070,7 +1070,7 @@ begin
 				new_sr_return_state <= SEND_CMD_2; set_sr_return_state <= true;
 				new_state <= SEND_RCV;
 			end if;
-	
+
 		when SEND_CMD_3 =>
 			-- Send the CRC
 			new_data_out <= crc7 & '1';
@@ -1082,7 +1082,7 @@ begin
 			new_byte_counter <= R1_TIMEOUT; set_byte_counter <= true;
 			new_sr_return_state <= SEND_CMD_5; set_sr_return_state <= true;
 			new_state <= SEND_RCV;
-			
+
 		when SEND_CMD_5 =>
 			-- Check for R1 response, receive another byte if not
 			if skipFirstR1Byte then
@@ -1109,61 +1109,61 @@ begin
 	begin
 		with state select sd_fsm <=
 			x"00" when RST,
-			x"00" when RST2,
-			x"01" when INIT,
-			x"02" when CMD0,
-			x"03" when CMD8,
-			x"04" when CMD8R1,
-			x"04" when CMD8B2,
-			x"04" when CMD8B3,
-			x"04" when CMD8B4,
-			x"04" when CMD8GOTB4,
-			x"05" when CMD55,
-			x"06" when CMD41,
-			x"07" when POLL_CMD,
-			x"08" when CMD58,
-			x"08" when CMD58R1,
-			x"08" when CMD58B2,
-			x"08" when CMD58B3,
-			x"08" when CMD58B4,
-			x"09" when CMD59,
-			x"0A" when CMD59R1,
-			x"10" when IDLE,
-			x"11" when IDLE2,
-			x"20" when READ_BLOCK,
-			x"20" when READ_MULTIPLE_BLOCK,
-			x"21" when READ_BLOCK_R1,
-			x"22" when READ_BLOCK_WAIT_CHECK,
-			x"23" when READ_BLOCK_DATA,
-			x"24" when READ_BLOCK_SKIP,
-			x"25" when READ_BLOCK_CRC,
-			x"26" when READ_BLOCK_CHECK_CRC,
-			x"27" when READ_BLOCK_FINISH,
-			x"28" when READ_MULTIPLE_BLOCK_STOP,
-			x"29" when READ_MULTIPLE_BLOCK_STOP_2,
-			x"30" when SEND_RCV,
-			x"31" when SEND_RCV_CLK1,
-			x"32" when SEND_CMD,
-			x"33" when SEND_CMD_1,
-			x"34" when SEND_CMD_2,
-			x"35" when SEND_CMD_3,
-			x"36" when SEND_CMD_4,
-			x"37" when SEND_CMD_5,
-			x"40" when SET_ERASE_COUNT_CMD,
-			x"41" when SET_ERASE_COUNT_CMD_2,
-			x"42" when WRITE_BLOCK_CMD,
-			x"43" when WRITE_MULTIPLE_BLOCK_CMD,
-			x"44" when WRITE_BLOCK_INIT,
-			x"45" when WRITE_BLOCK_DATA,
-			x"46" when WRITE_BLOCK_DATA_TOKEN,
-			x"47" when START_WRITE_BLOCK_DATA,
-			x"48" when WRITE_BLOCK_SEND_CRC2,
-			x"49" when WRITE_BLOCK_GET_RESPONSE,
-			x"4A" when WRITE_BLOCK_CHECK_RESPONSE,
-			x"4B" when WRITE_BLOCK_WAIT,
-			x"4C" when WRITE_BLOCK_ABORT,
-			x"4D" when WRITE_BLOCK_TERMINATE,
-			x"4E" when WRITE_BLOCK_FINISH
+			x"01" when RST2,
+			x"02" when INIT,
+			x"03" when CMD0,
+			x"04" when CMD8,
+			x"05" when CMD8R1,
+			x"06" when CMD8B2,
+			x"07" when CMD8B3,
+			x"08" when CMD8B4,
+			x"09" when CMD8GOTB4,
+			x"0a" when CMD55,
+			x"0b" when CMD41,
+			x"0c" when POLL_CMD,
+			x"0d" when CMD58,
+			x"0e" when CMD58R1,
+			x"0f" when CMD58B2,
+			x"10" when CMD58B3,
+			x"11" when CMD58B4,
+			x"12" when CMD59,
+			x"13" when CMD59R1,
+			x"14" when IDLE,
+			x"15" when IDLE2,
+			x"16" when READ_BLOCK,
+			x"17" when READ_MULTIPLE_BLOCK,
+			x"18" when READ_BLOCK_R1,
+			x"19" when READ_BLOCK_WAIT_CHECK,
+			x"1a" when READ_BLOCK_DATA,
+			x"1b" when READ_BLOCK_SKIP,
+			x"1c" when READ_BLOCK_CRC,
+			x"1d" when READ_BLOCK_CHECK_CRC,
+			x"1e" when READ_BLOCK_FINISH,
+			x"1f" when READ_MULTIPLE_BLOCK_STOP,
+			x"20" when READ_MULTIPLE_BLOCK_STOP_2,
+			x"21" when SEND_RCV,
+			x"22" when SEND_RCV_CLK1,
+			x"23" when SEND_CMD,
+			x"24" when SEND_CMD_1,
+			x"25" when SEND_CMD_2,
+			x"26" when SEND_CMD_3,
+			x"27" when SEND_CMD_4,
+			x"28" when SEND_CMD_5,
+			x"29" when SET_ERASE_COUNT_CMD,
+			x"2a" when SET_ERASE_COUNT_CMD_2,
+			x"2b" when WRITE_BLOCK_CMD,
+			x"2c" when WRITE_MULTIPLE_BLOCK_CMD,
+			x"2d" when WRITE_BLOCK_INIT,
+			x"2e" when WRITE_BLOCK_DATA,
+			x"2f" when WRITE_BLOCK_DATA_TOKEN,
+			x"30" when START_WRITE_BLOCK_DATA,
+			x"31" when WRITE_BLOCK_SEND_CRC2,
+			x"32" when WRITE_BLOCK_GET_RESPONSE,
+			x"33" when WRITE_BLOCK_CHECK_RESPONSE,
+			x"34" when WRITE_BLOCK_WAIT,
+			x"35" when WRITE_BLOCK_ABORT,
+			x"36" when WRITE_BLOCK_TERMINATE,
+			x"37" when WRITE_BLOCK_FINISH
 			;
 	end block calcDebugOutputs;
 end rtl;

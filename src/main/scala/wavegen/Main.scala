@@ -237,9 +237,10 @@ class MainBoth extends Module {
 }
 
 object MainRun extends scala.App {
-	(new ChiselStage).emitVerilog(new MainBoth, args)
-	(new ChiselStage).emitVerilog(new ImageOutput, args)
-	(new ChiselStage).emitVerilog(new Debouncer(3), args)
-	(new ChiselStage).emitVerilog(new Debouncer(5), args)
-	(new ChiselStage).emitVerilog(new Debouncer(8), args)
+	val opts = Array("--emission-options=disableMemRandomization,disableRegisterRandomization")
+	(new ChiselStage).emitVerilog(new MainBoth, opts)
+	(new ChiselStage).emitVerilog(new ImageOutput, opts)
+	(new ChiselStage).emitVerilog(new Debouncer(3), opts)
+	(new ChiselStage).emitVerilog(new Debouncer(5), opts)
+	(new ChiselStage).emitVerilog(new Debouncer(8), opts)
 }

@@ -27,6 +27,7 @@ module top (
 	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive
 	inout  [7:0] ja, // Pmod JA connector
 	output [7:0] jb,
+	output [7:0] jc,
 	output uart_rx_out,
 	input  uart_tx_in,
 	// output [14:0] ddr3_addr,
@@ -204,40 +205,75 @@ module top (
 	wire sd_read;
 	wire [7:0] sd_dout;
 	wire sd_byte_available;
-	wire sd_write;
-	wire [7:0] sd_din;
-	wire sd_write_ready;
-	wire sd_ready;
+	wire sd_read_ack;
+
+	// wire sd_write;
+	// wire [7:0] sd_din;
+	// wire sd_write_ready;
+	// wire sd_ready;
+
 	wire [31:0] sd_address;
+	wire sd_error;
+	wire [1:0] sd_status;
+	wire [7:0] sd_fsm;
 
-	wire [4:0] sd_status;
+	// wire [4:0] sd_status;
 
-	sd_controller sd (
+	// sd_controller sd (
+	// 	.cs(sd_d[3]),
+	// 	.mosi(sd_cmd),
+	// 	.miso(sd_d[0]),
+	// 	.sclk(sd_cclk),
+	// 	.rd(sd_read),
+	// 	.dout(sd_dout),
+	// 	.byte_available(sd_byte_available),
+	// 	.wr(sd_write),
+	// 	.din(sd_din),
+	// 	.ready_for_next_byte(sd_write_ready),
+	// 	.reset(!cpu_resetn | dbu),
+	// 	.ready(sd_ready),
+	// 	.address(sd_address),
+	// 	.clk(clk25MHz),
+	// 	.status(sd_status)
+	// );
+
+	sd_spi sd (
 		.cs(sd_d[3]),
 		.mosi(sd_cmd),
 		.miso(sd_d[0]),
 		.sclk(sd_cclk),
+		.card_present(1'b1),
+		.card_write_prot(1'b0),
 		.rd(sd_read),
+		.rd_multiple(1'b0),
 		.dout(sd_dout),
-		.byte_available(sd_byte_available),
-		.wr(sd_write),
-		.din(sd_din),
-		.ready_for_next_byte(sd_write_ready),
-		.reset(!cpu_resetn | dbu),
-		.ready(sd_ready),
-		.address(sd_address),
-		.clk(clk25MHz),
-		.status(sd_status)
+		.dout_avail(sd_byte_available),
+		.dout_taken(sd_read_ack),
+		.wr(1'b0),
+		.wr_multiple(1'b0),
+		.din(8'bx),
+		.din_valid(1'b0),
+		.din_taken(1'b0),
+		.addr(sd_address),
+		.erase_count(8'b0),
+		.sd_error(sd_error),
+		.reset(!cpu_resetn),
+		.clk(clk50MHz),
+		.sd_type(sd_status),
+		.sd_fsm(sd_fsm)
 	);
+
 
 	assign sd_d[1]  = 1'b1;
 	assign sd_d[2]  = 1'b1;
 	assign sd_reset = 1'b0;
 
-	assign jb[4:0] = sd_status;
-	assign jb[7:5] = {sd_byte_available, sd_write, sd_read};
+	// assign jb[4:0] = sd_status;
+	// assign jb[7:5] = {sd_byte_available, sd_write, sd_read};
 	// assign led[4:0] = sd_status;
 	// assign jb[7:5]  = 3'b0;
+
+	assign jb = {sd_status, sd_fsm[5:0]};
 
 	// DDRcontrol ram (
 	// 	.clk_200MHz_i(clk200MHz),
@@ -525,7 +561,7 @@ module top (
 		.clk(clk),
 		.clk_pix1(clk_pix1),
 		.clk_pix5(clk_pix5),
-		.clk25(clk25MHz),
+		.clk_sd(clk50MHz),
 		.sw(sw),
 		.buttonL(btnl),
 		.buttonR(btnr),
@@ -560,7 +596,7 @@ module top (
 		.multiplier(multiplier),
 		.gb_channels({gb_channels[3], gb_channels[2], gb_channels[1], gb_channels[0]}),
 		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]}),
-		.jb(),
+		.jc(jc),
 		.sd_read(sd_read),
 		.sd_dout(sd_dout),
 		.sd_byte_available(sd_byte_available),
@@ -568,7 +604,8 @@ module top (
 		.sd_din(sd_din),
 		.sd_write_ready(sd_write_ready),
 		.sd_ready(sd_ready),
-		.sd_address(sd_address)
+		.sd_address(sd_address),
+		.sd_read_ack(sd_read_ack)
 	);
 
 endmodule

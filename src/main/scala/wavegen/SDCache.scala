@@ -20,12 +20,16 @@ class SDCache(blocks: Int) extends Module {
 	val doRead  = WireInit(false.B)
 	val address = RegInit(0.U(32.W))
 	val dataOut = RegInit(0.U.asTypeOf(Valid(UInt(8.W))))
+	val readAck = RegInit(false.B)
+	readAck := false.B
 
 	io.sd.doWrite    := false.B
-	io.sd.doRead     := FastPulseDomainCrosser(io.sdClock, doRead)
+	io.sd.doRead     := FastPulseDomainCrosser(clock, reset, io.sdClock, doRead)
 	io.sd.dataOut    := DontCare
 	io.sd.address    := address
-	io.dataOut.valid := FastPulseDomainCrosser(io.sdClock, dataOut.valid)
+	io.sd.readAck    := FastPulseDomainCrosser(clock, reset, io.sdClock, readAck)
+	// io.sd.readAck    := readAck
+	io.dataOut.valid := FastPulseDomainCrosser(clock, reset, io.sdClock, dataOut.valid)
 	io.dataOut.bits  := dataOut.bits
 
 	val invalidBlock = "hffffffff".U(32.W)
@@ -49,7 +53,7 @@ class SDCache(blocks: Int) extends Module {
 
 	when (state === sIdle) {
 
-		when (Monitor(io.read)) {
+		when (io.read) {
 			storedAddress := io.address
 			// val found = blockIDs.exists(id => id === chop(io.address))
 			// val found = WireInit(invalidBlock)
@@ -82,7 +86,8 @@ class SDCache(blocks: Int) extends Module {
 		when (cooldown =/= 0.U) {
 			cooldown := cooldown - 1.U
 		} .elsewhen (io.sd.dataIn.valid && io.sd.ready) {
-			cooldown := 8.U // Might be able to set this as low as 4? (100 MHz) / (25 MHz) = 4
+			readAck  := true.B
+			cooldown := 8.U // Might be able to set this as low as 2? (100 MHz) / (50 MHz) = 2
 
 			val subindex = storedAddress(8, 0)
 			val cacheAddress = Cat(chosenBlock, subindex)

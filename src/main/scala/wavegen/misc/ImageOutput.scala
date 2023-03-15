@@ -20,7 +20,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val io = IO(new Bundle {
 		val audioClock  = Input(Clock())
-		val clock25MHz  = Input(Clock())
+		val sdClock     = Input(Clock())
 		val x           = Input(UInt(11.W))
 		val y           = Input(UInt(10.W))
 		val sw          = Input(UInt(8.W))
@@ -37,12 +37,8 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val rxByte      = Flipped(Valid(UInt(8.W)))
 		val gbChannels  = Input(Vec(4, UInt(4.W)))
 		val nesChannels = Input(Vec(4, UInt(4.W)))
-		val sd  = SDData()
-		val jb0 = Output(Bool())
-		val jb1 = Output(Bool())
-		val jb2 = Output(Bool())
-		val jb3 = Output(Bool())
-		val jb4 = Output(Bool())
+		val sd = SDData()
+		val jc = Output(UInt(8.W))
 	})
 
 	val slideshow = Module(new Slideshow)
@@ -88,12 +84,6 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val fakeAudioClock = StaticClocker(48000, clockFreq)
 
-	io.jb0 := 0.U
-	io.jb1 := 0.U
-	io.jb2 := 0.U
-	io.jb3 := 0.U
-	io.jb4 := 0.U
-
 	val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
 	val state = RegInit(sIdle)
 
@@ -113,9 +103,11 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val reading = RegInit(false.B)
 	val cache   = Module(new SDCache(4))
 	io.sd <> cache.io.sd
-	cache.io.sdClock := io.clock25MHz
+	cache.io.sdClock := io.sdClock
 	cache.io.address := DontCare
 	cache.io.read    := reading
+
+	io.jc := Cat(cache.io.sd.doRead, cache.io.sd.readAck, cache.io.dataOut.valid, Toggler(io.pulseD), 0.U(2.W), state)
 
 	val byte      = cache.io.dataOut.bits
 	val byteValid = cache.io.dataOut.valid

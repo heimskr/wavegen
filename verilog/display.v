@@ -5,7 +5,7 @@ module Display (
 	input  wire clk_pix1,
 	input  wire clk_pix5,
 	input  wire clk30,
-	input  wire clk25,
+	input  wire clk_sd,
 	input  wire [7:0] sw,
 	input  wire buttonL,
 	input  wire buttonR,
@@ -37,7 +37,7 @@ module Display (
 	input  wire [7:0] rx_byte,
 	input  wire [15:0] gb_channels,
 	input  wire [15:0] nes_channels,
-	output wire [4:0] jb,
+	output wire [7:0] jc,
 	output wire sd_read,
 	input  wire [7:0] sd_dout,
 	input  wire sd_byte_available,
@@ -45,7 +45,8 @@ module Display (
 	output wire [7:0] sd_din,
 	input  wire sd_write_ready,
 	input  wire sd_ready,
-	output wire [31:0] sd_address
+	output wire [31:0] sd_address,
+	output wire sd_read_ack
 );
 
 	wire pix_clk;    // pixel clock
@@ -108,7 +109,7 @@ module Display (
 	ImageOutput image_output (
 		.clock(pix_clk),
 		.reset(~rst_n),
-		.io_clock25MHz(clk25),
+		.io_sdClock(clk_sd),
 		.io_audioClock(clk_audio_buf),
 		.io_x(cx),
 		.io_y(cy),
@@ -141,11 +142,6 @@ module Display (
 		.io_nesChannels_1(nes_channels[7:4]),
 		.io_nesChannels_2(nes_channels[11:8]),
 		.io_nesChannels_3(nes_channels[15:12]),
-		.io_jb0(jb[0]),
-		.io_jb1(jb[1]),
-		.io_jb2(jb[2]),
-		.io_jb3(jb[3]),
-		.io_jb4(jb[4]),
 		.io_sd_doRead(sd_read),
 		.io_sd_dataIn_bits(sd_dout),
 		.io_sd_dataIn_valid(sd_byte_available),
@@ -153,7 +149,9 @@ module Display (
 		.io_sd_dataOut(sd_din),
 		.io_sd_writeReady(sd_write_ready),
 		.io_sd_ready(sd_ready),
-		.io_sd_address(sd_address)
+		.io_sd_address(sd_address),
+		.io_sd_readAck(sd_read_ack),
+		.io_jc(jc)
 	);
 
 	// TMDS Encoding and Serialization
