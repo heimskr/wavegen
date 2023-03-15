@@ -5,9 +5,11 @@ module Display (
 	input  wire clk_pix1,
 	input  wire clk_pix5,
 	input  wire clk30,
+	input  wire clk25,
 	input  wire [7:0] sw,
 	input  wire buttonL,
 	input  wire buttonR,
+	input  wire buttonD,
 	input  wire rst_n,
 	inout  wire hdmi_tx_cec,     // CE control bidirectional
 	input  wire hdmi_tx_hpd,     // hot-plug detect
@@ -60,6 +62,7 @@ module Display (
 	wire [9:0] cy;
 	wire pulseL;
 	wire pulseR;
+	wire pulseD;
 
 	wire nesAPulse;
 	wire nesBPulse;
@@ -70,13 +73,15 @@ module Display (
 	wire nesLeftPulse;
 	wire nesRightPulse;
 
-	Debouncer2 dbuttons (
+	Debouncer3 dbuttons (
 		.clock(pix_clk),
 		.reset(~rst_n),
 		.io_in_0(buttonL),
 		.io_in_1(buttonR),
+		.io_in_2(buttonD),
 		.io_out_0(pulseL),
-		.io_out_1(pulseR)
+		.io_out_1(pulseR),
+		.io_out_2(pulseD)
 	);
 
 	Debouncer8 debounce_nes (
@@ -103,12 +108,14 @@ module Display (
 	ImageOutput image_output (
 		.clock(pix_clk),
 		.reset(~rst_n),
+		.io_clock25MHz(clk25),
 		.io_audioClock(clk_audio_buf),
 		.io_x(cx),
 		.io_y(cy),
 		.io_sw(sw),
 		.io_pulseL(pulseL),
 		.io_pulseR(pulseR),
+		.io_pulseD(pulseD),
 		.io_red(red),
 		.io_green(green),
 		.io_blue(blue),

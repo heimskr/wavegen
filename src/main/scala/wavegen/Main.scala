@@ -239,7 +239,7 @@ class MainBoth extends Module {
 object MainRun extends scala.App {
 	(new ChiselStage).emitVerilog(new MainBoth, args)
 	(new ChiselStage).emitVerilog(new ImageOutput, args)
-	(new ChiselStage).emitVerilog(new Debouncer(2), args)
+	(new ChiselStage).emitVerilog(new Debouncer(3), args)
 	(new ChiselStage).emitVerilog(new Debouncer(5), args)
 	(new ChiselStage).emitVerilog(new Debouncer(8), args)
 }

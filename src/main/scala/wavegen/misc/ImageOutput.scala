@@ -20,11 +20,13 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val io = IO(new Bundle {
 		val audioClock  = Input(Clock())
+		val clock25MHz  = Input(Clock())
 		val x           = Input(UInt(11.W))
 		val y           = Input(UInt(10.W))
 		val sw          = Input(UInt(8.W))
 		val pulseL      = Input(Bool())
 		val pulseR      = Input(Bool())
+		val pulseD      = Input(Bool())
 		val red         = Output(UInt(8.W))
 		val green       = Output(UInt(8.W))
 		val blue        = Output(UInt(8.W))
@@ -111,6 +113,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val reading = RegInit(false.B)
 	val cache   = Module(new SDCache(4))
 	io.sd <> cache.io.sd
+	cache.io.sdClock := io.clock25MHz
 	cache.io.address := DontCare
 	cache.io.read    := reading
 
@@ -130,7 +133,7 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 		reading := false.B
 
-		when (io.nesButtons.a && slide === playground.U) {
+		when ((io.nesButtons.a || io.pulseD) && slide === playground.U) {
 			state      := sClearing
 			tocPointer := 0.U
 		}

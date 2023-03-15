@@ -10,18 +10,23 @@ class SDCache(blocks: Int) extends Module {
 	override val desiredName = s"SDCache_${blocks}b"
 
 	val io = IO(new Bundle {
+		val sdClock = Input(Clock())
 		val sd      = SDData()
 		val address = Input(UInt(32.W))
 		val read    = Input(Bool())
 		val dataOut = Valid(UInt(8.W))
 	})
 
+	val doRead  = WireInit(false.B)
+	val address = RegInit(0.U(32.W))
+	val dataOut = RegInit(0.U.asTypeOf(Valid(UInt(8.W))))
+
 	io.sd.doWrite    := false.B
-	io.sd.doRead     := false.B
+	io.sd.doRead     := FastPulseDomainCrosser(io.sdClock, doRead)
 	io.sd.dataOut    := DontCare
-	io.sd.address    := DontCare
-	io.dataOut.valid := false.B
-	io.dataOut.bits  := DontCare
+	io.sd.address    := address
+	io.dataOut.valid := FastPulseDomainCrosser(io.sdClock, dataOut.valid)
+	io.dataOut.bits  := dataOut.bits
 
 	val invalidBlock = "hffffffff".U(32.W)
 
@@ -55,9 +60,9 @@ class SDCache(blocks: Int) extends Module {
 				when (blockID === chop(io.address)) {
 					// chosenBlock := i.U
 					// state := sReading
-					io.dataOut.valid := true.B
-					io.dataOut.bits  := cache(Cat(i.U, io.address(8, 0)))
-					state := sIdle
+					dataOut.valid := true.B
+					dataOut.bits  := cache(Cat(i.U, io.address(8, 0)))
+					state         := sIdle
 				}
 			}
 		}
@@ -71,8 +76,8 @@ class SDCache(blocks: Int) extends Module {
 
 	} .elsewhen (state === sReading) {
 
-		io.sd.doRead  := true.B
-		io.sd.address := chop(storedAddress) + bytePointer
+		doRead  := true.B
+		address := chop(storedAddress) + bytePointer
 
 		when (cooldown =/= 0.U) {
 			cooldown := cooldown - 1.U
@@ -85,9 +90,9 @@ class SDCache(blocks: Int) extends Module {
 			cache.write(cacheAddress, io.sd.dataIn.bits)
 
 			when (bytePointer === 511.U) {
-				io.dataOut.valid := true.B
-				io.dataOut.bits  := Mux(subindex === 511.U, io.sd.dataIn.bits, cache(cacheAddress))
-				state            := sIdle
+				dataOut.valid := true.B
+				dataOut.bits  := Mux(subindex === 511.U, io.sd.dataIn.bits, cache(cacheAddress))
+				state         := sIdle
 			} .otherwise {
 				bytePointer := bytePointer + 1.U
 			}

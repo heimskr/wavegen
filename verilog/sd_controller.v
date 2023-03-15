@@ -6,30 +6,30 @@ through SPI mode. */
 module sd_controller(
     output reg cs, // Connect to SD_DAT[3].
     output mosi, // Connect to SD_CMD.
-    input miso, // Connect to SD_DAT[0].
+    input miso,  // Connect to SD_DAT[0].
     output sclk, // Connect to SD_SCK.
-                // For SPI mode, SD_DAT[2] and SD_DAT[1] should be held HIGH.
-                // SD_RESET should be held LOW.
+                 // For SPI mode, SD_DAT[2] and SD_DAT[1] should be held HIGH.
+                 // SD_RESET should be held LOW.
 
-    input rd,   // Read-enable. When [ready] is HIGH, asseting [rd] will
-                // begin a 512-byte READ operation at [address].
-                // [byte_available] will transition HIGH as a new byte has been
-                // read from the SD card. The byte is presented on [dout].
+    input rd, // Read-enable. When [ready] is HIGH, asseting [rd] will
+              // begin a 512-byte READ operation at [address].
+              // [byte_available] will transition HIGH as a new byte has been
+              // read from the SD card. The byte is presented on [dout].
     output reg [7:0] dout, // Data output for READ operation.
     output reg byte_available, // A new byte has been presented on [dout].
 
-    input wr,   // Write-enable. When [ready] is HIGH, asserting [wr] will
-                // begin a 512-byte WRITE operation at [address].
-                // [ready_for_next_byte] will transition HIGH to request that
-                // the next byte to be written should be presented on [din].
+    input wr, // Write-enable. When [ready] is HIGH, asserting [wr] will
+              // begin a 512-byte WRITE operation at [address].
+              // [ready_for_next_byte] will transition HIGH to request that
+              // the next byte to be written should be presented on [din].
     input [7:0] din, // Data input for WRITE operation.
     output reg ready_for_next_byte, // A new byte should be presented on [din].
 
-    input reset, // Resets controller on assertion.
+    input reset,  // Resets controller on assertion.
     output ready, // HIGH if the SD card is ready for a read or write operation.
-    input [31:0] address,   // Memory address for read/write operation. This MUST
-                            // be a multiple of 512 bytes, due to SD sectoring.
-    input clk,  // 25 MHz clock.
+    input [31:0] address, // Memory address for read/write operation. This MUST
+                          // be a multiple of 512 bytes, due to SD sectoring.
+    input clk, // 25 MHz clock.
     output [4:0] status // For debug purposes: Current state of controller.
 );
 

@@ -210,6 +210,8 @@ module top (
 	wire sd_ready;
 	wire [31:0] sd_address;
 
+	assign led[7:5] = 3'b0;
+
 	sd_controller sd (
 		.cs(sd_d[3]),
 		.mosi(sd_cmd),
@@ -224,13 +226,13 @@ module top (
 		.reset(!cpu_resetn),
 		.ready(sd_ready),
 		.address(sd_address),
-		.clk(clk),
-		.status()
+		.clk(clk25MHz),
+		.status(led[4:0])
 	);
 
-	assign sd_d[1] = 1'b1;
-	assign sd_d[2] = 1'b1;
-	assign sd_reset  = 1'b0;
+	assign sd_d[1]  = 1'b1;
+	assign sd_d[2]  = 1'b1;
+	assign sd_reset = 1'b0;
 
 	// DDRcontrol ram (
 	// 	.clk_200MHz_i(clk200MHz),
@@ -443,7 +445,8 @@ module top (
 		.io_sw(sw),
 		.io_outL(out_audioL),
 		.io_outR(out_audioR),
-		.io_led(led),
+		// .io_led(led),
+		.io_led(),
 		.io_addrGB(rom_addr_gb),
 		.io_addrNES(rom_addr_nes),
 		.io_romGB(rom_out_gb),
@@ -517,9 +520,11 @@ module top (
 		.clk(clk),
 		.clk_pix1(clk_pix1),
 		.clk_pix5(clk_pix5),
+		.clk25(clk25MHz),
 		.sw(sw),
 		.buttonL(btnl),
 		.buttonR(btnr),
+		.buttonD(btnd),
 		.clk30(clk30MHz),
 		.rst_n(cpu_resetn),
 		.hdmi_tx_cec(hdmi_tx_cec),
