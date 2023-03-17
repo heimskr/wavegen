@@ -27,6 +27,10 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val pulseL      = Input(Bool())
 		val pulseR      = Input(Bool())
 		val pulseD      = Input(Bool())
+		val pulseU      = Input(Bool())
+		val pulseC      = Input(Bool())
+		val buttonU     = Input(Bool())
+		val buttonC     = Input(Bool())
 		val red         = Output(UInt(8.W))
 		val green       = Output(UInt(8.W))
 		val blue        = Output(UInt(8.W))
@@ -39,6 +43,10 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val nesChannels = Input(Vec(4, UInt(4.W)))
 		val sd = SDData()
 		val jc = Output(UInt(8.W))
+		val sdErrorCode  = Input(UInt(3.W))
+		val sdBusy       = Input(Bool())
+		val sdDebug      = Input(UInt(4.W))
+		val sdDebugExtra = Input(UInt(8.W))
 	})
 
 	val slideshow = Module(new Slideshow)
@@ -103,11 +111,17 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val reading = RegInit(false.B)
 	val cache   = Module(new SDCache(4))
 	io.sd <> cache.io.sd
+	io.sd.doRead  := cache.io.sd.doRead  || (slide === playground.U && io.buttonC)
+	io.sd.readAck := cache.io.sd.readAck || (slide === playground.U && io.buttonU)
 	cache.io.sdClock := io.sdClock
 	cache.io.address := DontCare
 	cache.io.read    := reading
 
-	io.jc := Cat(cache.io.sd.doRead, cache.io.sd.readAck, cache.io.dataOut.valid, Toggler(io.pulseD), 0.U(2.W), state)
+	io.jc := Mux(io.sw(0), io.sdDebugExtra,
+	         Mux(io.sw(1), Cat(io.sd.readAck, io.sdErrorCode, state, cache.io.state),
+	                       Cat(io.sd.doRead, io.sd.readAck, cache.io.dataOut.valid, io.sdBusy, io.sdDebug)))
+	// io.jc := Cat(io.sd.doRead, io.sd.readAck, cache.io.dataOut.valid, io.sdErrorCode, cache.io.state)
+	// io.jc := io.sd.dataOut
 
 	val byte      = cache.io.dataOut.bits
 	val byteValid = cache.io.dataOut.valid

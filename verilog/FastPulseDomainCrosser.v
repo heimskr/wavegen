@@ -10,13 +10,25 @@ module FastPulseDomainCrosser (
 
     reg pulse;
 
-    always @(negedge slowClock) begin
-        pulse <= 1'b0;
+    reg pulseCounter;
+
+    always @(posedge slowClock) begin
+        if (!reset) begin
+            if (pulseCounter == 1'b0)
+                pulse <= 1'b0;
+            else
+                pulseCounter <= pulseCounter - 1'b1;
+        end
     end
 
     always @(posedge clock) begin
-        if (pulseIn)
+        if (reset) begin
+            pulse <= 1'b0;
+            pulseCounter <= 1'b1;
+        end else if (pulseIn) begin
             pulse <= 1'b1;
+            pulseCounter <= 1'b1;
+        end
     end
 
     assign pulseOut = pulse;

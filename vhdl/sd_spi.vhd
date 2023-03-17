@@ -132,7 +132,8 @@ port (
 	sd_error : out std_logic;		-- '1' if an error occurs, reset on next RD or WR
 	sd_busy : out std_logic;		-- '0' if a RD or WR can be accepted
 	sd_error_code : out std_logic_vector(2 downto 0); -- See above, 000=No error
-
+	debug : out std_logic_vector(3 downto 0);
+	debug_extra : out std_logic_vector(7 downto 0);
 
 	reset : in std_logic;	-- System reset
 	clk : in std_logic;		-- twice the SPI clk (max 50MHz)
@@ -261,6 +262,9 @@ signal skipFirstR1Byte, new_skipFirstR1Byte : boolean := false;
 signal din_latch : boolean := false;
 signal last_din_valid : std_logic := '0';
 
+signal new_debug : std_logic_vector(3 downto 0) := x"0";
+signal new_debug_extra : std_logic_vector(7 downto 0) := x"00";
+
 begin
 	-- This process updates all the state variables from the values calculated
 	-- by the calcStateVariables process
@@ -307,7 +311,11 @@ begin
 				din_taken <= '0';
 				multiple <= false;
 				skipFirstR1Byte <= false;
+				debug <= x"0";
+				debug_extra <= x"00";
 			else
+				debug <= new_debug;
+				debug_extra <= new_debug_extra;
 				-- State variables
 				state <= new_state;
 				if (set_return_state) then return_state <= new_return_state; end if;
@@ -370,7 +378,7 @@ begin
 				last_din_valid <= din_valid;
 			end if;
 		end if;
-    end process;
+	end process;
 
 	-- This process calculates all of the state variables
 	-- It should not generate any latches
@@ -1000,13 +1008,20 @@ begin
 			end if;
 
 		when SEND_RCV_CLK1 =>
+			new_debug <= x"1";
 			if slow_clock=false or clock_divider=0 then
+				new_debug <= x"2";
 				new_clock_divider <= slowClockDivider;
 				if (bit_counter = 0) then
+					new_debug <= x"3";
 					-- Reception handling - if DAvail and DTaken are down, transfer new byte into output register and raise DAvail
 					if transfer_data_out then
+						new_debug <= x"4";
 						if (rd='1' or rd_multiple='1') then
+							new_debug <= x"5";
+							new_debug_extra <= b"000000" & sDavail & dout_taken;
 							if sDavail='0' and dout_taken='0' then
+								new_debug <= x"6";
 								-- If we're ok to transfer data, then do it
 								-- otherwise wait here until dout_taken rises
 								set_davail <= true;
@@ -1014,6 +1029,7 @@ begin
 								-- Next byte
 								new_bit_counter <= 7;
 								if byte_counter=1 then
+									new_debug <= x"7";
 									new_transfer_data_out <= false;
 									new_sr_return_state <= READ_BLOCK_CRC;
 									set_sr_return_state <= true;
@@ -1021,11 +1037,13 @@ begin
 								new_state <= SEND_RCV;
 							end if;
 						else
+							new_debug <= x"8";
 							-- Abort transfer
 							new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
 							-- Next byte
 							new_bit_counter <= 7;
 							if byte_counter=1 then
+								new_debug <= x"9";
 								new_transfer_data_out <= false;
 								new_sr_return_state <= READ_BLOCK_CRC;
 								set_sr_return_state <= true;
@@ -1033,16 +1051,19 @@ begin
 							new_state <= SEND_RCV;
 						end if;
 					else
+						new_debug <= x"a";
 						new_bit_counter <= 7;
 						new_state <= sr_return_state;
 						new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
 					end if;
 				else
+					new_debug <= x"b";
 					new_bit_counter <= bit_counter - 1;
 					new_data_out <= data_out(6 downto 0) & '1';
 					new_state <= SEND_RCV;
 				end if;
 			else
+				new_debug <= x"c";
 				new_sclk <= '1';
 				new_clock_divider <= clock_divider - 1;
 			end if;
@@ -1101,7 +1122,7 @@ begin
 					new_state <= SEND_RCV; -- Will come back to SEND_CMD_5
 				end if;
 			end if;
-	    end case;
+		end case;
 	end process calcStateVariables;
 
 	-- This calculates a debug output to determine the FSM state

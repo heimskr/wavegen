@@ -2,6 +2,7 @@ package wavegen
 
 import chisel3._
 import chisel3.util._
+import wavegen.misc.BoolMonitor
 import wavegen.misc.Monitor
 
 // TODO: writing
@@ -15,21 +16,20 @@ class SDCache(blocks: Int) extends Module {
 		val address = Input(UInt(32.W))
 		val read    = Input(Bool())
 		val dataOut = Valid(UInt(8.W))
+		val state   = Output(UInt(2.W))
 	})
 
-	val doRead  = WireInit(false.B)
+	val doRead  = RegInit(false.B)
 	val address = RegInit(0.U(32.W))
 	val dataOut = RegInit(0.U.asTypeOf(Valid(UInt(8.W))))
 	val readAck = RegInit(false.B)
-	readAck := false.B
 
 	io.sd.doWrite    := false.B
-	io.sd.doRead     := FastPulseDomainCrosser(clock, reset, io.sdClock, doRead)
+	io.sd.doRead     := doRead
 	io.sd.dataOut    := DontCare
 	io.sd.address    := address
-	io.sd.readAck    := FastPulseDomainCrosser(clock, reset, io.sdClock, readAck)
-	// io.sd.readAck    := readAck
-	io.dataOut.valid := FastPulseDomainCrosser(clock, reset, io.sdClock, dataOut.valid)
+	io.sd.readAck    := readAck
+	io.dataOut.valid := dataOut.valid
 	io.dataOut.bits  := dataOut.bits
 
 	val invalidBlock = "hffffffff".U(32.W)
@@ -41,6 +41,7 @@ class SDCache(blocks: Int) extends Module {
 
 	val sIdle :: sStartReading :: sReading :: Nil = Enum(3)
 	val state = RegInit(sIdle)
+	io.state := state
 
 	def chop(value: UInt): UInt = Cat(value >> 9.U, 0.U(9.W))
 
@@ -52,6 +53,9 @@ class SDCache(blocks: Int) extends Module {
 	val cooldown = RegInit(0.U(8.W))
 
 	when (state === sIdle) {
+
+		doRead  := false.B
+		readAck := false.B
 
 		when (io.read) {
 			storedAddress := io.address
@@ -73,6 +77,8 @@ class SDCache(blocks: Int) extends Module {
 
 	} .elsewhen (state === sStartReading) {
 
+		doRead      := false.B
+		readAck     := false.B
 		bytePointer := 0.U
 		chosenBlock := nextBlock
 		nextBlock   := nextBlock + 1.U
@@ -80,12 +86,17 @@ class SDCache(blocks: Int) extends Module {
 
 	} .elsewhen (state === sReading) {
 
-		doRead  := true.B
+		doRead  := false.B
 		address := chop(storedAddress) + bytePointer
 
-		when (cooldown =/= 0.U) {
+		when (cooldown === 1.U) {
+			readAck  := false.B
+			cooldown := 0.U
+		} .elsewhen (cooldown =/= 0.U) {
+			readAck  := true.B
 			cooldown := cooldown - 1.U
 		} .elsewhen (io.sd.dataIn.valid && io.sd.ready) {
+			doRead   := false.B
 			readAck  := true.B
 			cooldown := 8.U // Might be able to set this as low as 2? (100 MHz) / (50 MHz) = 2
 
@@ -101,6 +112,9 @@ class SDCache(blocks: Int) extends Module {
 			} .otherwise {
 				bytePointer := bytePointer + 1.U
 			}
+		} .otherwise {
+			doRead  := true.B
+			readAck := false.B
 		}
 
 	}

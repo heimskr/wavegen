@@ -237,6 +237,27 @@ module top (
 	// 	.status(sd_status)
 	// );
 
+	reg sd_read_reg;
+	reg sd_read_ack_reg;
+	reg [31:0] sd_address_reg;
+
+	always @(posedge clk50MHz) begin
+		if (!cpu_resetn) begin
+			sd_read_reg <= 1'b0;
+			sd_read_ack_reg <= 1'b0;
+			sd_address_reg <= 32'b0;
+		end else begin
+			sd_read_reg <= sd_read;
+			sd_read_ack_reg <= sd_read_ack;
+			sd_address_reg <= sd_address;
+		end
+	end
+
+	wire sd_busy;
+	wire [2:0] sd_error_code;
+	wire [3:0] sd_debug;
+	wire [7:0] sd_debug_extra;
+
 	sd_spi sd (
 		.cs(sd_d[3]),
 		.mosi(sd_cmd),
@@ -244,23 +265,27 @@ module top (
 		.sclk(sd_cclk),
 		.card_present(1'b1),
 		.card_write_prot(1'b0),
-		.rd(sd_read),
+		.rd(sd_read_reg),
 		.rd_multiple(1'b0),
 		.dout(sd_dout),
 		.dout_avail(sd_byte_available),
-		.dout_taken(sd_read_ack),
+		.dout_taken(sd_read_ack_reg),
 		.wr(1'b0),
 		.wr_multiple(1'b0),
 		.din(8'bx),
 		.din_valid(1'b0),
 		.din_taken(1'b0),
-		.addr(sd_address),
+		.addr(sd_address_reg),
 		.erase_count(8'b0),
 		.sd_error(sd_error),
+		.sd_busy(sd_busy),
+		.sd_error_code(sd_error_code),
 		.reset(!cpu_resetn),
 		.clk(clk50MHz),
 		.sd_type(sd_status),
-		.sd_fsm(sd_fsm)
+		.sd_fsm(sd_fsm),
+		.debug(sd_debug),
+		.debug_extra(sd_debug_extra)
 	);
 
 
@@ -566,6 +591,7 @@ module top (
 		.buttonL(btnl),
 		.buttonR(btnr),
 		.buttonD(btnd),
+		.buttonU(btnu),
 		.clk30(clk30MHz),
 		.rst_n(cpu_resetn),
 		.hdmi_tx_cec(hdmi_tx_cec),
@@ -605,7 +631,11 @@ module top (
 		.sd_write_ready(sd_write_ready),
 		.sd_ready(sd_ready),
 		.sd_address(sd_address),
-		.sd_read_ack(sd_read_ack)
+		.sd_read_ack(sd_read_ack),
+		.sd_error_code(sd_error_code),
+		.sd_busy(sd_busy),
+		.sd_debug(sd_debug),
+		.sd_debug_extra(sd_debug_extra)
 	);
 
 endmodule

@@ -127,8 +127,8 @@ class MainBoth extends Module {
 	io.addrNES := nes.io.addr
 
 	when (useNES) {
-		io.outL := boost(nes.io.outL) * multiplier
-		io.outR := boost(nes.io.outR) * multiplier
+		io.outL := RegNext(boost(nes.io.outL) * multiplier)
+		io.outR := RegNext(boost(nes.io.outR) * multiplier)
 		io.led  := nes.io.leds
 		nes.io.rom    := io.romNES
 		nes.io.pulseD := io.pulseD
@@ -137,8 +137,8 @@ class MainBoth extends Module {
 		nes.io.pulseR := io.pulseR
 		nes.io.pulseC := io.pulseC
 	} .otherwise {
-		io.outL := boost(gameboy.io.outL) * multiplier
-		io.outR := boost(gameboy.io.outR) * multiplier
+		io.outL := RegNext(boost(gameboy.io.outL) * multiplier)
+		io.outR := RegNext(boost(gameboy.io.outR) * multiplier)
 		io.led  := gameboy.io.leds
 		gameboy.io.rom    := io.romGB
 		gameboy.io.pulseD := io.pulseD
@@ -240,7 +240,7 @@ object MainRun extends scala.App {
 	val opts = Array("--emission-options=disableMemRandomization,disableRegisterRandomization")
 	(new ChiselStage).emitVerilog(new MainBoth, opts)
 	(new ChiselStage).emitVerilog(new ImageOutput, opts)
-	(new ChiselStage).emitVerilog(new Debouncer(3), opts)
+	(new ChiselStage).emitVerilog(new Debouncer(4), opts)
 	(new ChiselStage).emitVerilog(new Debouncer(5), opts)
 	(new ChiselStage).emitVerilog(new Debouncer(8), opts)
 }

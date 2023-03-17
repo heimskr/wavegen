@@ -10,6 +10,8 @@ module Display (
 	input  wire buttonL,
 	input  wire buttonR,
 	input  wire buttonD,
+	input  wire buttonU,
+	input  wire buttonC,
 	input  wire rst_n,
 	inout  wire hdmi_tx_cec,     // CE control bidirectional
 	input  wire hdmi_tx_hpd,     // hot-plug detect
@@ -46,7 +48,11 @@ module Display (
 	input  wire sd_write_ready,
 	input  wire sd_ready,
 	output wire [31:0] sd_address,
-	output wire sd_read_ack
+	output wire sd_read_ack,
+	input  wire [2:0] sd_error_code,
+	input  wire sd_busy,
+	input  wire [3:0] sd_debug,
+	input  wire [7:0] sd_debug_extra
 );
 
 	wire pix_clk;    // pixel clock
@@ -64,6 +70,8 @@ module Display (
 	wire pulseL;
 	wire pulseR;
 	wire pulseD;
+	wire pulseU;
+	wire pulseC;
 
 	wire nesAPulse;
 	wire nesBPulse;
@@ -74,15 +82,19 @@ module Display (
 	wire nesLeftPulse;
 	wire nesRightPulse;
 
-	Debouncer3 dbuttons (
+	Debouncer5 dbuttons (
 		.clock(pix_clk),
 		.reset(~rst_n),
 		.io_in_0(buttonL),
 		.io_in_1(buttonR),
 		.io_in_2(buttonD),
+		.io_in_3(buttonU),
+		.io_in_4(buttonC),
 		.io_out_0(pulseL),
 		.io_out_1(pulseR),
-		.io_out_2(pulseD)
+		.io_out_2(pulseD),
+		.io_out_3(pulseU),
+		.io_out_4(pulseC)
 	);
 
 	Debouncer8 debounce_nes (
@@ -117,6 +129,10 @@ module Display (
 		.io_pulseL(pulseL),
 		.io_pulseR(pulseR),
 		.io_pulseD(pulseD),
+		.io_pulseU(pulseU),
+		.io_pulseC(pulseC),
+		.io_buttonU(buttonU),
+		.io_buttonC(buttonC),
 		.io_red(red),
 		.io_green(green),
 		.io_blue(blue),
@@ -151,7 +167,11 @@ module Display (
 		.io_sd_ready(sd_ready),
 		.io_sd_address(sd_address),
 		.io_sd_readAck(sd_read_ack),
-		.io_jc(jc)
+		.io_sdErrorCode(sd_error_code),
+		.io_sdBusy(sd_busy),
+		.io_jc(jc),
+		.io_sdDebug(sd_debug),
+		.io_sdDebugExtra(sd_debug_extra)
 	);
 
 	// TMDS Encoding and Serialization

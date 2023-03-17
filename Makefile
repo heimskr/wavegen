@@ -26,7 +26,7 @@ endif
 	cp MainGB.v      $(ELSEWHERE)/MainGB.v      && \
 	cp MainNES.v     $(ELSEWHERE)/MainNES.v     && \
 	cp MainBoth.v    $(ELSEWHERE)/MainBoth.v    && \
-	cp Debouncer3.v  $(ELSEWHERE)/Debouncer3.v  && \
+	cp Debouncer4.v  $(ELSEWHERE)/Debouncer4.v  && \
 	cp Debouncer5.v  $(ELSEWHERE)/Debouncer5.v  && \
 	cp Debouncer8.v  $(ELSEWHERE)/Debouncer8.v  && \
 	cp ImageOutput.v $(ELSEWHERE)/ImageOutput.v && \
