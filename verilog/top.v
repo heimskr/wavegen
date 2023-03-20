@@ -26,10 +26,10 @@ module top (
 	output [2:0] hdmi_tx_n, // Three HDMI channels differential negative
 	output [2:0] hdmi_tx_p, // Three HDMI channels differential positive
 	inout  [7:0] ja, // Pmod JA connector
-	output [7:0] jb,
-	output [7:0] jc,
-	output uart_rx_out,
-	input  uart_tx_in,
+	output [7:0] jb
+	// output [7:0] jc,
+	// output uart_rx_out,
+	// input  uart_tx_in,
 	// output [14:0] ddr3_addr,
 	// output [2:0] ddr3_ba,
 	// output ddr3_ras_n,
@@ -44,11 +44,11 @@ module top (
 	// inout  [15:0] ddr3_dq,
 	// inout  [1:0] ddr3_dqs_p,
 	// inout  [1:0] ddr3_dqs_n
-	input sd_cd,
-	output sd_reset,
-	output sd_cclk,
-	output sd_cmd,
-	inout [3:0] sd_d
+	// input sd_cd,
+	// output sd_reset,
+	// output sd_cclk,
+	// output sd_cmd,
+	// inout [3:0] sd_d
 );
 
 	wire clk12MHz;
@@ -162,60 +162,60 @@ module top (
 
 	// From Nexys Video looper demo
 
-	wire del_mem;              // Clear delete flag
-	wire delete;               // Delete flag
-	wire [3:0] delete_bank;    // Bank to delete
-	wire [3:0] mem_bank;       // Bank
-	wire write_zero;           // Used when deleting
-	wire [21:0] current_block; // Block address
-	wire [15:0] active;        // Bank is recorded on
-	wire [3:0]  current_bank;
-	wire [25:0] mem_a;
-	assign mem_a = {current_block, mem_bank}; // Address is block*8 + banknumber
-	wire [63:0] mem_dq_i;
-	wire [63:0] mem_dq_o;
-	reg  [63:0] mem_dq_o_b;
-	wire mem_cen;
-	wire mem_oen;
-	wire mem_wen;
-	wire read_data_valid;
-	reg read_data_valid_d1a;
-	reg read_data_valid_d1b;
-	reg read_data_valid_d2a;
-	reg read_data_valid_d2b;
-	wire read_data_valid_rise;
-	always @(posedge clk200MHz) begin
-		read_data_valid_d1a <= read_data_valid;
-		read_data_valid_d1b <= read_data_valid_d1a;
-	end
+	// wire del_mem;              // Clear delete flag
+	// wire delete;               // Delete flag
+	// wire [3:0] delete_bank;    // Bank to delete
+	// wire [3:0] mem_bank;       // Bank
+	// wire write_zero;           // Used when deleting
+	// wire [21:0] current_block; // Block address
+	// wire [15:0] active;        // Bank is recorded on
+	// wire [3:0]  current_bank;
+	// wire [25:0] mem_a;
+	// assign mem_a = {current_block, mem_bank}; // Address is block*8 + banknumber
+	// wire [63:0] mem_dq_i;
+	// wire [63:0] mem_dq_o;
+	// reg  [63:0] mem_dq_o_b;
+	// wire mem_cen;
+	// wire mem_oen;
+	// wire mem_wen;
+	// wire read_data_valid;
+	// reg read_data_valid_d1a;
+	// reg read_data_valid_d1b;
+	// reg read_data_valid_d2a;
+	// reg read_data_valid_d2b;
+	// wire read_data_valid_rise;
+	// always @(posedge clk200MHz) begin
+	// 	read_data_valid_d1a <= read_data_valid;
+	// 	read_data_valid_d1b <= read_data_valid_d1a;
+	// end
 
-	always @(posedge clk) begin
-		read_data_valid_d2a <= read_data_valid_d1a | read_data_valid_d1b;
-		read_data_valid_d2b <= read_data_valid_d2a;
-	end
+	// always @(posedge clk) begin
+	// 	read_data_valid_d2a <= read_data_valid_d1a | read_data_valid_d1b;
+	// 	read_data_valid_d2b <= read_data_valid_d2a;
+	// end
 
-	assign read_data_valid_rise = read_data_valid_d2a & ~read_data_valid_d2b;
+	// assign read_data_valid_rise = read_data_valid_d2a & ~read_data_valid_d2b;
 
-	always @(posedge clk200MHz) begin
-		if (read_data_valid) begin
-			mem_dq_o_b <= mem_dq_o;
-		end
-	end
+	// always @(posedge clk200MHz) begin
+	// 	if (read_data_valid) begin
+	// 		mem_dq_o_b <= mem_dq_o;
+	// 	end
+	// end
 
-	wire sd_read;
-	wire [7:0] sd_dout;
-	wire sd_byte_available;
-	wire sd_read_ack;
+	// wire sd_read;
+	// wire [7:0] sd_dout;
+	// wire sd_byte_available;
+	// wire sd_read_ack;
 
 	// wire sd_write;
 	// wire [7:0] sd_din;
 	// wire sd_write_ready;
 	// wire sd_ready;
 
-	wire [31:0] sd_address;
-	wire sd_error;
-	wire [1:0] sd_status;
-	wire [7:0] sd_fsm;
+	// wire [31:0] sd_address;
+	// wire sd_error;
+	// wire [1:0] sd_status;
+	// wire [7:0] sd_fsm;
 
 	// wire [4:0] sd_status;
 
@@ -237,68 +237,68 @@ module top (
 	// 	.status(sd_status)
 	// );
 
-	reg sd_read_reg;
-	reg sd_read_ack_reg;
-	reg [31:0] sd_address_reg;
+	// reg sd_read_reg;
+	// reg sd_read_ack_reg;
+	// reg [31:0] sd_address_reg;
 
-	always @(posedge clk50MHz) begin
-		if (!cpu_resetn) begin
-			sd_read_reg <= 1'b0;
-			sd_read_ack_reg <= 1'b0;
-			sd_address_reg <= 32'b0;
-		end else begin
-			sd_read_reg <= sd_read;
-			sd_read_ack_reg <= sd_read_ack;
-			sd_address_reg <= sd_address;
-		end
-	end
+	// always @(posedge clk50MHz) begin
+	// 	if (!cpu_resetn) begin
+	// 		sd_read_reg <= 1'b0;
+	// 		sd_read_ack_reg <= 1'b0;
+	// 		sd_address_reg <= 32'b0;
+	// 	end else begin
+	// 		sd_read_reg <= sd_read;
+	// 		sd_read_ack_reg <= sd_read_ack;
+	// 		sd_address_reg <= sd_address;
+	// 	end
+	// end
 
-	wire sd_busy;
-	wire [2:0] sd_error_code;
-	wire [3:0] sd_debug;
-	wire [7:0] sd_debug_extra;
+	// wire sd_busy;
+	// wire [2:0] sd_error_code;
+	// wire [3:0] sd_debug;
+	// wire [7:0] sd_debug_extra;
 
-	sd_spi sd (
-		.cs(sd_d[3]),
-		.mosi(sd_cmd),
-		.miso(sd_d[0]),
-		.sclk(sd_cclk),
-		.card_present(1'b1),
-		.card_write_prot(1'b0),
-		.rd(sd_read_reg),
-		.rd_multiple(1'b0),
-		.dout(sd_dout),
-		.dout_avail(sd_byte_available),
-		.dout_taken(sd_read_ack_reg),
-		.wr(1'b0),
-		.wr_multiple(1'b0),
-		.din(8'bx),
-		.din_valid(1'b0),
-		.din_taken(1'b0),
-		.addr(sd_address_reg),
-		.erase_count(8'b0),
-		.sd_error(sd_error),
-		.sd_busy(sd_busy),
-		.sd_error_code(sd_error_code),
-		.reset(!cpu_resetn),
-		.clk(clk50MHz),
-		.sd_type(sd_status),
-		.sd_fsm(sd_fsm),
-		.debug(sd_debug),
-		.debug_extra(sd_debug_extra)
-	);
+	// sd_spi sd (
+	// 	.cs(sd_d[3]),
+	// 	.mosi(sd_cmd),
+	// 	.miso(sd_d[0]),
+	// 	.sclk(sd_cclk),
+	// 	.card_present(1'b1),
+	// 	.card_write_prot(1'b0),
+	// 	.rd(sd_read_reg),
+	// 	.rd_multiple(1'b0),
+	// 	.dout(sd_dout),
+	// 	.dout_avail(sd_byte_available),
+	// 	.dout_taken(sd_read_ack_reg),
+	// 	.wr(1'b0),
+	// 	.wr_multiple(1'b0),
+	// 	.din(8'bx),
+	// 	.din_valid(1'b0),
+	// 	.din_taken(1'b0),
+	// 	.addr(sd_address_reg),
+	// 	.erase_count(8'b0),
+	// 	.sd_error(sd_error),
+	// 	.sd_busy(sd_busy),
+	// 	.sd_error_code(sd_error_code),
+	// 	.reset(!cpu_resetn),
+	// 	.clk(clk50MHz),
+	// 	.sd_type(sd_status),
+	// 	.sd_fsm(sd_fsm),
+	// 	.debug(sd_debug),
+	// 	.debug_extra(sd_debug_extra)
+	// );
 
 
-	assign sd_d[1]  = 1'b1;
-	assign sd_d[2]  = 1'b1;
-	assign sd_reset = 1'b0;
+	// assign sd_d[1]  = 1'b1;
+	// assign sd_d[2]  = 1'b1;
+	// assign sd_reset = 1'b0;
 
 	// assign jb[4:0] = sd_status;
 	// assign jb[7:5] = {sd_byte_available, sd_write, sd_read};
 	// assign led[4:0] = sd_status;
 	// assign jb[7:5]  = 3'b0;
 
-	assign jb = {sd_status, sd_fsm[5:0]};
+	// assign jb = {sd_status, sd_fsm[5:0]};
 
 	// DDRcontrol ram (
 	// 	.clk_200MHz_i(clk200MHz),
@@ -621,21 +621,23 @@ module top (
 		.rx_byte(8'b0),
 		.multiplier(multiplier),
 		.gb_channels({gb_channels[3], gb_channels[2], gb_channels[1], gb_channels[0]}),
-		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]}),
-		.jc(jc),
-		.sd_read(sd_read),
-		.sd_dout(sd_dout),
-		.sd_byte_available(sd_byte_available),
-		.sd_write(sd_write),
-		.sd_din(sd_din),
-		.sd_write_ready(sd_write_ready),
-		.sd_ready(sd_ready),
-		.sd_address(sd_address),
-		.sd_read_ack(sd_read_ack),
-		.sd_error_code(sd_error_code),
-		.sd_busy(sd_busy),
-		.sd_debug(sd_debug),
-		.sd_debug_extra(sd_debug_extra)
+		.nes_channels({nes_channels[3], nes_channels[2], nes_channels[1], nes_channels[0]})
+		// .jc(jc),
+		// .sd_read(sd_read),
+		// .sd_dout(sd_dout),
+		// .sd_byte_available(sd_byte_available),
+		// .sd_write(sd_write),
+		// .sd_din(sd_din),
+		// .sd_write_ready(sd_write_ready),
+		// .sd_ready(sd_ready),
+		// .sd_address(sd_address),
+		// .sd_read_ack(sd_read_ack),
+		// .sd_error_code(sd_error_code),
+		// .sd_busy(sd_busy),
+		// .sd_debug(sd_debug),
+		// .sd_debug_extra(sd_debug_extra)
 	);
+
+	assign jb[7:0] = ja[7:0];
 
 endmodule

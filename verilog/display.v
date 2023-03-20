@@ -38,21 +38,21 @@ module Display (
 	input  wire rx_ready,
 	input  wire [7:0] rx_byte,
 	input  wire [15:0] gb_channels,
-	input  wire [15:0] nes_channels,
-	output wire [7:0] jc,
-	output wire sd_read,
-	input  wire [7:0] sd_dout,
-	input  wire sd_byte_available,
-	output wire sd_write,
-	output wire [7:0] sd_din,
-	input  wire sd_write_ready,
-	input  wire sd_ready,
-	output wire [31:0] sd_address,
-	output wire sd_read_ack,
-	input  wire [2:0] sd_error_code,
-	input  wire sd_busy,
-	input  wire [3:0] sd_debug,
-	input  wire [7:0] sd_debug_extra
+	input  wire [15:0] nes_channels
+	// output wire [7:0] jc,
+	// output wire sd_read,
+	// input  wire [7:0] sd_dout,
+	// input  wire sd_byte_available,
+	// output wire sd_write,
+	// output wire [7:0] sd_din,
+	// input  wire sd_write_ready,
+	// input  wire sd_ready,
+	// output wire [31:0] sd_address,
+	// output wire sd_read_ack,
+	// input  wire [2:0] sd_error_code,
+	// input  wire sd_busy,
+	// input  wire [3:0] sd_debug,
+	// input  wire [7:0] sd_debug_extra
 );
 
 	wire pix_clk;    // pixel clock
@@ -157,21 +157,21 @@ module Display (
 		.io_nesChannels_0(nes_channels[3:0]),
 		.io_nesChannels_1(nes_channels[7:4]),
 		.io_nesChannels_2(nes_channels[11:8]),
-		.io_nesChannels_3(nes_channels[15:12]),
-		.io_sd_doRead(sd_read),
-		.io_sd_dataIn_bits(sd_dout),
-		.io_sd_dataIn_valid(sd_byte_available),
-		.io_sd_doWrite(sd_write),
-		.io_sd_dataOut(sd_din),
-		.io_sd_writeReady(sd_write_ready),
-		.io_sd_ready(sd_ready),
-		.io_sd_address(sd_address),
-		.io_sd_readAck(sd_read_ack),
-		.io_sdErrorCode(sd_error_code),
-		.io_sdBusy(sd_busy),
-		.io_jc(jc),
-		.io_sdDebug(sd_debug),
-		.io_sdDebugExtra(sd_debug_extra)
+		.io_nesChannels_3(nes_channels[15:12])
+		// .io_sd_doRead(sd_read),
+		// .io_sd_dataIn_bits(sd_dout),
+		// .io_sd_dataIn_valid(sd_byte_available),
+		// .io_sd_doWrite(sd_write),
+		// .io_sd_dataOut(sd_din),
+		// .io_sd_writeReady(sd_write_ready),
+		// .io_sd_ready(sd_ready),
+		// .io_sd_address(sd_address),
+		// .io_sd_readAck(sd_read_ack),
+		// .io_sdErrorCode(sd_error_code),
+		// .io_sdBusy(sd_busy),
+		// .io_jc(jc),
+		// .io_sdDebug(sd_debug),
+		// .io_sdDebugExtra(sd_debug_extra)
 	);
 
 	// TMDS Encoding and Serialization

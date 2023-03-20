@@ -68,14 +68,14 @@ class MainBoth extends Module {
 	val nesPulseDown      = RegNext(nesDebouncer.io.out(5) & io.sw(7))
 	val nesPulseLeft      = RegNext(nesDebouncer.io.out(6) & io.sw(7))
 	val nesPulseRight     = RegNext(nesDebouncer.io.out(7) & io.sw(7))
-	io.nesButtons.a      := nesA      & io.sw(7)
-	io.nesButtons.b      := nesB      & io.sw(7)
-	io.nesButtons.select := nesSelect & io.sw(7)
-	io.nesButtons.start  := nesStart  & io.sw(7)
-	io.nesButtons.up     := nesUp     & io.sw(7)
-	io.nesButtons.down   := nesDown   & io.sw(7)
-	io.nesButtons.left   := nesLeft   & io.sw(7)
-	io.nesButtons.right  := nesRight  & io.sw(7)
+	io.nesButtons.a      := RegNext(nesA      & io.sw(7))
+	io.nesButtons.b      := RegNext(nesB      & io.sw(7))
+	io.nesButtons.select := RegNext(nesSelect & io.sw(7))
+	io.nesButtons.start  := RegNext(nesStart  & io.sw(7))
+	io.nesButtons.up     := RegNext(nesUp     & io.sw(7))
+	io.nesButtons.down   := RegNext(nesDown   & io.sw(7))
+	io.nesButtons.left   := RegNext(nesLeft   & io.sw(7))
+	io.nesButtons.right  := RegNext(nesRight  & io.sw(7))
 
 	val useNES = RegInit(false.B)
 	io.useNES := useNES
@@ -154,11 +154,11 @@ class MainBoth extends Module {
 	val clock60 = Module(new StaticClocker(60, clockFreq, true))
 	clock60.io.enable := true.B
 
-	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(20)) }
+	val clock12us = withReset(reset.asBool || reset12us) { Module(new PeriodClocker(11)) }
 	clock12us.io.tickIn := true.B
 	clock12us.io.period := 1200.U
 
-	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(20)) }
+	val clock6us = withReset(reset.asBool || reset6us) { Module(new PeriodClocker(10)) }
 	clock6us.io.tickIn := true.B
 	clock6us.io.period := 600.U
 
@@ -237,7 +237,8 @@ class MainBoth extends Module {
 }
 
 object MainRun extends scala.App {
-	val opts = Array("--emission-options=disableMemRandomization,disableRegisterRandomization")
+	// val opts = Array("--emission-options=disableMemRandomization,disableRegisterRandomization")
+	val opts = args
 	(new ChiselStage).emitVerilog(new MainBoth, opts)
 	(new ChiselStage).emitVerilog(new ImageOutput, opts)
 	(new ChiselStage).emitVerilog(new Debouncer(4), opts)

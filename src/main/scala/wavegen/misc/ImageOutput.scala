@@ -13,10 +13,10 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 
 	val screenWidth  = 1280
 	val screenHeight = 720
-	val demoSlideGB  = 9
-	val demoSlideNES = 11
-	val maxSlides    = 16
-	val playground   = 14
+	val demoSlideGB  = 2
+	val demoSlideNES = 3
+	val lastSlide    = 14
+	// val playground   = 14
 
 	val io = IO(new Bundle {
 		val audioClock  = Input(Clock())
@@ -41,12 +41,12 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 		val rxByte      = Flipped(Valid(UInt(8.W)))
 		val gbChannels  = Input(Vec(4, UInt(4.W)))
 		val nesChannels = Input(Vec(4, UInt(4.W)))
-		val sd = SDData()
-		val jc = Output(UInt(8.W))
-		val sdErrorCode  = Input(UInt(3.W))
-		val sdBusy       = Input(Bool())
-		val sdDebug      = Input(UInt(4.W))
-		val sdDebugExtra = Input(UInt(8.W))
+		// val sd = SDData()
+		// val jc = Output(UInt(8.W))
+		// val sdErrorCode  = Input(UInt(3.W))
+		// val sdBusy       = Input(Bool())
+		// val sdDebug      = Input(UInt(4.W))
+		// val sdDebugExtra = Input(UInt(8.W))
 	})
 
 	val slideshow = Module(new Slideshow)
@@ -61,14 +61,14 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	val goNext     = io.pulseR || io.nesButtons.right || (io.rxByte.valid && io.rxByte.bits === 'd'.U)
 
 	when (goPrevious) {
-		slide := Mux(slide === 0.U, maxSlides.U, slide - 1.U)
+		slide := Mux(slide === 0.U, lastSlide.U, slide - 1.U)
 	}
 
 	when (goNext) {
-		slide := Mux(slide < maxSlides.U, slide + 1.U, 0.U)
+		slide := Mux(slide < lastSlide.U, slide + 1.U, 0.U)
 	}
 
-	when (io.nesButtons.select && slide =/= playground.U) {
+	when (io.nesButtons.select) {
 		io.useNESOut.valid := true.B
 		io.useNESOut.bits  := !useNES
 	}
@@ -90,43 +90,43 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	io.useNESOut.valid := isDemo
 	io.useNESOut.bits  := DontCare
 
-	val fakeAudioClock = StaticClocker(48000, clockFreq)
+	// val fakeAudioClock = StaticClocker(48000, clockFreq)
 
-	val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
-	val state = RegInit(sIdle)
+	// val sIdle :: sClearing :: sReadingTOC :: sDone :: Nil = Enum(4)
+	// val state = RegInit(sIdle)
 
 	// val stInit :: stReadingName :: stReadingAddress :: Nil = Enum(3)
 	// val tocState = RegInit(stInit)
 
-	val tocSize = 64 // Number of TOC entries, rather than the size of an individual TOC row
-	val toc = SyncReadMem(tocSize, new TOCRow)
-	val tocPointer = RegInit(0.U(log2Ceil(tocSize).W))
+	// val tocSize = 64 // Number of TOC entries, rather than the size of an individual TOC row
+	// val toc = SyncReadMem(tocSize, new TOCRow)
+	// val tocPointer = RegInit(0.U(log2Ceil(tocSize).W))
 
-	val tocRow = RegInit(0.U.asTypeOf(new TOCRow))
-	val tocRowPointer = RegInit(0.U(6.W))
+	// val tocRow = RegInit(0.U.asTypeOf(new TOCRow))
+	// val tocRowPointer = RegInit(0.U(6.W))
 
-	// The number of entries as indicated in the first byte of the SD card.
-	val tocCount = RegInit(0.U(8.W))
+	// // The number of entries as indicated in the first byte of the SD card.
+	// val tocCount = RegInit(0.U(8.W))
 
-	val reading = RegInit(false.B)
-	val cache   = Module(new SDCache(4))
-	io.sd <> cache.io.sd
-	io.sd.doRead  := cache.io.sd.doRead  || (slide === playground.U && io.buttonC)
-	io.sd.readAck := cache.io.sd.readAck || (slide === playground.U && io.buttonU)
-	cache.io.sdClock := io.sdClock
-	cache.io.address := DontCare
-	cache.io.read    := reading
+	// val reading = RegInit(false.B)
+	// val cache   = Module(new SDCache(4))
+	// io.sd <> cache.io.sd
+	// io.sd.doRead  := cache.io.sd.doRead  || (slide === playground.U && io.buttonC)
+	// io.sd.readAck := cache.io.sd.readAck || (slide === playground.U && io.buttonU)
+	// cache.io.sdClock := io.sdClock
+	// cache.io.address := DontCare
+	// cache.io.read    := reading
 
-	io.jc := Mux(io.sw(0), io.sdDebugExtra,
-	         Mux(io.sw(1), Cat(io.sd.readAck, io.sdErrorCode, state, cache.io.state),
-	                       Cat(io.sd.doRead, io.sd.readAck, cache.io.dataOut.valid, io.sdBusy, io.sdDebug)))
+	// io.jc := Mux(io.sw(0), io.sdDebugExtra,
+	//          Mux(io.sw(1), Cat(io.sd.readAck, io.sdErrorCode, state, cache.io.state),
+	//                        Cat(io.sd.doRead, io.sd.readAck, cache.io.dataOut.valid, io.sdBusy, io.sdDebug)))
 	// io.jc := Cat(io.sd.doRead, io.sd.readAck, cache.io.dataOut.valid, io.sdErrorCode, cache.io.state)
 	// io.jc := io.sd.dataOut
 
-	val byte      = cache.io.dataOut.bits
-	val byteValid = cache.io.dataOut.valid
+	// val byte      = cache.io.dataOut.bits
+	// val byteValid = cache.io.dataOut.valid
 
-	def isValidAPU(value: UInt): Bool = (value === 1.U || value === 2.U)
+	// def isValidAPU(value: UInt): Bool = (value === 1.U || value === 2.U)
 	def setAll(value: Int): Unit = { io.red := value.U; io.green := value.U; io.blue := value.U }
 
 	// TOC FORMAT:
@@ -135,75 +135,76 @@ class ImageOutput(val showScreenshot: Boolean = false) extends Module {
 	// The TOC consists of zero or more entries with a valid APU type followed by as many entries with an invalid APU
 	// type as it takes to pad the rest of the TOC.
 
-	when (state === sIdle) {
+	// when (state === sIdle) {
 
-		reading := false.B
+	// 	reading := false.B
 
-		when ((io.nesButtons.a || io.pulseD) && slide === playground.U) {
-			state      := sClearing
-			tocPointer := 0.U
-		}
+	// 	when ((io.nesButtons.a || io.pulseD) && slide === playground.U) {
+	// 		state      := sClearing
+	// 		tocPointer := 0.U
+	// 	}
 
-	} .elsewhen (state === sClearing) {
+	// } .elsewhen (state === sClearing) {
 
-		toc.write(tocPointer, 0.U.asTypeOf(new TOCRow))
+	// 	toc.write(tocPointer, 0.U.asTypeOf(new TOCRow))
 
-		when (tocPointer === (tocSize - 1).U) {
-			state         := sReadingTOC
-			tocPointer    := 0.U
-			tocRowPointer := 0.U
-			tocRow        := 0.U.asTypeOf(new TOCRow)
-		} .otherwise {
-			tocPointer := tocPointer + 1.U
-		}
+	// 	when (tocPointer === (tocSize - 1).U) {
+	// 		state         := sReadingTOC
+	// 		tocPointer    := 0.U
+	// 		tocRowPointer := 0.U
+	// 		tocRow        := 0.U.asTypeOf(new TOCRow)
+	// 	} .otherwise {
+	// 		tocPointer := tocPointer + 1.U
+	// 	}
 
-	} .elsewhen (state === sReadingTOC) {
+	// } .elsewhen (state === sReadingTOC) {
 
-		cache.io.address := Cat(tocPointer, tocRowPointer)
-		reading := true.B
+	// 	cache.io.address := Cat(tocPointer, tocRowPointer)
+	// 	reading := true.B
 
-		when (tocRowPointer === 0.U) { // Reading APU type
-			when (byteValid) {
-				when (isValidAPU(byte)) {
-					tocRow.apu := byte
-					tocRowPointer := 1.U
-				} .otherwise {
-					state := sDone
-				}
-			}
-		} .elsewhen (tocRowPointer < 5.U) {
-			when (byteValid) {
-				tocRow.address := tocRow.address | (byte << ((tocRowPointer - 1.U) << 3.U))
-				tocRowPointer := tocRowPointer + 1.U
-			}
-		} .otherwise {
-			when (byteValid) {
-				tocRow.name(tocRowPointer - 5.U) := byte
-				when (tocRowPointer === 63.U) {
-					toc.write(tocPointer, tocRow)
-					tocRowPointer := 0.U
-					tocPointer := tocPointer + 1.U
-				} .otherwise {
-					tocRowPointer := tocRowPointer + 1.U
-				}
-			}
-		}
+	// 	when (tocRowPointer === 0.U) { // Reading APU type
+	// 		when (byteValid) {
+	// 			when (isValidAPU(byte)) {
+	// 				tocRow.apu := byte
+	// 				tocRowPointer := 1.U
+	// 			} .otherwise {
+	// 				state := sDone
+	// 			}
+	// 		}
+	// 	} .elsewhen (tocRowPointer < 5.U) {
+	// 		when (byteValid) {
+	// 			tocRow.address := tocRow.address | (byte << ((tocRowPointer - 1.U) << 3.U))
+	// 			tocRowPointer := tocRowPointer + 1.U
+	// 		}
+	// 	} .otherwise {
+	// 		when (byteValid) {
+	// 			tocRow.name(tocRowPointer - 5.U) := byte
+	// 			when (tocRowPointer === 63.U) {
+	// 				toc.write(tocPointer, tocRow)
+	// 				tocRowPointer := 0.U
+	// 				tocPointer := tocPointer + 1.U
+	// 			} .otherwise {
+	// 				tocRowPointer := tocRowPointer + 1.U
+	// 			}
+	// 		}
+	// 	}
 
-	}
+	// }
 
-	when (slide === playground.U) {
+	// when (slide === playground.U) {
 
-		val rowIndex = io.y >> 3.U
-		val row = toc(rowIndex)
-		val charIndex = (io.x >> 3.U) - 1.U
+	// 	val rowIndex = io.y >> 3.U
+	// 	val row = toc(rowIndex)
+	// 	val charIndex = (io.x >> 3.U) - 1.U
 
-		setAll(255)
+	// 	setAll(255)
 
-		when (0.U <= charIndex && charIndex < 59.U && Font(row.name(charIndex), io.x(2, 0), io.y(2, 0))) {
-			setAll(0)
-		}
+	// 	when (0.U <= charIndex && charIndex < 59.U && Font(row.name(charIndex), io.x(2, 0), io.y(2, 0))) {
+	// 		setAll(0)
+	// 	}
 
-	} .elsewhen (isDemo) {
+	// } .elsewhen (isDemo) {
+	when (isDemo) {
 		io.red   := colors.io.red
 		io.green := colors.io.green
 		io.blue  := colors.io.blue
